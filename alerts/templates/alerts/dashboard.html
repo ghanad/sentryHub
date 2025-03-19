@@ -26,6 +26,10 @@
                         <h2>{{ total_alerts }}</h2>
                         <p class="text-muted">Total Alerts</p>
                     </div>
+                    <div class="col-12 mb-3">
+                        <h2 class="{% if unacknowledged_alerts > 0 %}text-danger{% endif %}">{{ unacknowledged_alerts }}</h2>
+                        <p class="text-muted">Unacknowledged Alerts</p>
+                    </div>
                 </div>
                 
                 <h6 class="border-bottom pb-2 mb-3">By Severity</h6>

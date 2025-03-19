@@ -22,6 +22,10 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         # Get alert statistics
         context['total_alerts'] = AlertGroup.objects.count()
         context['active_alerts'] = AlertGroup.objects.filter(current_status='firing').count()
+        context['unacknowledged_alerts'] = AlertGroup.objects.filter(
+            current_status='firing',
+            acknowledged=False
+        ).count()
         
         # Get alerts by severity
         severity_counts = AlertGroup.objects.filter(

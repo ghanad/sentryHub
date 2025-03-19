@@ -48,18 +48,42 @@ def process_alert(alert_data):
     ).order_by('-started_at').first()
     
     # Create new AlertInstance or update existing
-    if not last_instance or last_instance.status != status:
-        # Close the last instance if status has changed
-        if last_instance and last_instance.status != status:
-            last_instance.ended_at = starts_at
-            last_instance.save()
+    if status == 'firing':
+        # If it's a firing alert and there's no active firing instance, create one
+        if not last_instance or last_instance.status != 'firing' or last_instance.ended_at:
+            # Close the last instance if it exists (this shouldn't normally happen)
+            if last_instance and last_instance.status == 'firing' and not last_instance.ended_at:
+                last_instance.ended_at = starts_at
+                last_instance.save()
+                
+            # Create new firing instance
+            AlertInstance.objects.create(
+                alert_group=alert_group,
+                status=status,
+                started_at=starts_at,
+                ended_at=None,  # Explicitly set to None since it's firing
+                annotations=annotations,
+                generator_url=generator_url
+            )
+    else:  # status is 'resolved'
+        # Find the most recent firing instance with no end time
+        active_firing_instance = AlertInstance.objects.filter(
+            alert_group=alert_group,
+            status='firing',
+            ended_at__isnull=True
+        ).order_by('-started_at').first()
         
-        # Create new instance
+        # If we found an active firing instance, close it
+        if active_firing_instance:
+            active_firing_instance.ended_at = starts_at
+            active_firing_instance.save()
+        
+        # Create a resolved instance
         AlertInstance.objects.create(
             alert_group=alert_group,
             status=status,
             started_at=starts_at,
-            ended_at=ends_at,
+            ended_at=starts_at,  # For 'resolved' instances, end time is same as start time
             annotations=annotations,
             generator_url=generator_url
         )

@@ -83,7 +83,7 @@
                     <div class="col-md-6">
                         <div id="historyChart" style="height: 250px;" data-instances='[
                             {% for instance in instances|slice:":15" reversed %}
-                            {"label": "{{ instance.started_at|date:'Y-m-d H:i' }}", "status": "{{ instance.status }}"}{% if not forloop.last %},{% endif %}
+                            {"label": "{{ instance.started_at|date:'Y-m-d H:i' }}", "status": "{{ instance.status }}", "ended_at": "{{ instance.ended_at|default:'' }}"}{% if not forloop.last %},{% endif %}
                             {% endfor %}
                         ]'></div>
                     </div>
@@ -108,7 +108,7 @@
                             <tr>
                                 <td>{{ forloop.counter }}</td>
                                 <td>
-                                    {% if instance.status == 'firing' %}
+                                    {% if instance.status == 'firing' and not instance.ended_at %}
                                     <span class="badge bg-danger">Firing</span>
                                     {% else %}
                                     <span class="badge bg-success">Resolved</span>
@@ -118,7 +118,7 @@
                                 <td>
                                     {% if instance.ended_at %}
                                     {{ instance.ended_at|date:"Y-m-d H:i:s" }}
-                                    {% elif instance.status == 'firing' %}
+                                    {% elif instance.status == 'firing' and not instance.ended_at %}
                                     <span class="badge bg-warning text-dark">Not Resolved Yet</span>
                                     {% else %}
                                     <span class="badge bg-secondary">Unknown</span>
@@ -130,7 +130,7 @@
                                         <span class="duration" data-start="{{ instance.started_at|date:'c' }}" data-end="{{ instance.ended_at|date:'c' }}">
                                             Calculating...
                                         </span>
-                                        {% elif instance.status == 'firing' %}
+                                        {% elif instance.status == 'firing' and not instance.ended_at %}
                                         <span class="ongoing-duration" data-start="{{ instance.started_at|date:'c' }}">
                                             Ongoing
                                         </span>
@@ -275,6 +275,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Create a simple chart
     try {
+        // Populate from instances data
+        const instanceData = JSON.parse(document.getElementById('historyChart').dataset.instances);
+        
         const historyData = {
             labels: [],
             datasets: [{
@@ -287,17 +290,15 @@ document.addEventListener('DOMContentLoaded', function() {
             }]
         };
         
-        // Populate from instances data
-        const instanceData = JSON.parse(document.getElementById('historyChart').dataset.instances);
-        
         instanceData.forEach(instance => {
             historyData.labels.push(instance.label);
-            historyData.datasets[0].data.push(instance.status === "firing" ? 1 : 0);
+            const isFiring = instance.status === "firing" && !instance.ended_at;
+            historyData.datasets[0].data.push(isFiring ? 1 : 0);
             historyData.datasets[0].backgroundColor.push(
-                instance.status === "firing" ? 'rgba(220, 53, 69, 0.6)' : 'rgba(25, 135, 84, 0.6)'
+                isFiring ? 'rgba(220, 53, 69, 0.6)' : 'rgba(25, 135, 84, 0.6)'
             );
             historyData.datasets[0].borderColor.push(
-                instance.status === "firing" ? 'rgb(220, 53, 69)' : 'rgb(25, 135, 84)'
+                isFiring ? 'rgb(220, 53, 69)' : 'rgb(25, 135, 84)'
             );
         });
         
