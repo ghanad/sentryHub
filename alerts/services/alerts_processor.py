@@ -102,18 +102,9 @@ def acknowledge_alert(alert_group, user):
     Returns:
         AlertGroup: The updated alert group
     """
-    from ..models import AlertComment
-    
     alert_group.acknowledged = True
     alert_group.acknowledged_by = user
     alert_group.acknowledgement_time = timezone.now()
     alert_group.save()
-    
-    # Add an automatic comment
-    AlertComment.objects.create(
-        alert_group=alert_group,
-        user=user,
-        content=f"Alert acknowledged by {user.get_full_name() or user.username}"
-    )
     
     return alert_group

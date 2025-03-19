@@ -114,6 +114,9 @@ class AlertDetailView(LoginRequiredMixin, DetailView):
         context['acknowledge_form'] = AlertAcknowledgementForm()
         context['comment_form'] = AlertCommentForm()
         
+        # Format messages for JavaScript
+        context['messages'] = [{'message': str(message), 'tags': message.tags} for message in messages.get_messages(self.request)]
+        
         return context
     
     def post(self, request, *args, **kwargs):
@@ -150,11 +153,22 @@ class AlertDetailView(LoginRequiredMixin, DetailView):
                 comment.alert_group = alert
                 comment.user = request.user
                 comment.save()
-                messages.success(request, "Comment added successfully.")
+                
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({
+                        'status': 'success',
+                        'user': request.user.username,
+                        'content': form.cleaned_data['content']
+                    })
+                else:
+                    messages.success(request, "Comment added successfully.")
+                    return redirect('alerts:alert-detail', fingerprint=alert.fingerprint)
             else:
-                messages.error(request, "Please provide a valid comment.")
-            
-            return redirect('alerts:alert-detail', fingerprint=alert.fingerprint)
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
+                else:
+                    messages.error(request, "Please provide a valid comment.")
+                    return redirect('alerts:alert-detail', fingerprint=alert.fingerprint)
         
         return redirect('alerts:alert-detail', fingerprint=alert.fingerprint)
 

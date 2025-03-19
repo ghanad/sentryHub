@@ -33,19 +33,6 @@
     </div>
 </div>
 
-{% if messages %}
-<div class="row mb-4">
-    <div class="col-12">
-        {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-        {% endfor %}
-    </div>
-</div>
-{% endif %}
-
 <div class="row mb-4">
     <div class="col-12">
         <div class="card">
@@ -351,7 +338,7 @@
             </div>
             <div class="card-body">
                 <!-- Comment Form -->
-                <form method="post" class="mb-4">
+                <form method="post" class="mb-4" id="commentForm">
                     {% csrf_token %}
                     <div class="mb-3">
                         <label for="id_content" class="form-label">Add a Comment</label>
@@ -359,6 +346,73 @@
                     </div>
                     <button type="submit" name="comment" class="btn btn-primary">Submit</button>
                 </form>
+
+                <script>
+                document.getElementById('commentForm').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const formData = new FormData(this);
+                    formData.append('comment', 'true');
+                    
+                    fetch(window.location.href, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            // Show success message
+                            toastr.success("Comment added successfully.");
+                            
+                            // Clear the form
+                            this.reset();
+                            
+                            // Add the new comment to the list
+                            const commentsContainer = document.querySelector('.comments');
+                            const newComment = document.createElement('div');
+                            newComment.className = 'card mb-3';
+                            newComment.innerHTML = `
+                                <div class="card-header bg-light">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <strong>${formData.get('user')}</strong>
+                                        </div>
+                                        <div>
+                                            <small class="text-muted">${new Date().toLocaleString()}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <p class="card-text">${formData.get('content')}</p>
+                                </div>
+                            `;
+                            
+                            // Insert at the beginning of the comments list
+                            if (commentsContainer.firstChild) {
+                                commentsContainer.insertBefore(newComment, commentsContainer.firstChild);
+                            } else {
+                                commentsContainer.appendChild(newComment);
+                            }
+                            
+                            // Remove the "No comments" message if it exists
+                            const noCommentsAlert = commentsContainer.querySelector('.alert-info');
+                            if (noCommentsAlert) {
+                                noCommentsAlert.remove();
+                            }
+                        } else {
+                            toastr.error("Error adding comment.");
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        toastr.error("Error adding comment.");
+                    });
+                });
+                </script>
                 
                 <!-- Comment List -->
                 <div class="comments">
