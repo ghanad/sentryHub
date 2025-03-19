@@ -19,16 +19,20 @@
             <div class="card-body">
                 <div class="row text-center">
                     <div class="col-6 mb-3">
-                        <h2>{{ active_alerts }}</h2>
-                        <p class="text-muted">Active Alerts</p>
+                        <a href="{% url 'alerts:alert-list' %}?status=firing" class="text-decoration-none">
+                            <h2>{{ active_alerts }}</h2>
+                            <p class="text-muted">Active Alerts</p>
+                        </a>
                     </div>
                     <div class="col-6 mb-3">
                         <h2>{{ total_alerts }}</h2>
                         <p class="text-muted">Total Alerts</p>
                     </div>
                     <div class="col-12 mb-3">
-                        <h2 class="{% if unacknowledged_alerts > 0 %}text-danger{% endif %}">{{ unacknowledged_alerts }}</h2>
-                        <p class="text-muted">Unacknowledged Alerts</p>
+                        <a href="{% url 'alerts:alert-list' %}?acknowledged=false" class="text-decoration-none">
+                            <h2 class="{% if unacknowledged_alerts > 0 %}text-danger{% endif %}">{{ unacknowledged_alerts }}</h2>
+                            <p class="text-muted">Unacknowledged Alerts</p>
+                        </a>
                     </div>
                 </div>
                 
