@@ -348,6 +348,51 @@
                 </form>
 
                 <script>
+                // Function to detect Persian text
+                function isPersianText(text) {
+                    // Persian Unicode range: \u0600-\u06FF
+                    const persianRegex = /[\u0600-\u06FF]/;
+                    return persianRegex.test(text);
+                }
+
+                // Function to set text direction based on content
+                function setTextDirection(element) {
+                    if (isPersianText(element.textContent)) {
+                        element.style.direction = 'rtl';
+                        element.style.textAlign = 'right';
+                    } else {
+                        element.style.direction = 'ltr';
+                        element.style.textAlign = 'left';
+                    }
+                }
+
+                // Function to handle input direction
+                function handleInputDirection(event) {
+                    const textarea = event.target;
+                    if (isPersianText(textarea.value)) {
+                        textarea.style.direction = 'rtl';
+                        textarea.style.textAlign = 'right';
+                    } else {
+                        textarea.style.direction = 'ltr';
+                        textarea.style.textAlign = 'left';
+                    }
+                }
+
+                // Apply RTL detection to existing comments
+                document.addEventListener('DOMContentLoaded', function() {
+                    const commentTexts = document.querySelectorAll('.card-text');
+                    commentTexts.forEach(setTextDirection);
+
+                    // Add input event listener to comment textarea
+                    const commentTextarea = document.querySelector('#id_content');
+                    if (commentTextarea) {
+                        commentTextarea.addEventListener('input', handleInputDirection);
+                        // Set initial direction
+                        handleInputDirection({ target: commentTextarea });
+                    }
+                });
+
+                // Modify the comment form submission to handle RTL
                 document.getElementById('commentForm').addEventListener('submit', function(e) {
                     e.preventDefault();
                     
@@ -397,6 +442,10 @@
                             } else {
                                 commentsContainer.appendChild(newComment);
                             }
+                            
+                            // Apply RTL detection to the new comment
+                            const newCommentText = newComment.querySelector('.card-text');
+                            setTextDirection(newCommentText);
                             
                             // Remove the "No comments" message if it exists
                             const noCommentsAlert = commentsContainer.querySelector('.alert-info');
