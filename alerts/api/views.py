@@ -60,18 +60,36 @@ class AlertGroupViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = AcknowledgeAlertSerializer(data=request.data)
         
         if serializer.is_valid():
+            comment_text = serializer.validated_data['comment']
+            
             if serializer.validated_data['acknowledged']:
+                # First, create the comment
+                AlertComment.objects.create(
+                    alert_group=alert_group,
+                    user=request.user,
+                    content=comment_text
+                )
+                
+                # Then, acknowledge the alert
                 acknowledge_alert(alert_group, request.user)
                 return Response({
                     'status': 'success',
-                    'message': 'Alert acknowledged successfully'
+                    'message': 'Alert acknowledged successfully with comment'
                 })
             else:
                 alert_group.acknowledged = False
                 alert_group.save()
+                
+                # Add a comment about un-acknowledging
+                AlertComment.objects.create(
+                    alert_group=alert_group,
+                    user=request.user,
+                    content=f"Alert un-acknowledged: {comment_text}"
+                )
+                
                 return Response({
                     'status': 'success',
-                    'message': 'Alert un-acknowledged successfully'
+                    'message': 'Alert un-acknowledged successfully with comment'
                 })
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

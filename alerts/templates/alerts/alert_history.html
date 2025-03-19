@@ -1,4 +1,22 @@
 {% extends "alerts/base.html" %}
+{% block extra_css %}
+<style>
+/* Custom styles for history table */
+.table .badge {
+    font-size: 0.85em;
+}
+
+.ongoing-duration {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.6; }
+    100% { opacity: 1; }
+}
+</style>
+{% endblock %}
 
 {% block title %}History: {{ alert.name }} - SentryHub{% endblock %}
 
@@ -63,7 +81,7 @@
                         </table>
                     </div>
                     <div class="col-md-6">
-                        <div id="historyChart" style="height: 250px;" data-chart='[
+                        <div id="historyChart" style="height: 250px;" data-instances='[
                             {% for instance in instances|slice:":15" reversed %}
                             {"label": "{{ instance.started_at|date:'Y-m-d H:i' }}", "status": "{{ instance.status }}"}{% if not forloop.last %},{% endif %}
                             {% endfor %}
@@ -74,12 +92,13 @@
                 <!-- Complete History Timeline -->
                 <h5 class="border-bottom pb-2 mb-3">Complete History</h5>
                 <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
+                    <table class="table table-bordered table-hover">
+                        <thead class="table-light">
                             <tr>
+                                <th>#</th>
                                 <th>Status</th>
                                 <th>Started At</th>
-                                <th>Ended At</th>
+                                <th>Resolved At</th>
                                 <th>Duration</th>
                                 <th>Details</th>
                             </tr>
@@ -87,6 +106,7 @@
                         <tbody>
                             {% for instance in instances %}
                             <tr>
+                                <td>{{ forloop.counter }}</td>
                                 <td>
                                     {% if instance.status == 'firing' %}
                                     <span class="badge bg-danger">Firing</span>
@@ -98,16 +118,26 @@
                                 <td>
                                     {% if instance.ended_at %}
                                     {{ instance.ended_at|date:"Y-m-d H:i:s" }}
+                                    {% elif instance.status == 'firing' %}
+                                    <span class="badge bg-warning text-dark">Not Resolved Yet</span>
                                     {% else %}
-                                    <em>Still active</em>
+                                    <span class="badge bg-secondary">Unknown</span>
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if instance.ended_at %}
-                                    <span class="duration" data-start="{{ instance.started_at|date:'c' }}" data-end="{{ instance.ended_at|date:'c' }}"></span>
-                                    {% else %}
-                                    <span class="ongoing-duration" data-start="{{ instance.started_at|date:'c' }}"></span>
-                                    {% endif %}
+                                    <span class="{% if instance.status == 'firing' and not instance.ended_at %}text-warning fw-bold{% endif %}">
+                                        {% if instance.ended_at %}
+                                        <span class="duration" data-start="{{ instance.started_at|date:'c' }}" data-end="{{ instance.ended_at|date:'c' }}">
+                                            Calculating...
+                                        </span>
+                                        {% elif instance.status == 'firing' %}
+                                        <span class="ongoing-duration" data-start="{{ instance.started_at|date:'c' }}">
+                                            Ongoing
+                                        </span>
+                                        {% else %}
+                                        --
+                                        {% endif %}
+                                    </span>
                                 </td>
                                 <td>
                                     <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#instanceModal{{ instance.id }}">
@@ -204,24 +234,29 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Calculate durations
+    // Function to format duration
+    function formatDuration(seconds) {
+        if (seconds < 60) {
+            return seconds + " seconds";
+        } else if (seconds < 3600) {
+            return Math.floor(seconds / 60) + " min " + (seconds % 60) + " sec";
+        } else if (seconds < 86400) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            return hours + " hr " + minutes + " min";
+        } else {
+            const days = Math.floor(seconds / 86400);
+            const hours = Math.floor((seconds % 86400) / 3600);
+            return days + " days " + hours + " hr";
+        }
+    }
+
+    // Calculate durations for completed periods
     document.querySelectorAll('.duration').forEach(function(el) {
         const start = new Date(el.dataset.start);
         const end = new Date(el.dataset.end);
         const duration = Math.floor((end - start) / 1000); // Duration in seconds
-        
-        let text = '';
-        if (duration < 60) {
-            text = `${duration} seconds`;
-        } else if (duration < 3600) {
-            text = `${Math.floor(duration / 60)} minutes`;
-        } else if (duration < 86400) {
-            text = `${Math.floor(duration / 3600)} hours, ${Math.floor((duration % 3600) / 60)} minutes`;
-        } else {
-            text = `${Math.floor(duration / 86400)} days, ${Math.floor((duration % 86400) / 3600)} hours`;
-        }
-        
-        el.textContent = text;
+        el.textContent = formatDuration(duration);
     });
     
     // Calculate ongoing durations
@@ -229,34 +264,42 @@ document.addEventListener('DOMContentLoaded', function() {
         const start = new Date(el.dataset.start);
         const now = new Date();
         const duration = Math.floor((now - start) / 1000); // Duration in seconds
+        el.textContent = formatDuration(duration) + " (ongoing)";
         
-        let text = '';
-        if (duration < 60) {
-            text = `${duration} seconds (ongoing)`;
-        } else if (duration < 3600) {
-            text = `${Math.floor(duration / 60)} minutes (ongoing)`;
-        } else if (duration < 86400) {
-            text = `${Math.floor(duration / 3600)} hours, ${Math.floor((duration % 3600) / 60)} minutes (ongoing)`;
-        } else {
-            text = `${Math.floor(duration / 86400)} days, ${Math.floor((duration % 86400) / 3600)} hours (ongoing)`;
-        }
-        
-        el.textContent = text;
+        // Update ongoing duration every minute
+        setInterval(function() {
+            const currentDuration = Math.floor((new Date() - start) / 1000);
+            el.textContent = formatDuration(currentDuration) + " (ongoing)";
+        }, 60000);
     });
     
+    // Create a simple chart
     try {
-        const chartData = JSON.parse(document.getElementById('historyChart').dataset.chart);
         const historyData = {
-            labels: chartData.map(d => d.label),
+            labels: [],
             datasets: [{
                 label: 'Alert Status',
-                data: chartData.map(d => d.status === "firing" ? 1 : 0),
-                backgroundColor: chartData.map(d => d.status === "firing" ? 'rgba(220, 53, 69, 0.6)' : 'rgba(25, 135, 84, 0.6)'),
-                borderColor: chartData.map(d => d.status === "firing" ? 'rgb(220, 53, 69)' : 'rgb(25, 135, 84)'),
+                data: [],
+                backgroundColor: [],
+                borderColor: [],
                 borderWidth: 1,
                 barThickness: 20
             }]
         };
+        
+        // Populate from instances data
+        const instanceData = JSON.parse(document.getElementById('historyChart').dataset.instances);
+        
+        instanceData.forEach(instance => {
+            historyData.labels.push(instance.label);
+            historyData.datasets[0].data.push(instance.status === "firing" ? 1 : 0);
+            historyData.datasets[0].backgroundColor.push(
+                instance.status === "firing" ? 'rgba(220, 53, 69, 0.6)' : 'rgba(25, 135, 84, 0.6)'
+            );
+            historyData.datasets[0].borderColor.push(
+                instance.status === "firing" ? 'rgb(220, 53, 69)' : 'rgb(25, 135, 84)'
+            );
+        });
         
         if (historyData.labels.length > 0) {
             const ctx = document.getElementById('historyChart').getContext('2d');

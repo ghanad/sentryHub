@@ -1,12 +1,16 @@
-from django.views.generic import TemplateView, ListView, DetailView
+from django.views.generic import TemplateView, ListView, DetailView, FormView
 from django.db.models import Count, Q
 from django.utils import timezone
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.http import JsonResponse
+from django.contrib import messages
+from django.views.generic.detail import SingleObjectMixin
 
-from .models import AlertGroup, AlertInstance
+from .models import AlertGroup, AlertInstance, AlertComment
+from .forms import AlertAcknowledgementForm, AlertCommentForm
+from .services.alerts_processor import acknowledge_alert
 
 
 class DashboardView(LoginRequiredMixin, TemplateView):
@@ -102,25 +106,50 @@ class AlertDetailView(LoginRequiredMixin, DetailView):
         # Get comments
         context['comments'] = self.object.comments.all().order_by('-created_at')
         
+        # Add forms to context
+        context['acknowledge_form'] = AlertAcknowledgementForm()
+        context['comment_form'] = AlertCommentForm()
+        
         return context
     
     def post(self, request, *args, **kwargs):
         alert = self.get_object()
         
-        # Handle acknowledgement
+        # Handle acknowledgement with required comment
         if 'acknowledge' in request.POST:
-            from .services.alerts_processor import acknowledge_alert
-            acknowledge_alert(alert, request.user)
-            return redirect('alerts:alert-detail', fingerprint=alert.fingerprint)
+            form = AlertAcknowledgementForm(request.POST)
+            if form.is_valid():
+                comment_text = form.cleaned_data['comment']
+                
+                # Create the comment first
+                AlertComment.objects.create(
+                    alert_group=alert,
+                    user=request.user,
+                    content=comment_text
+                )
+                
+                # Then acknowledge the alert
+                acknowledge_alert(alert, request.user)
+                
+                messages.success(request, "Alert has been acknowledged successfully.")
+                return redirect('alerts:alert-detail', fingerprint=alert.fingerprint)
+            else:
+                # If form is invalid, redisplay the page with error messages
+                messages.error(request, "Please provide a comment when acknowledging an alert.")
+                return self.get(request, *args, **kwargs)
         
         # Handle comment
-        if 'comment' in request.POST and request.POST.get('content'):
-            from .models import AlertComment
-            AlertComment.objects.create(
-                alert_group=alert,
-                user=request.user,
-                content=request.POST.get('content')
-            )
+        if 'comment' in request.POST:
+            form = AlertCommentForm(request.POST)
+            if form.is_valid():
+                comment = form.save(commit=False)
+                comment.alert_group = alert
+                comment.user = request.user
+                comment.save()
+                messages.success(request, "Comment added successfully.")
+            else:
+                messages.error(request, "Please provide a valid comment.")
+            
             return redirect('alerts:alert-detail', fingerprint=alert.fingerprint)
         
         return redirect('alerts:alert-detail', fingerprint=alert.fingerprint)

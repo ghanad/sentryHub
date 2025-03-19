@@ -50,3 +50,4 @@ class AlertmanagerWebhookSerializer(serializers.Serializer):
 
 class AcknowledgeAlertSerializer(serializers.Serializer):
     acknowledged = serializers.BooleanField(required=True)
+    comment = serializers.CharField(required=True)
