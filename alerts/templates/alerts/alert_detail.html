@@ -1,0 +1,290 @@
+{% extends "alerts/base.html" %}
+
+{% block title %}{{ alert.name }} - SentryHub{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'alerts:dashboard' %}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'alerts:alert-list' %}">Alerts</a></li>
+                <li class="breadcrumb-item active">{{ alert.name }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Alert: {{ alert.name }}</h5>
+                    <div>
+                        <a href="{% url 'alerts:alert-history' alert.fingerprint %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-clock-history"></i> History
+                        </a>
+                        {% if not alert.acknowledged %}
+                        <form method="post" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" name="acknowledge" value="true" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-check-circle"></i> Acknowledge
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <!-- Alert Details -->
+                    <div class="col-md-6">
+                        <h6 class="border-bottom pb-2 mb-3">Alert Details</h6>
+                        <table class="table">
+                            <tr>
+                                <th style="width: 30%">Status</th>
+                                <td>
+                                    {% if alert.current_status == 'firing' %}
+                                    <span class="badge bg-danger">Firing</span>
+                                    {% else %}
+                                    <span class="badge bg-success">Resolved</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Severity</th>
+                                <td>
+                                    {% if alert.severity == 'critical' %}
+                                    <span class="badge bg-danger">Critical</span>
+                                    {% elif alert.severity == 'warning' %}
+                                    <span class="badge bg-warning text-dark">Warning</span>
+                                    {% else %}
+                                    <span class="badge bg-info text-dark">Info</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>First Occurrence</th>
+                                <td>{{ alert.first_occurrence|date:"Y-m-d H:i:s" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Last Occurrence</th>
+                                <td>{{ alert.last_occurrence|date:"Y-m-d H:i:s" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Total Firing Count</th>
+                                <td>{{ alert.total_firing_count }}</td>
+                            </tr>
+                            <tr>
+                                <th>Acknowledged</th>
+                                <td>
+                                    {% if alert.acknowledged %}
+                                    Yes, by {{ alert.acknowledged_by.username }} at {{ alert.acknowledgement_time|date:"Y-m-d H:i:s" }}
+                                    {% else %}
+                                    No
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Fingerprint</th>
+                                <td><code>{{ alert.fingerprint }}</code></td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <!-- Labels and Annotations -->
+                    <div class="col-md-6">
+                        <h6 class="border-bottom pb-2 mb-3">Labels</h6>
+                        <table class="table table-sm mb-4">
+                            <thead>
+                                <tr>
+                                    <th>Key</th>
+                                    <th>Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for key, value in alert.labels.items %}
+                                <tr>
+                                    <td><code>{{ key }}</code></td>
+                                    <td><code>{{ value }}</code></td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="2" class="text-center">No labels</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        
+                        <h6 class="border-bottom pb-2 mb-3">Latest Annotations</h6>
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Key</th>
+                                    <th>Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% with last_instance=instances.first %}
+                                {% if last_instance %}
+                                    {% for key, value in last_instance.annotations.items %}
+                                    <tr>
+                                        <td><code>{{ key }}</code></td>
+                                        <td>{{ value }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="2" class="text-center">No annotations</td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                <tr>
+                                    <td colspan="2" class="text-center">No instances</td>
+                                </tr>
+                                {% endif %}
+                                {% endwith %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alert History Timeline -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Recent History</h5>
+            </div>
+            <div class="card-body">
+                <ul class="timeline">
+                    {% for instance in instances|slice:":5" %}
+                    <li class="timeline-item mb-4">
+                        <div class="timeline-marker {% if instance.status == 'firing' %}bg-danger{% else %}bg-success{% endif %}"></div>
+                        <div class="timeline-content">
+                            <h5 class="timeline-title">
+                                {% if instance.status == 'firing' %}
+                                <span class="badge bg-danger">Started Firing</span>
+                                {% else %}
+                                <span class="badge bg-success">Resolved</span>
+                                {% endif %}
+                            </h5>
+                            <p class="timeline-text">{{ instance.started_at|date:"Y-m-d H:i:s" }}</p>
+                            {% if instance.ended_at %}
+                            <p class="timeline-text">Ended: {{ instance.ended_at|date:"Y-m-d H:i:s" }}</p>
+                            {% endif %}
+                            {% if instance.generator_url %}
+                            <p class="timeline-text">
+                                <a href="{{ instance.generator_url }}" target="_blank">View in Prometheus <i class="bi bi-box-arrow-up-right"></i></a>
+                            </p>
+                            {% endif %}
+                        </div>
+                    </li>
+                    {% empty %}
+                    <li class="timeline-item mb-4">
+                        <div class="timeline-marker bg-secondary"></div>
+                        <div class="timeline-content">
+                            <p class="timeline-text">No history available</p>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                
+                {% if instances.count > 5 %}
+                <div class="text-center mt-3">
+                    <a href="{% url 'alerts:alert-history' alert.fingerprint %}" class="btn btn-outline-primary">View Full History</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Comments Section -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Comments</h5>
+            </div>
+            <div class="card-body">
+                <!-- Comment Form -->
+                <form method="post" class="mb-4">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="content" class="form-label">Add a Comment</label>
+                        <textarea class="form-control" id="content" name="content" rows="3" required></textarea>
+                    </div>
+                    <button type="submit" name="comment" class="btn btn-primary">Submit</button>
+                </form>
+                
+                <!-- Comment List -->
+                <div class="comments">
+                    {% for comment in comments %}
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <strong>{{ comment.user.username }}</strong>
+                                </div>
+                                <div>
+                                    <small class="text-muted">{{ comment.created_at|date:"Y-m-d H:i:s" }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">{{ comment.content }}</p>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="alert alert-info">
+                        No comments yet. Be the first to comment!
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Timeline styles */
+.timeline {
+    position: relative;
+    padding-left: 40px;
+    list-style: none;
+}
+
+.timeline-item {
+    position: relative;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -40px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+}
+
+.timeline-content {
+    position: relative;
+}
+
+.timeline:before {
+    content: '';
+    position: absolute;
+    left: -31px;
+    top: 10px;
+    height: calc(100% - 20px);
+    width: 2px;
+    background-color: #e9ecef;
+}
+</style>
+{% endblock %}

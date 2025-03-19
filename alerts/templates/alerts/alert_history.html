@@ -1,0 +1,301 @@
+{% extends "alerts/base.html" %}
+
+{% block title %}History: {{ alert.name }} - SentryHub{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'alerts:dashboard' %}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'alerts:alert-list' %}">Alerts</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'alerts:alert-detail' alert.fingerprint %}">{{ alert.name }}</a></li>
+                <li class="breadcrumb-item active">History</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Alert History: {{ alert.name }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <table class="table">
+                            <tr>
+                                <th style="width: 30%">Status</th>
+                                <td>
+                                    {% if alert.current_status == 'firing' %}
+                                    <span class="badge bg-danger">Firing</span>
+                                    {% else %}
+                                    <span class="badge bg-success">Resolved</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Severity</th>
+                                <td>
+                                    {% if alert.severity == 'critical' %}
+                                    <span class="badge bg-danger">Critical</span>
+                                    {% elif alert.severity == 'warning' %}
+                                    <span class="badge bg-warning text-dark">Warning</span>
+                                    {% else %}
+                                    <span class="badge bg-info text-dark">Info</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>First Occurrence</th>
+                                <td>{{ alert.first_occurrence|date:"Y-m-d H:i:s" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Last Occurrence</th>
+                                <td>{{ alert.last_occurrence|date:"Y-m-d H:i:s" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Total Firing Count</th>
+                                <td>{{ alert.total_firing_count }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <div id="historyChart" style="height: 250px;" data-chart='[
+                            {% for instance in instances|slice:":15" reversed %}
+                            {"label": "{{ instance.started_at|date:'Y-m-d H:i' }}", "status": "{{ instance.status }}"}{% if not forloop.last %},{% endif %}
+                            {% endfor %}
+                        ]'></div>
+                    </div>
+                </div>
+                
+                <!-- Complete History Timeline -->
+                <h5 class="border-bottom pb-2 mb-3">Complete History</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Status</th>
+                                <th>Started At</th>
+                                <th>Ended At</th>
+                                <th>Duration</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for instance in instances %}
+                            <tr>
+                                <td>
+                                    {% if instance.status == 'firing' %}
+                                    <span class="badge bg-danger">Firing</span>
+                                    {% else %}
+                                    <span class="badge bg-success">Resolved</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ instance.started_at|date:"Y-m-d H:i:s" }}</td>
+                                <td>
+                                    {% if instance.ended_at %}
+                                    {{ instance.ended_at|date:"Y-m-d H:i:s" }}
+                                    {% else %}
+                                    <em>Still active</em>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if instance.ended_at %}
+                                    <span class="duration" data-start="{{ instance.started_at|date:'c' }}" data-end="{{ instance.ended_at|date:'c' }}"></span>
+                                    {% else %}
+                                    <span class="ongoing-duration" data-start="{{ instance.started_at|date:'c' }}"></span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#instanceModal{{ instance.id }}">
+                                        <i class="bi bi-info-circle"></i> Annotations
+                                    </button>
+                                    
+                                    {% if instance.generator_url %}
+                                    <a href="{{ instance.generator_url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-graph-up"></i> Prometheus
+                                    </a>
+                                    {% endif %}
+                                    
+                                    <!-- Modal for instance details -->
+                                    <div class="modal fade" id="instanceModal{{ instance.id }}" tabindex="-1" aria-labelledby="instanceModalLabel{{ instance.id }}" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title" id="instanceModalLabel{{ instance.id }}">Alert Instance Details</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <h6>Annotations</h6>
+                                                    <table class="table table-sm">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Key</th>
+                                                                <th>Value</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {% for key, value in instance.annotations.items %}
+                                                            <tr>
+                                                                <td><code>{{ key }}</code></td>
+                                                                <td>{{ value }}</td>
+                                                            </tr>
+                                                            {% empty %}
+                                                            <tr>
+                                                                <td colspan="2" class="text-center">No annotations</td>
+                                                            </tr>
+                                                            {% endfor %}
+                                                        </tbody>
+                                                    </table>
+                                                    
+                                                    <h6 class="mt-4">Timing Information</h6>
+                                                    <table class="table table-sm">
+                                                        <tr>
+                                                            <th>Status</th>
+                                                            <td>
+                                                                {% if instance.status == 'firing' %}
+                                                                <span class="badge bg-danger">Firing</span>
+                                                                {% else %}
+                                                                <span class="badge bg-success">Resolved</span>
+                                                                {% endif %}
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>Started At</th>
+                                                            <td>{{ instance.started_at|date:"Y-m-d H:i:s" }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>Ended At</th>
+                                                            <td>
+                                                                {% if instance.ended_at %}
+                                                                {{ instance.ended_at|date:"Y-m-d H:i:s" }}
+                                                                {% else %}
+                                                                <em>Still active</em>
+                                                                {% endif %}
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center">No history available</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Calculate durations
+    document.querySelectorAll('.duration').forEach(function(el) {
+        const start = new Date(el.dataset.start);
+        const end = new Date(el.dataset.end);
+        const duration = Math.floor((end - start) / 1000); // Duration in seconds
+        
+        let text = '';
+        if (duration < 60) {
+            text = `${duration} seconds`;
+        } else if (duration < 3600) {
+            text = `${Math.floor(duration / 60)} minutes`;
+        } else if (duration < 86400) {
+            text = `${Math.floor(duration / 3600)} hours, ${Math.floor((duration % 3600) / 60)} minutes`;
+        } else {
+            text = `${Math.floor(duration / 86400)} days, ${Math.floor((duration % 86400) / 3600)} hours`;
+        }
+        
+        el.textContent = text;
+    });
+    
+    // Calculate ongoing durations
+    document.querySelectorAll('.ongoing-duration').forEach(function(el) {
+        const start = new Date(el.dataset.start);
+        const now = new Date();
+        const duration = Math.floor((now - start) / 1000); // Duration in seconds
+        
+        let text = '';
+        if (duration < 60) {
+            text = `${duration} seconds (ongoing)`;
+        } else if (duration < 3600) {
+            text = `${Math.floor(duration / 60)} minutes (ongoing)`;
+        } else if (duration < 86400) {
+            text = `${Math.floor(duration / 3600)} hours, ${Math.floor((duration % 3600) / 60)} minutes (ongoing)`;
+        } else {
+            text = `${Math.floor(duration / 86400)} days, ${Math.floor((duration % 86400) / 3600)} hours (ongoing)`;
+        }
+        
+        el.textContent = text;
+    });
+    
+    try {
+        const chartData = JSON.parse(document.getElementById('historyChart').dataset.chart);
+        const historyData = {
+            labels: chartData.map(d => d.label),
+            datasets: [{
+                label: 'Alert Status',
+                data: chartData.map(d => d.status === "firing" ? 1 : 0),
+                backgroundColor: chartData.map(d => d.status === "firing" ? 'rgba(220, 53, 69, 0.6)' : 'rgba(25, 135, 84, 0.6)'),
+                borderColor: chartData.map(d => d.status === "firing" ? 'rgb(220, 53, 69)' : 'rgb(25, 135, 84)'),
+                borderWidth: 1,
+                barThickness: 20
+            }]
+        };
+        
+        if (historyData.labels.length > 0) {
+            const ctx = document.getElementById('historyChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: historyData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 1,
+                            ticks: {
+                                callback: function(value) {
+                                    return value === 0 ? 'Resolved' : 'Firing';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.raw === 1 ? 'Status: Firing' : 'Status: Resolved';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    } catch (e) {
+        console.error("Error creating chart:", e);
+        document.getElementById('historyChart').innerHTML = '<div class="alert alert-warning">Could not load chart data</div>';
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,129 @@
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from django.shortcuts import get_object_or_404
+from django.db.models import Q
+
+from ..models import AlertGroup, AlertInstance, AlertComment
+from ..services.alerts_processor import process_alert, acknowledge_alert
+from .serializers import (
+    AlertGroupSerializer, 
+    AlertInstanceSerializer, 
+    AlertCommentSerializer,
+    AlertmanagerWebhookSerializer,
+    AcknowledgeAlertSerializer
+)
+
+
+class AlertWebhookView(APIView):
+    """
+    API endpoint that receives alerts from Alertmanager.
+    """
+    def post(self, request, format=None):
+        serializer = AlertmanagerWebhookSerializer(data=request.data)
+        if serializer.is_valid():
+            # Process each alert in the webhook
+            for alert_data in serializer.validated_data['alerts']:
+                process_alert(alert_data)
+            return Response({'status': 'success'}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AlertGroupViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    API endpoint that allows alert groups to be viewed.
+    """
+    queryset = AlertGroup.objects.all()
+    serializer_class = AlertGroupSerializer
+    filterset_fields = ['severity', 'current_status', 'acknowledged']
+    search_fields = ['name', 'fingerprint']
+    
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        
+        # Filter by current status if specified in query params
+        status_filter = self.request.query_params.get('status', None)
+        if status_filter:
+            queryset = queryset.filter(current_status=status_filter)
+        
+        # Only show active (firing) alerts by default
+        active_only = self.request.query_params.get('active_only', 'true')
+        if active_only.lower() == 'true':
+            queryset = queryset.filter(current_status='firing')
+        
+        return queryset
+    
+    @action(detail=True, methods=['put'])
+    def acknowledge(self, request, pk=None):
+        alert_group = self.get_object()
+        serializer = AcknowledgeAlertSerializer(data=request.data)
+        
+        if serializer.is_valid():
+            if serializer.validated_data['acknowledged']:
+                acknowledge_alert(alert_group, request.user)
+                return Response({
+                    'status': 'success',
+                    'message': 'Alert acknowledged successfully'
+                })
+            else:
+                alert_group.acknowledged = False
+                alert_group.save()
+                return Response({
+                    'status': 'success',
+                    'message': 'Alert un-acknowledged successfully'
+                })
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=True, methods=['get'])
+    def history(self, request, pk=None):
+        alert_group = self.get_object()
+        instances = alert_group.instances.all()
+        serializer = AlertInstanceSerializer(instances, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['get', 'post'])
+    def comments(self, request, pk=None):
+        alert_group = self.get_object()
+        
+        if request.method == 'GET':
+            comments = alert_group.comments.all()
+            serializer = AlertCommentSerializer(comments, many=True)
+            return Response(serializer.data)
+        
+        elif request.method == 'POST':
+            serializer = AlertCommentSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save(alert_group=alert_group, user=request.user)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AlertHistoryViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    API endpoint that allows alert instances to be viewed.
+    """
+    queryset = AlertInstance.objects.all()
+    serializer_class = AlertInstanceSerializer
+    filterset_fields = ['status']
+    
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        
+        # Filter by alert group fingerprint
+        fingerprint = self.request.query_params.get('fingerprint', None)
+        if fingerprint:
+            queryset = queryset.filter(alert_group__fingerprint=fingerprint)
+        
+        # Filter by date range
+        start_date = self.request.query_params.get('start_date', None)
+        end_date = self.request.query_params.get('end_date', None)
+        
+        if start_date:
+            queryset = queryset.filter(started_at__gte=start_date)
+        
+        if end_date:
+            queryset = queryset.filter(started_at__lte=end_date)
+        
+        return queryset

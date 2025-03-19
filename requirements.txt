@@ -1,0 +1,5 @@
+Django==4.0.0
+djangorestframework==3.13.0
+python-dateutil==2.8.2
+django-filter==21.1
+Markdown==3.3.6
