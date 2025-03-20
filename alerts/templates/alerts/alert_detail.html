@@ -1,8 +1,37 @@
 {% extends "alerts/base.html" %}
 {% block extra_css %}
 <style>
-/* Custom styles for history table */
-.table .badge {
+/* Custom styles for alert details page */
+.alert-header {
+    border-left: 5px solid #dc3545;
+    padding-left: 15px;
+}
+
+.alert-header.severity-critical {
+    border-left-color: #dc3545;
+}
+
+.alert-header.severity-warning {
+    border-left-color: #ffc107;
+}
+
+.alert-header.severity-info {
+    border-left-color: #0dcaf0;
+}
+
+.tab-content {
+    padding: 20px;
+    border-left: 1px solid #dee2e6;
+    border-right: 1px solid #dee2e6;
+    border-bottom: 1px solid #dee2e6;
+    border-radius: 0 0 0.25rem 0.25rem;
+}
+
+.nav-tabs .nav-link.active {
+    font-weight: 500;
+}
+
+.badge {
     font-size: 0.85em;
 }
 
@@ -28,16 +57,6 @@
     border-radius: 5px;
     background-color: #f8f9fa;
 }
-
-.severity-critical {
-    border-left: 5px solid #dc3545;
-}
-.severity-warning {
-    border-left: 5px solid #ffc107;
-}
-.severity-info {
-    border-left: 5px solid #0dcaf0;
-}
 </style>
 {% endblock %}
 
@@ -56,12 +75,19 @@
     </div>
 </div>
 
+<!-- Alert Summary Card -->
 <div class="row mb-4">
     <div class="col-12">
         <div class="card">
-            <div class="card-header">
+            <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Alert: {{ alert.name }}</h5>
+                    <h4 class="alert-header severity-{{ alert.severity }}">{{ alert.name }} 
+                        {% if alert.current_status == 'firing' %}
+                        <span class="badge bg-danger">Firing</span>
+                        {% else %}
+                        <span class="badge bg-success">Resolved</span>
+                        {% endif %}
+                    </h4>
                     <div>
                         <a href="{% url 'alerts:alert-history' alert.fingerprint %}" class="btn btn-sm btn-outline-secondary">
                             <i class="bi bi-clock-history"></i> History
@@ -102,12 +128,9 @@
                         {% endif %}
                     </div>
                 </div>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <!-- Alert Details -->
+
+                <div class="row mt-3">
                     <div class="col-md-6">
-                        <h6 class="border-bottom pb-2 mb-3">Alert Details</h6>
                         <table class="table">
                             <tr>
                                 <th style="width: 30%">Status</th>
@@ -135,8 +158,12 @@
                                 <th>First Occurrence</th>
                                 <td>{{ alert.first_occurrence|date:"Y-m-d H:i:s" }}</td>
                             </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table">
                             <tr>
-                                <th>Last Occurrence</th>
+                                <th style="width: 30%">Last Occurrence</th>
                                 <td>{{ alert.last_occurrence|date:"Y-m-d H:i:s" }}</td>
                             </tr>
                             <tr>
@@ -149,69 +176,10 @@
                                     {% if alert.acknowledged %}
                                     Yes, by {{ alert.acknowledged_by.username }} at {{ alert.acknowledgement_time|date:"Y-m-d H:i:s" }}
                                     {% else %}
-                                    No
+                                    <span class="badge bg-secondary">No</span>
                                     {% endif %}
                                 </td>
                             </tr>
-                            <tr>
-                                <th>Fingerprint</th>
-                                <td><code>{{ alert.fingerprint }}</code></td>
-                            </tr>
-                        </table>
-                    </div>
-                    
-                    <!-- Labels and Annotations -->
-                    <div class="col-md-6">
-                        <h6 class="border-bottom pb-2 mb-3">Labels</h6>
-                        <table class="table table-sm mb-4">
-                            <thead>
-                                <tr>
-                                    <th>Key</th>
-                                    <th>Value</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for key, value in alert.labels.items %}
-                                <tr>
-                                    <td><code>{{ key }}</code></td>
-                                    <td><code>{{ value }}</code></td>
-                                </tr>
-                                {% empty %}
-                                <tr>
-                                    <td colspan="2" class="text-center">No labels</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                        
-                        <h6 class="border-bottom pb-2 mb-3">Latest Annotations</h6>
-                        <table class="table table-sm">
-                            <thead>
-                                <tr>
-                                    <th>Key</th>
-                                    <th>Value</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% with last_instance=instances.first %}
-                                {% if last_instance %}
-                                    {% for key, value in last_instance.annotations.items %}
-                                    <tr>
-                                        <td><code>{{ key }}</code></td>
-                                        <td>{{ value }}</td>
-                                    </tr>
-                                    {% empty %}
-                                    <tr>
-                                        <td colspan="2" class="text-center">No annotations</td>
-                                    </tr>
-                                    {% endfor %}
-                                {% else %}
-                                <tr>
-                                    <td colspan="2" class="text-center">No instances</td>
-                                </tr>
-                                {% endif %}
-                                {% endwith %}
-                            </tbody>
                         </table>
                     </div>
                 </div>
@@ -220,347 +188,427 @@
     </div>
 </div>
 
-<!-- Alert History Timeline -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">Alert History</h5>
-                    <a href="{% url 'alerts:alert-history' alert.fingerprint %}" class="btn btn-sm btn-outline-secondary">
-                        <i class="bi bi-clock-history"></i> View Full History
-                    </a>
-                </div>
+<!-- Tabs Navigation -->
+<ul class="nav nav-tabs" id="alertTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="details-tab" data-bs-toggle="tab" data-bs-target="#details" type="button" role="tab" aria-controls="details" aria-selected="true">
+            <i class="bi bi-info-circle"></i> Alert Details
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab" aria-controls="history" aria-selected="false">
+            <i class="bi bi-clock-history"></i> History
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="docs-tab" data-bs-toggle="tab" data-bs-target="#docs" type="button" role="tab" aria-controls="docs" aria-selected="false">
+            <i class="bi bi-book"></i> Documentation
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="comments-tab" data-bs-toggle="tab" data-bs-target="#comments" type="button" role="tab" aria-controls="comments" aria-selected="false">
+            <i class="bi bi-chat-dots"></i> Comments 
+            <span class="badge bg-secondary rounded-pill">{{ comments.count }}</span>
+        </button>
+    </li>
+</ul>
+
+<!-- Tab Content -->
+<div class="tab-content" id="alertTabsContent">
+    <!-- Alert Details Tab -->
+    <div class="tab-pane fade show active" id="details" role="tabpanel" aria-labelledby="details-tab">
+        <div class="row">
+            <div class="col-md-6">
+                <h5 class="border-bottom pb-2 mb-3">Labels</h5>
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Key</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for key, value in alert.labels.items %}
+                        <tr>
+                            <td><code>{{ key }}</code></td>
+                            <td><code>{{ value }}</code></td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="2" class="text-center">No labels</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-bordered table-hover">
-                        <thead class="table-light">
+            <div class="col-md-6">
+                <h5 class="border-bottom pb-2 mb-3">Latest Annotations</h5>
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Key</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% with last_instance=instances.first %}
+                        {% if last_instance %}
+                            {% for key, value in last_instance.annotations.items %}
                             <tr>
-                                <th>#</th>
-                                <th>Status</th>
-                                <th>Started</th>
-                                <th>Resolved</th>
-                                <th>Duration</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for instance in instances|slice:":10" %}
-                            <tr>
-                                <td>{{ forloop.counter }}</td>
-                                <td>
-                                    {% if instance.status == 'firing' and not instance.ended_at %}
-                                    <span class="badge bg-danger">Firing</span>
-                                    {% else %}
-                                    <span class="badge bg-success">Resolved</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ instance.started_at|date:"Y-m-d H:i:s" }}</td>
-                                <td>
-                                    {% if instance.ended_at %}
-                                    {{ instance.ended_at|date:"Y-m-d H:i:s" }}
-                                    {% elif instance.status == 'firing' and not instance.ended_at %}
-                                    <span class="badge bg-warning text-dark">Not Resolved Yet</span>
-                                    {% else %}
-                                    <span class="badge bg-secondary">Unknown</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <span class="{% if instance.status == 'firing' and not instance.ended_at %}text-warning fw-bold{% endif %}">
-                                        {% if instance.ended_at %}
-                                        <span class="duration" data-start="{{ instance.started_at|date:'c' }}" data-end="{{ instance.ended_at|date:'c' }}">
-                                            Calculating...
-                                        </span>
-                                        {% elif instance.status == 'firing' and not instance.ended_at %}
-                                        <span class="ongoing-duration" data-start="{{ instance.started_at|date:'c' }}">
-                                            Ongoing
-                                        </span>
-                                        {% else %}
-                                        --
-                                        {% endif %}
-                                    </span>
-                                </td>
-                                <td>
-                                    <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#instanceModal{{ instance.id }}">
-                                        <i class="bi bi-info-circle"></i> Details
-                                    </button>
-                                    
-                                    {% if instance.generator_url %}
-                                    <a href="{{ instance.generator_url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
-                                        <i class="bi bi-box-arrow-up-right"></i> Prometheus
-                                    </a>
-                                    {% endif %}
-                                    
-                                    <!-- Modal for instance details -->
-                                    <div class="modal fade" id="instanceModal{{ instance.id }}" tabindex="-1" aria-labelledby="instanceModalLabel{{ instance.id }}" aria-hidden="true">
-                                        <div class="modal-dialog">
-                                            <div class="modal-content">
-                                                <div class="modal-header">
-                                                    <h5 class="modal-title" id="instanceModalLabel{{ instance.id }}">Alert Instance Details</h5>
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                </div>
-                                                <div class="modal-body">
-                                                    <h6>Annotations</h6>
-                                                    <table class="table table-sm">
-                                                        <thead>
-                                                            <tr>
-                                                                <th>Key</th>
-                                                                <th>Value</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            {% for key, value in instance.annotations.items %}
-                                                            <tr>
-                                                                <td><code>{{ key }}</code></td>
-                                                                <td>{{ value }}</td>
-                                                            </tr>
-                                                            {% empty %}
-                                                            <tr>
-                                                                <td colspan="2" class="text-center">No annotations</td>
-                                                            </tr>
-                                                            {% endfor %}
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </td>
+                                <td><code>{{ key }}</code></td>
+                                <td>{{ value }}</td>
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="6" class="text-center">No history available</td>
+                                <td colspan="2" class="text-center">No annotations</td>
                             </tr>
                             {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                
-                {% if instances.count > 10 %}
-                <div class="text-center mt-3">
-                    <a href="{% url 'alerts:alert-history' alert.fingerprint %}" class="btn btn-outline-primary">
-                        <i class="bi bi-list"></i> View Complete History ({{ instances.count }} records)
-                    </a>
-                </div>
-                {% endif %}
+                        {% else %}
+                        <tr>
+                            <td colspan="2" class="text-center">No instances</td>
+                        </tr>
+                        {% endif %}
+                        {% endwith %}
+                    </tbody>
+                </table>
+
+                <h5 class="border-bottom pb-2 mb-3 mt-4">Additional Details</h5>
+                <table class="table table-sm">
+                    <tr>
+                        <th>Fingerprint</th>
+                        <td><code>{{ alert.fingerprint }}</code></td>
+                    </tr>
+                    {% with last_instance=instances.first %}
+                    {% if last_instance and last_instance.generator_url %}
+                    <tr>
+                        <th>Source</th>
+                        <td>
+                            <a href="{{ last_instance.generator_url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-box-arrow-up-right"></i> View in Prometheus
+                            </a>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% endwith %}
+                </table>
             </div>
         </div>
     </div>
-</div>
-
-<!-- Documentation Section -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">Documentation</h5>
-                </div>
-            </div>
-            <div class="card-body">
-                {% with linked_docs=alert.documentation_links.all %}
-                {% if linked_docs %}
-                    {% for link in linked_docs %}
-                    <div class="card mb-3">
-                        <div class="card-header bg-light">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <h6 class="mb-0">{{ link.documentation.title }}</h6>
-                                <div>
-                                    <a href="{% url 'docs:documentation-detail' link.documentation.id %}" class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-eye"></i> View Full Documentation
-                                    </a>
-                                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" 
-                                            data-bs-target="#doc-{{ link.documentation.id }}" aria-expanded="false">
-                                        <i class="bi bi-chevron-down"></i> Show Description
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="collapse" id="doc-{{ link.documentation.id }}">
-                            <div class="card-body">
-                                <!-- Description -->
-                                <div dir="rtl" style="text-align: right;">
-                                    {{ link.documentation.description|linebreaks }}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                {% else %}
-                <div class="alert alert-info">
-                    <p>No documentation is linked to this alert yet.</p>
-                    <p>The system will automatically match and link documentation based on the alert name.</p>
-                </div>
-                {% endif %}
-                {% endwith %}
-            </div>
+    
+    <!-- History Tab -->
+    <div class="tab-pane fade" id="history" role="tabpanel" aria-labelledby="history-tab">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Alert History</h5>
+            <a href="{% url 'alerts:alert-history' alert.fingerprint %}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-clock-history"></i> View Full History
+            </a>
         </div>
-    </div>
-</div>
-
-<!-- Comments Section -->
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Comments</h5>
-            </div>
-            <div class="card-body">
-                <!-- Comment Form -->
-                <form method="post" class="mb-4" id="commentForm">
-                    {% csrf_token %}
-                    <div class="mb-3">
-                        <label for="id_content" class="form-label">Add a Comment</label>
-                        {{ comment_form.content }}
-                    </div>
-                    <button type="submit" name="comment" class="btn btn-primary">Submit</button>
-                </form>
-
-                <script>
-                // Function to detect Persian text
-                function isPersianText(text) {
-                    // Persian Unicode range: \u0600-\u06FF
-                    const persianRegex = /[\u0600-\u06FF]/;
-                    return persianRegex.test(text);
-                }
-
-                // Function to set text direction based on content
-                function setTextDirection(element) {
-                    if (isPersianText(element.textContent)) {
-                        element.style.direction = 'rtl';
-                        element.style.textAlign = 'right';
-                    } else {
-                        element.style.direction = 'ltr';
-                        element.style.textAlign = 'left';
-                    }
-                }
-
-                // Function to handle input direction
-                function handleInputDirection(event) {
-                    const textarea = event.target;
-                    if (isPersianText(textarea.value)) {
-                        textarea.style.direction = 'rtl';
-                        textarea.style.textAlign = 'right';
-                    } else {
-                        textarea.style.direction = 'ltr';
-                        textarea.style.textAlign = 'left';
-                    }
-                }
-
-                // Apply RTL detection to existing comments
-                document.addEventListener('DOMContentLoaded', function() {
-                    const commentTexts = document.querySelectorAll('.card-text');
-                    commentTexts.forEach(setTextDirection);
-
-                    // Add input event listener to comment textarea
-                    const commentTextarea = document.querySelector('#id_content');
-                    if (commentTextarea) {
-                        commentTextarea.addEventListener('input', handleInputDirection);
-                        // Set initial direction
-                        handleInputDirection({ target: commentTextarea });
-                    }
-                });
-
-                // Modify the comment form submission to handle RTL
-                document.getElementById('commentForm').addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    
-                    const formData = new FormData(this);
-                    formData.append('comment', 'true');
-                    
-                    fetch(window.location.href, {
-                        method: 'POST',
-                        body: formData,
-                        headers: {
-                            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.status === 'success') {
-                            // Show success message
-                            toastr.success("Comment added successfully.");
+        
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Status</th>
+                        <th>Started</th>
+                        <th>Resolved</th>
+                        <th>Duration</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for instance in instances %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>
+                            {% if instance.status == 'firing' and not instance.ended_at %}
+                            <span class="badge bg-danger">Firing</span>
+                            {% else %}
+                            <span class="badge bg-success">Resolved</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ instance.started_at|date:"Y-m-d H:i:s" }}</td>
+                        <td>
+                            {% if instance.ended_at %}
+                            {{ instance.ended_at|date:"Y-m-d H:i:s" }}
+                            {% elif instance.status == 'firing' and not instance.ended_at %}
+                            <span class="badge bg-warning text-dark">Not Resolved Yet</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Unknown</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="{% if instance.status == 'firing' and not instance.ended_at %}text-warning fw-bold{% endif %}">
+                                {% if instance.ended_at %}
+                                <span class="duration" data-start="{{ instance.started_at|date:'c' }}" data-end="{{ instance.ended_at|date:'c' }}">
+                                    Calculating...
+                                </span>
+                                {% elif instance.status == 'firing' and not instance.ended_at %}
+                                <span class="ongoing-duration" data-start="{{ instance.started_at|date:'c' }}">
+                                    Ongoing
+                                </span>
+                                {% else %}
+                                --
+                                {% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#instanceModal{{ instance.id }}">
+                                <i class="bi bi-info-circle"></i> Details
+                            </button>
                             
-                            // Clear the form
-                            this.reset();
+                            {% if instance.generator_url %}
+                            <a href="{{ instance.generator_url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-box-arrow-up-right"></i> Prometheus
+                            </a>
+                            {% endif %}
                             
-                            // Add the new comment to the list
-                            const commentsContainer = document.querySelector('.comments');
-                            const newComment = document.createElement('div');
-                            newComment.className = 'card mb-3';
-                            newComment.innerHTML = `
-                                <div class="card-header bg-light">
-                                    <div class="d-flex justify-content-between">
-                                        <div>
-                                            <strong>${formData.get('user')}</strong>
+                            <!-- Modal for instance details -->
+                            <div class="modal fade" id="instanceModal{{ instance.id }}" tabindex="-1" aria-labelledby="instanceModalLabel{{ instance.id }}" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="instanceModalLabel{{ instance.id }}">Alert Instance Details</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                         </div>
-                                        <div>
-                                            <small class="text-muted">${new Date().toLocaleString()}</small>
+                                        <div class="modal-body">
+                                            <h6>Annotations</h6>
+                                            <table class="table table-sm">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Key</th>
+                                                        <th>Value</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for key, value in instance.annotations.items %}
+                                                    <tr>
+                                                        <td><code>{{ key }}</code></td>
+                                                        <td>{{ value }}</td>
+                                                    </tr>
+                                                    {% empty %}
+                                                    <tr>
+                                                        <td colspan="2" class="text-center">No annotations</td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="card-body">
-                                    <p class="card-text">${formData.get('content')}</p>
-                                </div>
-                            `;
-                            
-                            // Insert at the beginning of the comments list
-                            if (commentsContainer.firstChild) {
-                                commentsContainer.insertBefore(newComment, commentsContainer.firstChild);
-                            } else {
-                                commentsContainer.appendChild(newComment);
-                            }
-                            
-                            // Apply RTL detection to the new comment
-                            const newCommentText = newComment.querySelector('.card-text');
-                            setTextDirection(newCommentText);
-                            
-                            // Remove the "No comments" message if it exists
-                            const noCommentsAlert = commentsContainer.querySelector('.alert-info');
-                            if (noCommentsAlert) {
-                                noCommentsAlert.remove();
-                            }
-                        } else {
-                            toastr.error("Error adding comment.");
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        toastr.error("Error adding comment.");
-                    });
-                });
-                </script>
-                
-                <!-- Comment List -->
-                <div class="comments">
-                    {% for comment in comments %}
-                    <div class="card mb-3">
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center">No history available</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Documentation Tab -->
+    <div class="tab-pane fade" id="docs" role="tabpanel" aria-labelledby="docs-tab">
+        {% with linked_docs=alert.documentation_links.all %}
+        {% if linked_docs %}
+            {% for link in linked_docs %}
+            <div class="card mb-3">
+                <div class="card-header bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">{{ link.documentation.title }}</h6>
+                        <div>
+                            <a href="{% url 'docs:documentation-detail' link.documentation.id %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i> View Full Documentation
+                            </a>
+                            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" 
+                                    data-bs-target="#doc-{{ link.documentation.id }}" aria-expanded="true">
+                                <i class="bi bi-chevron-down"></i> Show Description
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="collapse show" id="doc-{{ link.documentation.id }}">
+                    <div class="card-body">
+                        <!-- Description -->
+                        <div class="rtl-content">
+                            {{ link.documentation.description|linebreaks }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="alert alert-info">
+                <p>No documentation is linked to this alert yet.</p>
+                <p>The system will automatically match and link documentation based on the alert name.</p>
+            </div>
+        {% endif %}
+        {% endwith %}
+    </div>
+    
+    <!-- Comments Tab -->
+    <div class="tab-pane fade" id="comments" role="tabpanel" aria-labelledby="comments-tab">
+        <!-- Comment Form -->
+        <form method="post" class="mb-4" id="commentForm">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="id_content" class="form-label">Add a Comment</label>
+                {{ comment_form.content }}
+            </div>
+            <button type="submit" name="comment" class="btn btn-primary">Submit</button>
+        </form>
+
+        <script>
+        // Function to detect Persian text
+        function isPersianText(text) {
+            // Persian Unicode range: \u0600-\u06FF
+            const persianRegex = /[\u0600-\u06FF]/;
+            return persianRegex.test(text);
+        }
+
+        // Function to set text direction based on content
+        function setTextDirection(element) {
+            if (isPersianText(element.textContent)) {
+                element.style.direction = 'rtl';
+                element.style.textAlign = 'right';
+            } else {
+                element.style.direction = 'ltr';
+                element.style.textAlign = 'left';
+            }
+        }
+
+        // Function to handle input direction
+        function handleInputDirection(event) {
+            const textarea = event.target;
+            if (isPersianText(textarea.value)) {
+                textarea.style.direction = 'rtl';
+                textarea.style.textAlign = 'right';
+            } else {
+                textarea.style.direction = 'ltr';
+                textarea.style.textAlign = 'left';
+            }
+        }
+
+        // Apply RTL detection to existing comments
+        document.addEventListener('DOMContentLoaded', function() {
+            const commentTexts = document.querySelectorAll('.card-text');
+            commentTexts.forEach(setTextDirection);
+
+            // Add input event listener to comment textarea
+            const commentTextarea = document.querySelector('#id_content');
+            if (commentTextarea) {
+                commentTextarea.addEventListener('input', handleInputDirection);
+                // Set initial direction
+                handleInputDirection({ target: commentTextarea });
+            }
+        });
+
+        // Modify the comment form submission to handle RTL
+        document.getElementById('commentForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            formData.append('comment', 'true');
+            
+            fetch(window.location.href, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Show success message
+                    toastr.success("Comment added successfully.");
+                    
+                    // Clear the form
+                    this.reset();
+                    
+                    // Add the new comment to the list
+                    const commentsContainer = document.querySelector('.comments');
+                    const newComment = document.createElement('div');
+                    newComment.className = 'card mb-3';
+                    newComment.innerHTML = `
                         <div class="card-header bg-light">
                             <div class="d-flex justify-content-between">
                                 <div>
-                                    <strong>{{ comment.user.username }}</strong>
+                                    <strong>${data.user}</strong>
                                 </div>
                                 <div>
-                                    <small class="text-muted">{{ comment.created_at|date:"Y-m-d H:i:s" }}</small>
+                                    <small class="text-muted">${new Date().toLocaleString()}</small>
                                 </div>
                             </div>
                         </div>
                         <div class="card-body">
-                            <p class="card-text">{{ comment.content }}</p>
+                            <p class="card-text">${data.content}</p>
+                        </div>
+                    `;
+                    
+                    // Insert at the beginning of the comments list
+                    if (commentsContainer.firstChild) {
+                        commentsContainer.insertBefore(newComment, commentsContainer.firstChild);
+                    } else {
+                        commentsContainer.appendChild(newComment);
+                    }
+                    
+                    // Apply RTL detection to the new comment
+                    const newCommentText = newComment.querySelector('.card-text');
+                    setTextDirection(newCommentText);
+                    
+                    // Remove the "No comments" message if it exists
+                    const noCommentsAlert = commentsContainer.querySelector('.alert-info');
+                    if (noCommentsAlert) {
+                        noCommentsAlert.remove();
+                    }
+                    
+                    // Update the comment count
+                    const commentCount = document.querySelector('#comments-tab .badge');
+                    if (commentCount) {
+                        const currentCount = parseInt(commentCount.textContent);
+                        commentCount.textContent = (currentCount + 1).toString();
+                    }
+                } else {
+                    toastr.error("Error adding comment.");
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                toastr.error("Error adding comment.");
+            });
+        });
+        </script>
+        
+        <!-- Comment List -->
+        <div class="comments">
+            {% for comment in comments %}
+            <div class="card mb-3">
+                <div class="card-header bg-light">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <strong>{{ comment.user.username }}</strong>
+                        </div>
+                        <div>
+                            <small class="text-muted">{{ comment.created_at|date:"Y-m-d H:i:s" }}</small>
                         </div>
                     </div>
-                    {% empty %}
-                    <div class="alert alert-info">
-                        No comments yet. Be the first to comment!
-                    </div>
-                    {% endfor %}
+                </div>
+                <div class="card-body">
+                    <p class="card-text">{{ comment.content }}</p>
                 </div>
             </div>
+            {% empty %}
+            <div class="alert alert-info">
+                No comments yet. Be the first to comment!
+            </div>
+            {% endfor %}
         </div>
     </div>
 </div>
@@ -606,6 +654,23 @@ document.addEventListener('DOMContentLoaded', function() {
             const currentDuration = Math.floor((new Date() - start) / 1000);
             el.textContent = formatDuration(currentDuration) + " (ongoing)";
         }, 60000);
+    });
+    
+    // Remember active tab when page is reloaded
+    const hash = window.location.hash;
+    if (hash) {
+        const tab = document.querySelector(`a[href="${hash}"]`);
+        if (tab) {
+            tab.click();
+        }
+    }
+    
+    // Store active tab in URL when changed
+    const tabLinks = document.querySelectorAll('#alertTabs button');
+    tabLinks.forEach(tab => {
+        tab.addEventListener('shown.bs.tab', function (e) {
+            window.location.hash = e.target.getAttribute('data-bs-target').substring(1);
+        });
     });
 });
 </script>
