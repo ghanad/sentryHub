@@ -359,9 +359,6 @@
             <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0">Documentation</h5>
-                    <a href="{% url 'docs:link-documentation' alert.id %}" class="btn btn-sm btn-outline-primary">
-                        <i class="bi bi-link"></i> Link Documentation
-                    </a>
                 </div>
             </div>
             <div class="card-body">
@@ -396,7 +393,7 @@
                 {% else %}
                 <div class="alert alert-info">
                     <p>No documentation is linked to this alert yet.</p>
-                    <p>Click "Link Documentation" to associate this alert with existing documentation or create new documentation.</p>
+                    <p>The system will automatically match and link documentation based on the alert name.</p>
                 </div>
                 {% endif %}
                 {% endwith %}
