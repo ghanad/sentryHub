@@ -1,9 +1,12 @@
 from django.utils import timezone
 from dateutil.parser import parse as parse_datetime
 import re
+import logging
 
 from ..models import AlertGroup, AlertInstance
+from docs.services.documentation_matcher import match_documentation_to_alert
 
+logger = logging.getLogger(__name__)
 
 def process_alert(alert_data):
     """
@@ -87,6 +90,12 @@ def process_alert(alert_data):
             annotations=annotations,
             generator_url=generator_url
         )
+    
+    matched_doc = match_documentation_to_alert(alert_group)
+    if matched_doc:
+        logger.info(f"Documentation '{matched_doc.title}' automatically linked to alert '{alert_group.name}'")
+    else:
+        logger.info(f"No matching documentation found for alert '{alert_group.name}'")
     
     return alert_group
 

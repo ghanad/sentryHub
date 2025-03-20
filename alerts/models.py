@@ -35,6 +35,13 @@ class AlertGroup(models.Model):
         related_name='acknowledged_alerts'
     )
     acknowledgement_time = models.DateTimeField(null=True, blank=True)
+    documentation = models.ForeignKey(
+        'docs.AlertDocumentation',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='directly_linked_alerts'
+    )
     
     def __str__(self):
         return f"{self.name} ({self.fingerprint})"

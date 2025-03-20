@@ -15,6 +15,29 @@
     50% { opacity: 0.6; }
     100% { opacity: 1; }
 }
+
+/* RTL support for documentation */
+.rtl-content {
+    direction: rtl;
+    text-align: right;
+}
+
+.documentation-section {
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+    background-color: #f8f9fa;
+}
+
+.severity-critical {
+    border-left: 5px solid #dc3545;
+}
+.severity-warning {
+    border-left: 5px solid #ffc107;
+}
+.severity-info {
+    border-left: 5px solid #0dcaf0;
+}
 </style>
 {% endblock %}
 
@@ -324,6 +347,59 @@
                     </a>
                 </div>
                 {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Documentation Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Documentation</h5>
+                    <a href="{% url 'docs:link-documentation' alert.id %}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-link"></i> Link Documentation
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                {% with linked_docs=alert.documentation_links.all %}
+                {% if linked_docs %}
+                    {% for link in linked_docs %}
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">{{ link.documentation.title }}</h6>
+                                <div>
+                                    <a href="{% url 'docs:documentation-detail' link.documentation.id %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i> View Full Documentation
+                                    </a>
+                                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" 
+                                            data-bs-target="#doc-{{ link.documentation.id }}" aria-expanded="false">
+                                        <i class="bi bi-chevron-down"></i> Show Description
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="collapse" id="doc-{{ link.documentation.id }}">
+                            <div class="card-body">
+                                <!-- Description -->
+                                <div dir="rtl" style="text-align: right;">
+                                    {{ link.documentation.description|linebreaks }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div class="alert alert-info">
+                    <p>No documentation is linked to this alert yet.</p>
+                    <p>Click "Link Documentation" to associate this alert with existing documentation or create new documentation.</p>
+                </div>
+                {% endif %}
+                {% endwith %}
             </div>
         </div>
     </div>

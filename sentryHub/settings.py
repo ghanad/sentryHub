@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     
     # Project apps
     'alerts',
+    'docs',
 ]
 
 MIDDLEWARE = [

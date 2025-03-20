@@ -1,0 +1,93 @@
+{# docs/templates/docs/link_documentation.html #}
+{% extends "alerts/base.html" %}
+
+{% block title %}Link Documentation - SentryHub{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'alerts:dashboard' %}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'alerts:alert-list' %}">Alerts</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'alerts:alert-detail' object.fingerprint %}">{{ object.name }}</a></li>
+                <li class="breadcrumb-item active">Link Documentation</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Link Documentation to Alert</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <p><strong>Alert:</strong> {{ object.name }}</p>
+                    <p><strong>Current Status:</strong> 
+                        {% if object.current_status == 'firing' %}
+                        <span class="badge bg-danger">Firing</span>
+                        {% else %}
+                        <span class="badge bg-success">Resolved</span>
+                        {% endif %}
+                    </p>
+                </div>
+                
+                {% if current_docs %}
+                <h6 class="border-bottom pb-2 mb-3">Currently Linked Documentation</h6>
+                <div class="mb-4">
+                    <ul class="list-group">
+                        {% for doc in current_docs %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <a href="{% url 'docs:documentation-detail' doc.id %}">{{ doc.title }}</a>
+                            </div>
+                            <form method="post" action="{% url 'docs:unlink-documentation' object.id doc.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-link-break"></i> Unlink
+                                </button>
+                            </form>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                
+                <h6 class="border-bottom pb-2 mb-3">Link New Documentation</h6>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="documentation_id" class="form-label">Select Documentation</label>
+                        <select name="documentation_id" id="documentation_id" class="form-select" required>
+                            <option value="">-- Select Documentation --</option>
+                            {% for doc in documentations %}
+                                {% if doc not in current_docs %}
+                                <option value="{{ doc.id }}">{{ doc.title }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'alerts:alert-detail' object.fingerprint %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-link"></i> Link Documentation
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="mt-4">
+                    <a href="{% url 'docs:documentation-create' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-plus-circle"></i> Create New Documentation
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

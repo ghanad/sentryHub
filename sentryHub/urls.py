@@ -12,6 +12,7 @@ urlpatterns = [
     path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('', include('alerts.urls', namespace='alerts')),
     path('api-auth/', include('rest_framework.urls')),
+    path('docs/', include('docs.urls', namespace='docs')),
 ]
 
 # Change admin site header
