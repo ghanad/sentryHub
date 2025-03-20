@@ -4,9 +4,13 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
+from rest_framework.permissions import AllowAny
+import logging
+import requests
 
 from ..models import AlertGroup, AlertInstance, AlertComment
 from ..services.alerts_processor import process_alert, acknowledge_alert
+from ..services.alert_logger import save_alert_to_file
 from .serializers import (
     AlertGroupSerializer, 
     AlertInstanceSerializer, 
@@ -15,14 +19,20 @@ from .serializers import (
     AcknowledgeAlertSerializer
 )
 
+logger = logging.getLogger(__name__)
 
 class AlertWebhookView(APIView):
     """
     API endpoint that receives alerts from Alertmanager.
     """
+    permission_classes = [AllowAny]
     def post(self, request, format=None):
+        logger.info(f"Received webhook data: {request.data}")
         serializer = AlertmanagerWebhookSerializer(data=request.data)
         if serializer.is_valid():
+            # Save the raw alert data to a file
+            # save_alert_to_file(serializer.validated_data)
+            
             # Process each alert in the webhook
             for alert_data in serializer.validated_data['alerts']:
                 process_alert(alert_data)

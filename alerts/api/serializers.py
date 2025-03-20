@@ -37,15 +37,16 @@ class AlertCommentSerializer(serializers.ModelSerializer):
 
 
 class AlertmanagerWebhookSerializer(serializers.Serializer):
-    receiver = serializers.CharField(required=True)
-    status = serializers.CharField(required=True)
+    receiver = serializers.CharField(required=False)
+    status = serializers.CharField(required=False)
     alerts = serializers.ListField(required=True)
     groupLabels = serializers.DictField(required=False)
     commonLabels = serializers.DictField(required=False)
     commonAnnotations = serializers.DictField(required=False)
-    externalURL = serializers.URLField(required=False)
+    externalURL = serializers.CharField(required=False)
     version = serializers.CharField(required=False)
     groupKey = serializers.CharField(required=False)
+    truncatedAlerts = serializers.IntegerField(required=False)
 
 
 class AcknowledgeAlertSerializer(serializers.Serializer):
