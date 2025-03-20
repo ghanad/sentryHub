@@ -18,7 +18,6 @@ def match_documentation_to_alert(alert_group, user=None):
     """
     alert_name = alert_group.name
     
-    # اضافه کردن logging برای دیباگ
     logger.info(f"Attempting to match documentation for alert: {alert_name}")
     
     try:
@@ -46,7 +45,6 @@ def match_documentation_to_alert(alert_group, user=None):
         else:
             logger.info(f"Documentation {documentation.id} was already linked to alert {alert_group.id}")
         
-        # همیشه مستند را برگردان، حتی اگر لینک از قبل وجود داشته باشد
         return documentation
         
     except Exception as e:

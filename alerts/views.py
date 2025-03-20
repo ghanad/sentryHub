@@ -7,10 +7,14 @@ from django.urls import reverse
 from django.http import JsonResponse
 from django.contrib import messages
 from django.views.generic.detail import SingleObjectMixin
+import logging
 
 from .models import AlertGroup, AlertInstance, AlertComment
 from .forms import AlertAcknowledgementForm, AlertCommentForm
 from .services.alerts_processor import acknowledge_alert
+from docs.services.documentation_matcher import match_documentation_to_alert
+
+logger = logging.getLogger(__name__)
 
 
 class DashboardView(LoginRequiredMixin, TemplateView):
@@ -103,6 +107,15 @@ class AlertDetailView(LoginRequiredMixin, DetailView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        logger.info(f"Viewing alert details for alert: {self.object.name} (ID: {self.object.id})")
+        
+        # Try to match documentation for this alert
+        matched_doc = match_documentation_to_alert(self.object, self.request.user)
+        if matched_doc:
+            logger.info(f"Successfully matched documentation for alert: {self.object.name}")
+            context['matched_documentation'] = matched_doc
+        else:
+            logger.info(f"No documentation match found for alert: {self.object.name}")
         
         # Get alert instances for history
         context['instances'] = self.object.instances.all().order_by('-started_at')
@@ -121,12 +134,14 @@ class AlertDetailView(LoginRequiredMixin, DetailView):
     
     def post(self, request, *args, **kwargs):
         alert = self.get_object()
+        logger.info(f"Processing POST request for alert: {alert.name} (ID: {alert.id})")
         
         # Handle acknowledgement with required comment
         if 'acknowledge' in request.POST:
             form = AlertAcknowledgementForm(request.POST)
             if form.is_valid():
                 comment_text = form.cleaned_data['comment']
+                logger.info(f"Acknowledging alert: {alert.name} with comment: {comment_text}")
                 
                 # Create the comment first
                 AlertComment.objects.create(
@@ -141,7 +156,7 @@ class AlertDetailView(LoginRequiredMixin, DetailView):
                 messages.success(request, "Alert has been acknowledged successfully.")
                 return redirect('alerts:alert-detail', fingerprint=alert.fingerprint)
             else:
-                # If form is invalid, redisplay the page with error messages
+                logger.warning(f"Invalid acknowledgement form for alert: {alert.name}")
                 messages.error(request, "Please provide a comment when acknowledging an alert.")
                 return self.get(request, *args, **kwargs)
         
@@ -153,6 +168,7 @@ class AlertDetailView(LoginRequiredMixin, DetailView):
                 comment.alert_group = alert
                 comment.user = request.user
                 comment.save()
+                logger.info(f"Added new comment to alert: {alert.name}")
                 
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return JsonResponse({
@@ -164,6 +180,7 @@ class AlertDetailView(LoginRequiredMixin, DetailView):
                     messages.success(request, "Comment added successfully.")
                     return redirect('alerts:alert-detail', fingerprint=alert.fingerprint)
             else:
+                logger.warning(f"Invalid comment form for alert: {alert.name}")
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
                 else:
