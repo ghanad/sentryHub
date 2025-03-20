@@ -109,13 +109,8 @@ class AlertDetailView(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         logger.info(f"Viewing alert details for alert: {self.object.name} (ID: {self.object.id})")
         
-        # Try to match documentation for this alert
-        matched_doc = match_documentation_to_alert(self.object, self.request.user)
-        if matched_doc:
-            logger.info(f"Successfully matched documentation for alert: {self.object.name}")
-            context['matched_documentation'] = matched_doc
-        else:
-            logger.info(f"No documentation match found for alert: {self.object.name}")
+        # Get linked documentation for this alert
+        context['linked_documentation'] = self.object.documentation_links.select_related('documentation').all()
         
         # Get alert instances for history
         context['instances'] = self.object.instances.all().order_by('-started_at')

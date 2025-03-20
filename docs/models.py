@@ -2,11 +2,12 @@
 
 from django.db import models
 from django.utils import timezone
+from tinymce.models import HTMLField
 
 
 class AlertDocumentation(models.Model):
     title = models.CharField(max_length=255, help_text="Alert name (must match the alertname)")
-    description = models.TextField(help_text="Description of the alert and problem")
+    description = HTMLField(help_text="Description of the alert and problem")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(

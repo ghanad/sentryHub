@@ -1,17 +1,14 @@
 {# docs/templates/docs/documentation_form.html #}
 {% extends "alerts/base.html" %}
+{% load static %}
 
 {% block title %}
 {% if object %}Edit{% else %}Create{% endif %} Documentation - SentryHub
 {% endblock %}
 
 {% block extra_css %}
-<style>
-.rtl-textarea {
-    direction: rtl;
-    text-align: right;
-}
-</style>
+{{ block.super }}
+{{ form.media.css }}
 {% endblock %}
 
 {% block content %}
@@ -87,34 +84,6 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Function to detect Persian text
-    function isPersianText(text) {
-        // Persian Unicode range: \u0600-\u06FF
-        const persianRegex = /[\u0600-\u06FF]/;
-        return persianRegex.test(text);
-    }
-
-    // Function to handle input direction
-    function handleInputDirection(event) {
-        const textarea = event.target;
-        if (isPersianText(textarea.value)) {
-            textarea.style.direction = 'rtl';
-            textarea.style.textAlign = 'right';
-        } else {
-            textarea.style.direction = 'ltr';
-            textarea.style.textAlign = 'left';
-        }
-    }
-
-    // Add input event listener to description textarea
-    const descriptionTextarea = document.querySelector('#id_description');
-    
-    if (descriptionTextarea) {
-        descriptionTextarea.addEventListener('input', handleInputDirection);
-        handleInputDirection({ target: descriptionTextarea }); // Set initial direction
-    }
-});
-</script>
+{{ block.super }}
+{{ form.media.js }}
 {% endblock %}

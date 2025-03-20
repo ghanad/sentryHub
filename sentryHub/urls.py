@@ -13,6 +13,7 @@ urlpatterns = [
     path('', include('alerts.urls', namespace='alerts')),
     path('api-auth/', include('rest_framework.urls')),
     path('docs/', include('docs.urls', namespace='docs')),
+    path('tinymce/', include('tinymce.urls')),
 ]
 
 # Change admin site header

@@ -5,9 +5,59 @@
 
 {% block extra_css %}
 <style>
-.rtl-content {
+.documentation-content {
     direction: rtl;
     text-align: right;
+}
+
+.documentation-content p {
+    direction: rtl;
+    text-align: right;
+}
+
+.documentation-content p:has(code),
+.documentation-content pre,
+.documentation-content code {
+    direction: ltr;
+    text-align: left;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+}
+
+.documentation-content img {
+    max-width: 100%;
+    height: auto;
+}
+
+.documentation-content table {
+    width: 100%;
+    margin-bottom: 1rem;
+    border-collapse: collapse;
+}
+
+.documentation-content table th,
+.documentation-content table td {
+    padding: 0.75rem;
+    border: 1px solid #dee2e6;
+}
+
+.documentation-content table th {
+    background-color: #f8f9fa;
+}
+
+.documentation-content pre {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 0.25rem;
+    overflow-x: auto;
+    direction: ltr;
+    text-align: left;
+}
+
+.documentation-content blockquote {
+    border-right: 4px solid #dee2e6;
+    padding-right: 1rem;
+    margin: 1rem 0;
+    color: #6c757d;
 }
 
 .documentation-section {
@@ -80,8 +130,8 @@
                         <!-- Description Section -->
                         <div class="documentation-section">
                             <h5><i class="bi bi-info-circle"></i> Description</h5>
-                            <div class="rtl-content">
-                                <p>{{ documentation.description|linebreaks }}</p>
+                            <div class="documentation-content">
+                                {{ documentation.description|safe }}
                             </div>
                         </div>
                     </div>
@@ -139,4 +189,35 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Function to detect Persian text
+    function isPersianText(text) {
+        // Persian Unicode range: \u0600-\u06FF
+        const persianRegex = /[\u0600-\u06FF]/;
+        return persianRegex.test(text);
+    }
+
+    // Function to set text direction based on content
+    function setTextDirection(element) {
+        if (isPersianText(element.textContent)) {
+            element.style.direction = 'rtl';
+            element.style.textAlign = 'right';
+        } else {
+            element.style.direction = 'ltr';
+            element.style.textAlign = 'left';
+        }
+    }
+
+    // Apply RTL/LTR detection to all paragraphs in documentation content
+    const documentationContent = document.querySelector('.documentation-content');
+    if (documentationContent) {
+        const paragraphs = documentationContent.querySelectorAll('p');
+        paragraphs.forEach(setTextDirection);
+    }
+});
+</script>
 {% endblock %}

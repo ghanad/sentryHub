@@ -45,10 +45,60 @@
     100% { opacity: 1; }
 }
 
-/* RTL support for documentation */
-.rtl-content {
+/* Documentation content styles */
+.documentation-content {
     direction: rtl;
     text-align: right;
+}
+
+.documentation-content p {
+    direction: rtl;
+    text-align: right;
+}
+
+.documentation-content p:has(code),
+.documentation-content pre,
+.documentation-content code {
+    direction: ltr;
+    text-align: left;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+}
+
+.documentation-content img {
+    max-width: 100%;
+    height: auto;
+}
+
+.documentation-content table {
+    width: 100%;
+    margin-bottom: 1rem;
+    border-collapse: collapse;
+}
+
+.documentation-content table th,
+.documentation-content table td {
+    padding: 0.75rem;
+    border: 1px solid #dee2e6;
+}
+
+.documentation-content table th {
+    background-color: #f8f9fa;
+}
+
+.documentation-content pre {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 0.25rem;
+    overflow-x: auto;
+    direction: ltr;
+    text-align: left;
+}
+
+.documentation-content blockquote {
+    border-right: 4px solid #dee2e6;
+    padding-right: 1rem;
+    margin: 1rem 0;
+    color: #6c757d;
 }
 
 .documentation-section {
@@ -414,41 +464,36 @@
     
     <!-- Documentation Tab -->
     <div class="tab-pane fade" id="docs" role="tabpanel" aria-labelledby="docs-tab">
-        {% with linked_docs=alert.documentation_links.all %}
-        {% if linked_docs %}
-            {% for link in linked_docs %}
-            <div class="card mb-3">
-                <div class="card-header bg-light">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h6 class="mb-0">{{ link.documentation.title }}</h6>
-                        <div>
-                            <a href="{% url 'docs:documentation-detail' link.documentation.id %}" class="btn btn-sm btn-outline-primary">
-                                <i class="bi bi-eye"></i> View Full Documentation
-                            </a>
-                            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" 
-                                    data-bs-target="#doc-{{ link.documentation.id }}" aria-expanded="true">
-                                <i class="bi bi-chevron-down"></i> Show Description
-                            </button>
+        <div class="row">
+            <div class="col-12">
+                {% if linked_documentation %}
+                    {% for link in linked_documentation %}
+                    <div class="documentation-section">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5><i class="bi bi-book"></i> {{ link.documentation.title }}</h5>
+                            <div>
+                                <a href="{% url 'docs:documentation-detail' link.documentation.pk %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i> View Full
+                                </a>
+                                {% if perms.docs.change_alertdocumentation %}
+                                <a href="{% url 'docs:documentation-update' link.documentation.pk %}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-pencil"></i> Edit
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="documentation-content">
+                            {{ link.documentation.description|safe }}
                         </div>
                     </div>
-                </div>
-                <div class="collapse show" id="doc-{{ link.documentation.id }}">
-                    <div class="card-body">
-                        <!-- Description -->
-                        <div class="rtl-content">
-                            {{ link.documentation.description|linebreaks }}
-                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> No documentation linked to this alert.
                     </div>
-                </div>
+                {% endif %}
             </div>
-            {% endfor %}
-        {% else %}
-            <div class="alert alert-info">
-                <p>No documentation is linked to this alert yet.</p>
-                <p>The system will automatically match and link documentation based on the alert name.</p>
-            </div>
-        {% endif %}
-        {% endwith %}
+        </div>
     </div>
     
     <!-- Comments Tab -->
@@ -672,6 +717,31 @@ document.addEventListener('DOMContentLoaded', function() {
             window.location.hash = e.target.getAttribute('data-bs-target').substring(1);
         });
     });
+
+    // Function to detect Persian text
+    function isPersianText(text) {
+        // Persian Unicode range: \u0600-\u06FF
+        const persianRegex = /[\u0600-\u06FF]/;
+        return persianRegex.test(text);
+    }
+
+    // Function to set text direction based on content
+    function setTextDirection(element) {
+        if (isPersianText(element.textContent)) {
+            element.style.direction = 'rtl';
+            element.style.textAlign = 'right';
+        } else {
+            element.style.direction = 'ltr';
+            element.style.textAlign = 'left';
+        }
+    }
+
+    // Apply RTL/LTR detection to all paragraphs in documentation content
+    const documentationContent = document.querySelector('.documentation-content');
+    if (documentationContent) {
+        const paragraphs = documentationContent.querySelectorAll('p');
+        paragraphs.forEach(setTextDirection);
+    }
 });
 </script>
 {% endblock %}
