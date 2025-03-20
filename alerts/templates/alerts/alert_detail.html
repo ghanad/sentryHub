@@ -139,9 +139,6 @@
                         {% endif %}
                     </h4>
                     <div>
-                        <a href="{% url 'alerts:alert-history' alert.fingerprint %}" class="btn btn-sm btn-outline-secondary">
-                            <i class="bi bi-clock-history"></i> History
-                        </a>
                         {% if not alert.acknowledged %}
                         <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#acknowledgeModal">
                             <i class="bi bi-check-circle"></i> Acknowledge
@@ -241,22 +238,22 @@
 <!-- Tabs Navigation -->
 <ul class="nav nav-tabs" id="alertTabs" role="tablist">
     <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="details-tab" data-bs-toggle="tab" data-bs-target="#details" type="button" role="tab" aria-controls="details" aria-selected="true">
+        <button class="nav-link {% if active_tab == 'details' %}active{% endif %}" id="details-tab" data-bs-toggle="tab" data-bs-target="#details" type="button" role="tab" aria-controls="details" aria-selected="{% if active_tab == 'details' %}true{% else %}false{% endif %}">
             <i class="bi bi-info-circle"></i> Alert Details
         </button>
     </li>
     <li class="nav-item" role="presentation">
-        <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab" aria-controls="history" aria-selected="false">
+        <button class="nav-link {% if active_tab == 'history' %}active{% endif %}" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab" aria-controls="history" aria-selected="{% if active_tab == 'history' %}true{% else %}false{% endif %}">
             <i class="bi bi-clock-history"></i> History
         </button>
     </li>
     <li class="nav-item" role="presentation">
-        <button class="nav-link" id="docs-tab" data-bs-toggle="tab" data-bs-target="#docs" type="button" role="tab" aria-controls="docs" aria-selected="false">
+        <button class="nav-link {% if active_tab == 'docs' %}active{% endif %}" id="docs-tab" data-bs-toggle="tab" data-bs-target="#docs" type="button" role="tab" aria-controls="docs" aria-selected="{% if active_tab == 'docs' %}true{% else %}false{% endif %}">
             <i class="bi bi-book"></i> Documentation
         </button>
     </li>
     <li class="nav-item" role="presentation">
-        <button class="nav-link" id="comments-tab" data-bs-toggle="tab" data-bs-target="#comments" type="button" role="tab" aria-controls="comments" aria-selected="false">
+        <button class="nav-link {% if active_tab == 'comments' %}active{% endif %}" id="comments-tab" data-bs-toggle="tab" data-bs-target="#comments" type="button" role="tab" aria-controls="comments" aria-selected="{% if active_tab == 'comments' %}true{% else %}false{% endif %}">
             <i class="bi bi-chat-dots"></i> Comments 
             <span class="badge bg-secondary rounded-pill">{{ comments.count }}</span>
         </button>
@@ -266,7 +263,7 @@
 <!-- Tab Content -->
 <div class="tab-content" id="alertTabsContent">
     <!-- Alert Details Tab -->
-    <div class="tab-pane fade show active" id="details" role="tabpanel" aria-labelledby="details-tab">
+    <div class="tab-pane fade {% if active_tab == 'details' %}show active{% endif %}" id="details" role="tabpanel" aria-labelledby="details-tab">
         <div class="row">
             <div class="col-md-6">
                 <h5 class="border-bottom pb-2 mb-3">Labels</h5>
@@ -346,12 +343,9 @@
     </div>
     
     <!-- History Tab -->
-    <div class="tab-pane fade" id="history" role="tabpanel" aria-labelledby="history-tab">
+    <div class="tab-pane fade {% if active_tab == 'history' %}show active{% endif %}" id="history" role="tabpanel" aria-labelledby="history-tab">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h5 class="mb-0">Alert History</h5>
-            <a href="{% url 'alerts:alert-history' alert.fingerprint %}" class="btn btn-sm btn-outline-secondary">
-                <i class="bi bi-clock-history"></i> View Full History
-            </a>
         </div>
         
         <div class="table-responsive">
@@ -459,11 +453,46 @@
                     {% endfor %}
                 </tbody>
             </table>
+            
+            <!-- Pagination -->
+            {% if instances.paginator.num_pages > 1 %}
+            <nav aria-label="History pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if instances.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ instances.previous_page_number }}&tab=history" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in instances.paginator.page_range %}
+                        {% if instances.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% elif num > instances.number|add:'-3' and num < instances.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}&tab=history">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if instances.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ instances.next_page_number }}&tab=history" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
         </div>
     </div>
     
     <!-- Documentation Tab -->
-    <div class="tab-pane fade" id="docs" role="tabpanel" aria-labelledby="docs-tab">
+    <div class="tab-pane fade {% if active_tab == 'docs' %}show active{% endif %}" id="docs" role="tabpanel" aria-labelledby="docs-tab">
         <div class="row">
             <div class="col-12">
                 {% if linked_documentation %}
@@ -497,7 +526,7 @@
     </div>
     
     <!-- Comments Tab -->
-    <div class="tab-pane fade" id="comments" role="tabpanel" aria-labelledby="comments-tab">
+    <div class="tab-pane fade {% if active_tab == 'comments' %}show active{% endif %}" id="comments" role="tabpanel" aria-labelledby="comments-tab">
         <!-- Comment Form -->
         <form method="post" class="mb-4" id="commentForm">
             {% csrf_token %}
@@ -701,46 +730,25 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 60000);
     });
     
-    // Remember active tab when page is reloaded
-    const hash = window.location.hash;
-    if (hash) {
-        const tab = document.querySelector(`a[href="${hash}"]`);
-        if (tab) {
-            tab.click();
-        }
-    }
-    
     // Store active tab in URL when changed
     const tabLinks = document.querySelectorAll('#alertTabs button');
     tabLinks.forEach(tab => {
         tab.addEventListener('shown.bs.tab', function (e) {
-            window.location.hash = e.target.getAttribute('data-bs-target').substring(1);
+            const tabId = e.target.getAttribute('data-bs-target').substring(1);
+            const currentUrl = new URL(window.location.href);
+            currentUrl.searchParams.set('tab', tabId);
+            window.history.pushState({}, '', currentUrl);
         });
     });
 
-    // Function to detect Persian text
-    function isPersianText(text) {
-        // Persian Unicode range: \u0600-\u06FF
-        const persianRegex = /[\u0600-\u06FF]/;
-        return persianRegex.test(text);
-    }
-
-    // Function to set text direction based on content
-    function setTextDirection(element) {
-        if (isPersianText(element.textContent)) {
-            element.style.direction = 'rtl';
-            element.style.textAlign = 'right';
-        } else {
-            element.style.direction = 'ltr';
-            element.style.textAlign = 'left';
+    // Check for tab parameter in URL on page load
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+    if (tabParam) {
+        const tab = document.querySelector(`button[data-bs-target="#${tabParam}"]`);
+        if (tab) {
+            tab.click();
         }
-    }
-
-    // Apply RTL/LTR detection to all paragraphs in documentation content
-    const documentationContent = document.querySelector('.documentation-content');
-    if (documentationContent) {
-        const paragraphs = documentationContent.querySelectorAll('p');
-        paragraphs.forEach(setTextDirection);
     }
 });
 </script>

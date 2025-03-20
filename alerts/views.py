@@ -8,6 +8,7 @@ from django.http import JsonResponse
 from django.contrib import messages
 from django.views.generic.detail import SingleObjectMixin
 import logging
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 
 from .models import AlertGroup, AlertInstance, AlertComment
 from .forms import AlertAcknowledgementForm, AlertCommentForm
@@ -112,8 +113,24 @@ class AlertDetailView(LoginRequiredMixin, DetailView):
         # Get linked documentation for this alert
         context['linked_documentation'] = self.object.documentation_links.select_related('documentation').all()
         
-        # Get alert instances for history
-        context['instances'] = self.object.instances.all().order_by('-started_at')
+        # Get alert instances for history with pagination
+        page = self.request.GET.get('page', 1)
+        try:
+            page = int(page)
+        except (TypeError, ValueError):
+            page = 1
+            
+        instances = self.object.instances.all().order_by('-started_at')
+        paginator = Paginator(instances, 10)  # Show 10 instances per page
+        
+        try:
+            instances = paginator.page(page)
+        except PageNotAnInteger:
+            instances = paginator.page(1)
+        except EmptyPage:
+            instances = paginator.page(paginator.num_pages)
+            
+        context['instances'] = instances
         
         # Get comments
         context['comments'] = self.object.comments.all().order_by('-created_at')
@@ -124,6 +141,9 @@ class AlertDetailView(LoginRequiredMixin, DetailView):
         
         # Format messages for JavaScript
         context['messages'] = [{'message': str(message), 'tags': message.tags} for message in messages.get_messages(self.request)]
+        
+        # Add active tab to context
+        context['active_tab'] = self.request.GET.get('tab', 'details')
         
         return context
     
