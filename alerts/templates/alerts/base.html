@@ -37,7 +37,7 @@
     </nav>
 
     <!-- Main Content -->
-    <div class="container mt-4" data-messages='{{ messages|safe|default:"[]" }}'>
+    <div class="container mt-4">
         {% block content %}{% endblock %}
     </div>
 
@@ -58,26 +58,15 @@
             "timeOut": "5000"
         };
 
-        // Get messages from data attribute
-        const messagesContainer = document.querySelector('.container');
-        if (messagesContainer && messagesContainer.dataset.messages) {
-            try {
-                const messages = JSON.parse(messagesContainer.dataset.messages);
-                console.log('Messages:', messages); // Debug log
-                
-                if (messages && messages.length > 0) {
-                    messages.forEach(msg => {
-                        console.log('Showing message:', msg); // Debug log
-                        toastr[msg.tags](msg.message);
-                    });
-                }
-            } catch (e) {
-                console.error('Error parsing messages:', e); // Debug log
-            }
-        }
+        // Handle messages from Django messages framework
+        {% if messages %}
+            {% for message in messages %}
+                toastr.{{ message.tags }}("{{ message|escapejs }}");
+            {% endfor %}
+        {% endif %}
     });
     </script>
     
     {% block extra_js %}{% endblock %}
 </body>
-</html>
+</html> 
