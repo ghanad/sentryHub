@@ -31,10 +31,10 @@ class AlertWebhookView(APIView):
         serializer = AlertmanagerWebhookSerializer(data=request.data)
         
         if serializer.is_valid():
-            # استخراج همه هشدارها
+            # Extract all alerts
             alerts = serializer.validated_data['alerts']
             
-            # هشدارها را براساس fingerprint گروه‌بندی می‌کنیم تا هشدارهای مرتبط با هم را با هم پردازش کنیم
+            # Group alerts by fingerprint to process related alerts together
             alerts_by_fingerprint = {}
             for alert in alerts:
                 fingerprint = alert.get('fingerprint')
@@ -42,12 +42,12 @@ class AlertWebhookView(APIView):
                     alerts_by_fingerprint[fingerprint] = []
                 alerts_by_fingerprint[fingerprint].append(alert)
             
-            # پردازش هشدارها به ترتیب fingerprint
+            # Process alerts by fingerprint
             for fingerprint, fingerprint_alerts in alerts_by_fingerprint.items():
-                # مرتب‌سازی هشدارها: اول resolved، سپس firing
+                # Sort alerts: resolved first, then firing
                 sorted_alerts = sorted(fingerprint_alerts, key=lambda a: 0 if a['status'] == 'resolved' else 1)
                 
-                # پردازش هر هشدار به ترتیب
+                # Process each alert in order
                 for alert_data in sorted_alerts:
                     process_alert(alert_data)
             
