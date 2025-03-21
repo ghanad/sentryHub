@@ -1,0 +1,43 @@
+# Remove Recodes from Database with shell
+from alerts.models import AlertGroup, AlertInstance, AlertComment
+from docs.models import AlertDocumentation, DocumentationAlertGroup
+AlertInstance.objects.all().delete()
+AlertComment.objects.all().delete()
+DocumentationAlertGroup.objects.all().delete()
+AlertGroup.objects.all().delete()
+AlertDocumentation.objects.all().delete()
+
+
+
+# query on database
+from alerts.models import AlertGroup, AlertInstance
+import json
+from django.core.serializers.json import DjangoJSONEncoder
+   
+alert_group = AlertGroup.objects.filter(
+name='NodeExporterNotScrape16',
+labels__instance='localhost:9100'
+).first()
+   
+if alert_group:
+	print(f"Alert Group Found: {alert_group.name} (ID: {alert_group.id})")
+	print(f"Fingerprint: {alert_group.fingerprint}")
+	print(f"Status: {alert_group.current_status}")
+	print(f"Severity: {alert_group.severity}")
+	print(f"Total Firing Count: {alert_group.total_firing_count}")
+	print(f"First Occurrence: {alert_group.first_occurrence}")
+	print(f"Last Occurrence: {alert_group.last_occurrence}")
+	print(f"Acknowledged: {alert_group.acknowledged}")
+   
+   
+instances = AlertInstance.objects.filter(alert_group=alert_group).order_by('started_at')
+print(f"\nTotal Instances: {instances.count()}")
+   
+for i, instance in enumerate(instances, 1):
+	print(f"\n{i}. Status: {instance.status}")
+	print(f"   Started: {instance.started_at}")
+	print(f"   Ended: {instance.ended_at or 'Still Active'}")
+	annotations = json.dumps(instance.annotations, indent=2, cls=DjangoJSONEncoder)
+	print(f"   Annotations: {annotations}")
+	print(f"   ID: {instance.id}")
+
