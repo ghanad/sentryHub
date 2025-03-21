@@ -14,10 +14,11 @@ class AlertGroupSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = AlertGroup
-        fields = ['id', 'fingerprint', 'name', 'labels', 'severity', 'first_occurrence', 
-                 'last_occurrence', 'current_status', 'total_firing_count', 
-                 'acknowledged', 'acknowledged_by', 'acknowledged_by_name', 
-                 'acknowledgement_time', 'instances']
+        fields = ['id', 'fingerprint', 'name', 'labels', 'severity', 
+                 'instance', 'service', 'job', 'cluster', 'namespace',
+                 'first_occurrence', 'last_occurrence', 'current_status', 
+                 'total_firing_count', 'acknowledged', 'acknowledged_by', 
+                 'acknowledged_by_name', 'acknowledgement_time', 'instances']
     
     def get_acknowledged_by_name(self, obj):
         if obj.acknowledged_by:

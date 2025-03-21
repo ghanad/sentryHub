@@ -2,6 +2,8 @@ from django.db import models
 from django.utils import timezone
 
 
+# alerts/models.py - تغییرات در مدل AlertGroup
+
 class AlertGroup(models.Model):
     fingerprint = models.CharField(max_length=255, unique=True, db_index=True)
     name = models.CharField(max_length=255)
@@ -15,6 +17,10 @@ class AlertGroup(models.Model):
         ],
         default='warning'
     )
+    
+    instance = models.CharField(max_length=255, blank=True, null=True, db_index=True, 
+        help_text="Instance address (IP or hostname) extracted from labels")
+    
     first_occurrence = models.DateTimeField(auto_now_add=True)
     last_occurrence = models.DateTimeField(auto_now=True)
     current_status = models.CharField(
@@ -44,6 +50,8 @@ class AlertGroup(models.Model):
     )
     
     def __str__(self):
+        if self.instance:
+            return f"{self.name} ({self.instance})"
         return f"{self.name} ({self.fingerprint})"
     
     class Meta:

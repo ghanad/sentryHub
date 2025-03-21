@@ -9,6 +9,40 @@
     </div>
 </div>
 
+<!-- Alert Summary Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Alert Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 text-center">
+                        <h3>{{ alerts|length }}</h3>
+                        <p class="text-muted">Results</p>
+                    </div>
+                    
+                    <div class="col-md-3 text-center">
+                        <h3>{{ firing_count }}</h3>
+                        <p class="text-muted">Firing</p>
+                    </div>
+                    
+                    <div class="col-md-3 text-center">
+                        <h3>{{ critical_count }}</h3>
+                        <p class="text-muted">Critical</p>
+                    </div>
+                    
+                    <div class="col-md-3 text-center">
+                        <h3>{{ acknowledged_count }}</h3>
+                        <p class="text-muted">Acknowledged</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="row mb-4">
     <div class="col-12">
         <div class="card">
@@ -35,6 +69,10 @@
                         </select>
                     </div>
                     <div class="col-md-3">
+                        <label for="instance" class="form-label">Instance</label>
+                        <input type="text" class="form-control" id="instance" name="instance" value="{{ instance }}" placeholder="Instance">
+                    </div>
+                    <div class="col-md-3">
                         <label for="acknowledged" class="form-label">Acknowledgement</label>
                         <select class="form-select" id="acknowledged" name="acknowledged">
                             <option value="" {% if not acknowledged %}selected{% endif %}>All</option>
@@ -42,7 +80,7 @@
                             <option value="false" {% if acknowledged == 'false' %}selected{% endif %}>Not Acknowledged</option>
                         </select>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-12">
                         <label for="search" class="form-label">Search</label>
                         <input type="text" class="form-control" id="search" name="search" value="{{ search }}" placeholder="Name or fingerprint">
                     </div>
@@ -69,8 +107,8 @@
                             <tr>
                                 <th>Status</th>
                                 <th>Name</th>
+                                <th>Instance</th>
                                 <th>Severity</th>
-                                <th>First Occurrence</th>
                                 <th>Last Occurrence</th>
                                 <th>Count</th>
                                 <th>Acknowledged</th>
@@ -88,6 +126,7 @@
                                     {% endif %}
                                 </td>
                                 <td>{{ alert.name }}</td>
+                                <td>{{ alert.instance|default:"-" }}</td>
                                 <td>
                                     {% if alert.severity == 'critical' %}
                                     <span class="badge bg-danger">Critical</span>
@@ -97,7 +136,6 @@
                                     <span class="badge bg-info text-dark">Info</span>
                                     {% endif %}
                                 </td>
-                                <td>{{ alert.first_occurrence|date:"Y-m-d H:i:s" }}</td>
                                 <td>{{ alert.last_occurrence|date:"Y-m-d H:i:s" }}</td>
                                 <td>{{ alert.total_firing_count }}</td>
                                 <td>

@@ -73,6 +73,8 @@ def get_or_create_alert_group(fingerprint, status, labels):
     Returns:
         AlertGroup: The created or updated alert group
     """
+    instance = labels.get('instance')
+    
     alert_group, created = AlertGroup.objects.get_or_create(
         fingerprint=fingerprint,
         defaults={
@@ -80,6 +82,7 @@ def get_or_create_alert_group(fingerprint, status, labels):
             'labels': labels,
             'severity': labels.get('severity', 'warning'),
             'current_status': status,
+            'instance': instance,
         }
     )
     
@@ -87,6 +90,10 @@ def get_or_create_alert_group(fingerprint, status, labels):
         # Update existing AlertGroup
         alert_group.current_status = status
         alert_group.last_occurrence = timezone.now()
+        
+        if instance and alert_group.instance != instance:
+            alert_group.instance = instance
+            
         if status == 'firing' and alert_group.current_status != 'firing':
             alert_group.total_firing_count += 1
         alert_group.save()

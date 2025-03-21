@@ -4,10 +4,11 @@ from .models import AlertGroup, AlertInstance, AlertComment
 
 @admin.register(AlertGroup)
 class AlertGroupAdmin(admin.ModelAdmin):
-    list_display = ('name', 'fingerprint', 'severity', 'current_status', 'total_firing_count', 
-                   'first_occurrence', 'last_occurrence', 'acknowledged')
+    list_display = ('name', 'instance', 'fingerprint', 'severity', 
+                    'current_status', 'total_firing_count', 
+                    'first_occurrence', 'last_occurrence', 'acknowledged')
     list_filter = ('severity', 'current_status', 'acknowledged')
-    search_fields = ('name', 'fingerprint')
+    search_fields = ('name', 'fingerprint', 'instance')
     date_hierarchy = 'first_occurrence'
 
 

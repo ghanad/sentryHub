@@ -41,6 +41,20 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             item['severity']: item['count'] for item in severity_counts
         }
         
+        # Get instance statistics
+        context['instance_count'] = AlertGroup.objects.filter(
+            current_status='firing'
+        ).exclude(instance__isnull=True).values('instance').distinct().count()
+        
+        # Get top instances with most alerts
+        top_instances = AlertGroup.objects.filter(
+            current_status='firing'
+        ).exclude(instance__isnull=True).values('instance').annotate(
+            count=Count('id')
+        ).order_by('-count')[:5]
+        
+        context['top_instances'] = top_instances
+        
         # Get recent alerts
         context['recent_alerts'] = AlertGroup.objects.filter(
             current_status='firing'
@@ -68,6 +82,11 @@ class AlertListView(LoginRequiredMixin, ListView):
         if severity:
             queryset = queryset.filter(severity=severity)
         
+        # Filter by instance
+        instance = self.request.GET.get('instance')
+        if instance:
+            queryset = queryset.filter(instance__icontains=instance)
+        
         # Filter by acknowledgement status
         acknowledged = self.request.GET.get('acknowledged')
         if acknowledged == 'true':
@@ -79,7 +98,9 @@ class AlertListView(LoginRequiredMixin, ListView):
         search = self.request.GET.get('search')
         if search:
             queryset = queryset.filter(
-                Q(name__icontains=search) | Q(fingerprint__icontains=search)
+                Q(name__icontains=search) | 
+                Q(fingerprint__icontains=search) |
+                Q(instance__icontains=search)
             )
         
         return queryset.order_by('-last_occurrence')
@@ -90,8 +111,15 @@ class AlertListView(LoginRequiredMixin, ListView):
         # Add filter parameters to context
         context['status'] = self.request.GET.get('status', '')
         context['severity'] = self.request.GET.get('severity', '')
+        context['instance'] = self.request.GET.get('instance', '')
         context['acknowledged'] = self.request.GET.get('acknowledged', '')
         context['search'] = self.request.GET.get('search', '')
+        
+        # Calculate statistics counts for the filtered results
+        alerts = context['alerts']
+        context['firing_count'] = sum(1 for alert in alerts if alert.current_status == 'firing')
+        context['critical_count'] = sum(1 for alert in alerts if alert.severity == 'critical')
+        context['acknowledged_count'] = sum(1 for alert in alerts if alert.acknowledged)
         
         return context
 

@@ -62,8 +62,9 @@ class AlertGroupViewSet(viewsets.ReadOnlyModelViewSet):
     """
     queryset = AlertGroup.objects.all()
     serializer_class = AlertGroupSerializer
-    filterset_fields = ['severity', 'current_status', 'acknowledged']
-    search_fields = ['name', 'fingerprint']
+    filterset_fields = ['severity', 'current_status', 'acknowledged', 
+                       'instance', 'service', 'job', 'cluster', 'namespace']
+    search_fields = ['name', 'fingerprint', 'instance', 'service']
     
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -77,6 +78,31 @@ class AlertGroupViewSet(viewsets.ReadOnlyModelViewSet):
         active_only = self.request.query_params.get('active_only', 'true')
         if active_only.lower() == 'true':
             queryset = queryset.filter(current_status='firing')
+        
+        # Filter by instance
+        instance = self.request.query_params.get('instance', None)
+        if instance:
+            queryset = queryset.filter(instance__icontains=instance)
+        
+        # Filter by service
+        service = self.request.query_params.get('service', None)
+        if service:
+            queryset = queryset.filter(service__icontains=service)
+        
+        # Filter by job
+        job = self.request.query_params.get('job', None)
+        if job:
+            queryset = queryset.filter(job__icontains=job)
+        
+        # Filter by cluster
+        cluster = self.request.query_params.get('cluster', None)
+        if cluster:
+            queryset = queryset.filter(cluster__icontains=cluster)
+        
+        # Filter by namespace
+        namespace = self.request.query_params.get('namespace', None)
+        if namespace:
+            queryset = queryset.filter(namespace__icontains=namespace)
         
         return queryset
     
