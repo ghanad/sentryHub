@@ -9,6 +9,8 @@ from docs.services.documentation_matcher import match_documentation_to_alert
 
 logger = logging.getLogger(__name__)
 
+# alerts/services/alerts_processor.py - process_alert function with changes
+
 def process_alert(alert_data):
     """
     Process an alert from Alertmanager.
@@ -70,10 +72,14 @@ def process_alert(alert_data):
         ).first()
         
         if active_instance and active_instance.started_at != starts_at:
-            # If the start times differ, close the old instance
-            active_instance.ended_at = starts_at
+            # If the start times differ, close the old instance but mark it as inferred resolution
+            active_instance.status = 'resolved'
+            active_instance.resolution_type = 'inferred'
+            # We set ended_at to null or we could also set it to current time
+            # active_instance.ended_at = timezone.now()
+            active_instance.ended_at = None
             active_instance.save()
-            logger.info(f"Closed previous firing instance with new start time {starts_at}")
+            logger.info(f"Closed previous firing instance with inferred resolution (no explicit resolve received)")
         
         # Create new firing instance only if we don't have one with matching start time
         if not active_instance or active_instance.started_at != starts_at:
@@ -83,7 +89,8 @@ def process_alert(alert_data):
                 started_at=starts_at,
                 ended_at=None,
                 annotations=annotations,
-                generator_url=generator_url
+                generator_url=generator_url,
+                resolution_type=None  # No resolution for new firing alerts
             )
             logger.info(f"Created new firing instance (ID: {new_instance.id})")
     
@@ -111,6 +118,7 @@ def process_alert(alert_data):
             # Update the existing firing instance to resolved instead of creating a new one
             matching_firing.status = 'resolved'
             matching_firing.ended_at = ends_at or starts_at
+            matching_firing.resolution_type = 'normal'  # This is a normal resolution from Alertmanager
             matching_firing.save()
             logger.info(f"Updated firing instance to resolved status (ID: {matching_firing.id})")
         else:
@@ -123,8 +131,12 @@ def process_alert(alert_data):
             
             if active_instances.exists():
                 # Close all active instances with resolved time
-                count = active_instances.update(ended_at=starts_at)
-                logger.info(f"Closed {count} active firing instances with end time {starts_at}")
+                for instance in active_instances:
+                    instance.status = 'resolved'
+                    instance.ended_at = ends_at or starts_at
+                    instance.resolution_type = 'normal'
+                    instance.save()
+                logger.info(f"Closed {active_instances.count()} active firing instances with normal resolution")
             
             # Create a new resolved instance only if we didn't find and update a matching firing instance
             new_instance = AlertInstance.objects.create(
@@ -133,7 +145,8 @@ def process_alert(alert_data):
                 started_at=starts_at,
                 ended_at=ends_at or starts_at,
                 annotations=annotations,
-                generator_url=generator_url
+                generator_url=generator_url,
+                resolution_type='normal'  # This is a normal resolution
             )
             logger.info(f"Created new resolved instance (ID: {new_instance.id})")
     

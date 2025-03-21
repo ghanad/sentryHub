@@ -374,11 +374,13 @@
                         <td>{{ instance.started_at|date:"Y-m-d H:i:s" }}</td>
                         <td>
                             {% if instance.ended_at %}
-                            {{ instance.ended_at|date:"Y-m-d H:i:s" }}
+                                {{ instance.ended_at|date:"Y-m-d H:i:s" }}
+                            {% elif instance.status == 'resolved' and instance.resolution_type == 'inferred' %}
+                                <span class="badge bg-warning text-dark">Inferred Resolution</span>
                             {% elif instance.status == 'firing' and not instance.ended_at %}
-                            <span class="badge bg-warning text-dark">Not Resolved Yet</span>
+                                <span class="badge bg-warning text-dark">Not Resolved Yet</span>
                             {% else %}
-                            <span class="badge bg-secondary">Unknown</span>
+                                <span class="badge bg-secondary">Unknown</span>
                             {% endif %}
                         </td>
                         <td>

@@ -67,6 +67,16 @@ class AlertInstance(models.Model):
     ended_at = models.DateTimeField(null=True, blank=True)
     annotations = models.JSONField()
     generator_url = models.URLField(max_length=500, null=True, blank=True)
+    resolution_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('normal', 'Normal Resolution'),
+            ('inferred', 'Inferred Resolution'),
+            ('manual', 'Manual Resolution'),
+        ],
+        null=True,
+        blank=True
+    )
     
     def __str__(self):
         return f"{self.alert_group.name} - {self.status} at {self.started_at}"
