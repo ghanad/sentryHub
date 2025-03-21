@@ -1,0 +1,40 @@
+{
+    "receiver": "web.hook",
+    "status": "firing",
+    "alerts": [
+        {
+            "status": "resolved",
+            "labels": {
+                "alertname": "NodeExporterNotScrape",
+                "category": "nodes",
+                "instance": "10.1.1.10:9100",
+                "job": "node",
+                "severity": "warning"
+            },
+            "annotations": {
+                "peygir": "users:ali;resolve:true",
+                "summary": "node exporter 10.1.1.10:9100 is DOWN."
+            },
+            "startsAt": "2025-03-21T07:07:47.348Z",
+            "endsAt": "2025-03-21T07:08:57.348Z",
+            "generatorURL": "http://DESKTOP-JSRUK7R:9090/graph?g0.expr=up+%21%3D+1&g0.tab=1",
+            "fingerprint": "353d7ef36cec3766"
+        }
+    ],
+    "groupLabels": {
+        "alertname": "NodeExporterNotScrape"
+    },
+    "commonLabels": {
+        "alertname": "NodeExporterNotScrape",
+        "category": "nodes",
+        "job": "node",
+        "severity": "warning"
+    },
+    "commonAnnotations": {
+        "peygir": "users:ali;resolve:true"
+    },
+    "externalURL": "http://DESKTOP-JSRUK7R:9093",
+    "version": "4",
+    "groupKey": "{}:{alertname=\"NodeExporterNotScrape\"}",
+    "truncatedAlerts": 0
+} 
