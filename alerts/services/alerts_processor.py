@@ -20,19 +20,19 @@ def process_alert(alert_data):
     Returns:
         AlertGroup: The created or updated alert group
     """
-    # اطلاعات هشدار را استخراج می‌کنیم
+    # Extract alert information
     fingerprint, status, labels, annotations, starts_at, ends_at, generator_url = extract_alert_data(alert_data)
     
-    # گروه هشدار را دریافت یا ایجاد می‌کنیم
+    # Get or create alert group
     alert_group = get_or_create_alert_group(fingerprint, status, labels)
     
-    # هشدار را پردازش می‌کنیم
+    # Process the alert
     if status == 'firing':
         process_firing_alert(alert_group, labels, fingerprint, starts_at, annotations, generator_url)
     else:  # status is 'resolved'
         process_resolved_alert(alert_group, labels, fingerprint, starts_at, ends_at, annotations, generator_url)
     
-    # سعی می‌کنیم مستندات مرتبط با این هشدار را پیدا کنیم
+    # Try to find related documentation for this alert
     try_match_documentation(alert_group)
     
     return alert_group
