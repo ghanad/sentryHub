@@ -62,9 +62,6 @@ class AlertListView(LoginRequiredMixin, ListView):
         status = self.request.GET.get('status')
         if status:
             queryset = queryset.filter(current_status=status)
-        else:
-            # Default to showing only firing alerts
-            queryset = queryset.filter(current_status='firing')
         
         # Filter by severity
         severity = self.request.GET.get('severity')
