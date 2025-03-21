@@ -10,7 +10,7 @@ def should_exclude(path):
         'media', 'node_modules', '.DS_Store', 'migrations',
         'jspdf.umd.min.js', 'html2canvas.min.js', 'jquery-3.6.0.min.js', 'jalalidatepicker.min.js',
         'codeBase.json', 'code_base_to_prompt.py', 'jalalidatepicker.min.css', 'media', 'fake_data',
-        'logs', 'search2', 'excel_analysis.json', "__init__.py",
+        'logs', 'search2', 'excel_analysis.json', "__init__.py", "manage.py", "requirements.txt", "send_fake_data",
 
     ]
     

@@ -13,7 +13,8 @@
             },
             "annotations": {
                 "peygir": "users:ali;resolve:true",
-                "summary": "node exporter 10.1.1.10:9100 is DOWN."
+                "summary": "node exporter 10.1.1.10:9100 is DOWN.",
+                "sms": "ali,reza,sina;resolve:true"
             },
             "startsAt": "2025-03-21T07:07:47.348Z",
             "endsAt": "2025-03-21T07:08:57.348Z",
