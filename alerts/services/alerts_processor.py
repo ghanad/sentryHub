@@ -2,6 +2,7 @@ from django.utils import timezone
 from dateutil.parser import parse as parse_datetime
 import re
 import logging
+import json
 
 from ..models import AlertGroup, AlertInstance
 from docs.services.documentation_matcher import match_documentation_to_alert
@@ -26,6 +27,8 @@ def process_alert(alert_data):
     ends_at = parse_datetime(alert_data.get('endsAt')) if alert_data.get('endsAt') and alert_data.get('endsAt') != '0001-01-01T00:00:00Z' else None
     generator_url = alert_data.get('generatorURL')
     
+    logger.info(f"Processing alert: {labels.get('alertname')} - {fingerprint} - {status}")
+    
     # Check if AlertGroup with this fingerprint exists
     alert_group, created = AlertGroup.objects.get_or_create(
         fingerprint=fingerprint,
@@ -41,56 +44,100 @@ def process_alert(alert_data):
         # Update existing AlertGroup
         alert_group.current_status = status
         alert_group.last_occurrence = timezone.now()
-        if status == 'firing':
+        if status == 'firing' and alert_group.current_status != 'firing':
             alert_group.total_firing_count += 1
         alert_group.save()
     
-    # Find the latest AlertInstance
-    last_instance = AlertInstance.objects.filter(
-        alert_group=alert_group
-    ).order_by('-started_at').first()
-    
-    # Create new AlertInstance or update existing
+    # Process based on status
     if status == 'firing':
-        # If it's a firing alert and there's no active firing instance, create one
-        if not last_instance or last_instance.status != 'firing' or last_instance.ended_at:
-            # Close the last instance if it exists (this shouldn't normally happen)
-            if last_instance and last_instance.status == 'firing' and not last_instance.ended_at:
-                last_instance.ended_at = starts_at
-                last_instance.save()
-                
-            # Create new firing instance
-            AlertInstance.objects.create(
-                alert_group=alert_group,
-                status=status,
-                started_at=starts_at,
-                ended_at=None,  # Explicitly set to None since it's firing
-                annotations=annotations,
-                generator_url=generator_url
-            )
-    else:  # status is 'resolved'
-        # Find the most recent firing instance with no end time
-        active_firing_instance = AlertInstance.objects.filter(
+        # Check for existing duplicate firing instances
+        existing_firing = AlertInstance.objects.filter(
+            alert_group=alert_group,
+            status='firing',
+            started_at=starts_at,
+            ended_at__isnull=True
+        ).exists()
+        
+        if existing_firing:
+            logger.info(f"Skipping duplicate firing instance: {labels.get('alertname')} - {fingerprint}")
+            return alert_group
+        
+        # Check if there's an active firing instance
+        active_instance = AlertInstance.objects.filter(
             alert_group=alert_group,
             status='firing',
             ended_at__isnull=True
-        ).order_by('-started_at').first()
+        ).first()
         
-        # If we found an active firing instance, close it
-        if active_firing_instance:
-            active_firing_instance.ended_at = starts_at
-            active_firing_instance.save()
+        if active_instance and active_instance.started_at != starts_at:
+            # If the start times differ, close the old instance
+            active_instance.ended_at = starts_at
+            active_instance.save()
+            logger.info(f"Closed previous firing instance with new start time {starts_at}")
         
-        # Create a resolved instance
-        AlertInstance.objects.create(
-            alert_group=alert_group,
-            status=status,
-            started_at=starts_at,
-            ended_at=starts_at,  # For 'resolved' instances, end time is same as start time
-            annotations=annotations,
-            generator_url=generator_url
-        )
+        # Create new firing instance only if we don't have one with matching start time
+        if not active_instance or active_instance.started_at != starts_at:
+            new_instance = AlertInstance.objects.create(
+                alert_group=alert_group,
+                status=status,
+                started_at=starts_at,
+                ended_at=None,
+                annotations=annotations,
+                generator_url=generator_url
+            )
+            logger.info(f"Created new firing instance (ID: {new_instance.id})")
     
+    else:  # status is 'resolved'
+        # Check if there's already a matching resolved instance
+        existing_resolved = AlertInstance.objects.filter(
+            alert_group=alert_group,
+            status='resolved',
+            started_at=starts_at,
+            ended_at=ends_at or starts_at
+        ).exists()
+        
+        if existing_resolved:
+            logger.info(f"Skipping duplicate resolved instance: {labels.get('alertname')} - {fingerprint}")
+            return alert_group
+        
+        # Find matching firing instance that started at the same time
+        matching_firing = AlertInstance.objects.filter(
+            alert_group=alert_group,
+            status='firing',
+            started_at=starts_at
+        ).first()
+        
+        if matching_firing:
+            # Update the existing firing instance to resolved instead of creating a new one
+            matching_firing.status = 'resolved'
+            matching_firing.ended_at = ends_at or starts_at
+            matching_firing.save()
+            logger.info(f"Updated firing instance to resolved status (ID: {matching_firing.id})")
+        else:
+            # Find any active firing instances to close
+            active_instances = AlertInstance.objects.filter(
+                alert_group=alert_group,
+                status='firing',
+                ended_at__isnull=True
+            )
+            
+            if active_instances.exists():
+                # Close all active instances with resolved time
+                count = active_instances.update(ended_at=starts_at)
+                logger.info(f"Closed {count} active firing instances with end time {starts_at}")
+            
+            # Create a new resolved instance only if we didn't find and update a matching firing instance
+            new_instance = AlertInstance.objects.create(
+                alert_group=alert_group,
+                status=status,
+                started_at=starts_at,
+                ended_at=ends_at or starts_at,
+                annotations=annotations,
+                generator_url=generator_url
+            )
+            logger.info(f"Created new resolved instance (ID: {new_instance.id})")
+    
+    # Try to match documentation to this alert
     matched_doc = match_documentation_to_alert(alert_group)
     if matched_doc:
         logger.info(f"Documentation '{matched_doc.title}' automatically linked to alert '{alert_group.name}'")

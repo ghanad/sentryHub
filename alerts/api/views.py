@@ -29,14 +29,30 @@ class AlertWebhookView(APIView):
     def post(self, request, format=None):
         logger.info(f"Received webhook data: {request.data}")
         serializer = AlertmanagerWebhookSerializer(data=request.data)
+        
         if serializer.is_valid():
-            # Save the raw alert data to a file
-            # save_alert_to_file(serializer.validated_data)
+            # استخراج همه هشدارها
+            alerts = serializer.validated_data['alerts']
             
-            # Process each alert in the webhook
-            for alert_data in serializer.validated_data['alerts']:
-                process_alert(alert_data)
+            # هشدارها را براساس fingerprint گروه‌بندی می‌کنیم تا هشدارهای مرتبط با هم را با هم پردازش کنیم
+            alerts_by_fingerprint = {}
+            for alert in alerts:
+                fingerprint = alert.get('fingerprint')
+                if fingerprint not in alerts_by_fingerprint:
+                    alerts_by_fingerprint[fingerprint] = []
+                alerts_by_fingerprint[fingerprint].append(alert)
+            
+            # پردازش هشدارها به ترتیب fingerprint
+            for fingerprint, fingerprint_alerts in alerts_by_fingerprint.items():
+                # مرتب‌سازی هشدارها: اول resolved، سپس firing
+                sorted_alerts = sorted(fingerprint_alerts, key=lambda a: 0 if a['status'] == 'resolved' else 1)
+                
+                # پردازش هر هشدار به ترتیب
+                for alert_data in sorted_alerts:
+                    process_alert(alert_data)
+            
             return Response({'status': 'success'}, status=status.HTTP_200_OK)
+        
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
