@@ -249,7 +249,8 @@
     </li>
     <li class="nav-item" role="presentation">
         <button class="nav-link {% if active_tab == 'docs' %}active{% endif %}" id="docs-tab" data-bs-toggle="tab" data-bs-target="#docs" type="button" role="tab" aria-controls="docs" aria-selected="{% if active_tab == 'docs' %}true{% else %}false{% endif %}">
-            <i class="bi bi-book"></i> Documentation
+            <i class="bi bi-book"></i> Documentation 
+            <span class="badge bg-secondary rounded-pill">{{ linked_documentation|length }}</span>
         </button>
     </li>
     <li class="nav-item" role="presentation">
