@@ -1,0 +1,116 @@
+/* Custom styles for history table */
+.table .badge {
+    font-size: 0.85em;
+}
+
+.ongoing-duration {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.6; }
+    100% { opacity: 1; }
+}
+
+/* History Chart Styles */
+#historyChart {
+    background-color: #fff;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Table Responsive Styles */
+.table-responsive {
+    margin-bottom: 1.5rem;
+}
+
+/* Modal Styles */
+.modal-body h6 {
+    margin-top: 1rem;
+    margin-bottom: 0.75rem;
+    color: #495057;
+}
+
+.modal-body code {
+    background-color: #f8f9fa;
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
+    color: #e83e8c;
+}
+
+/* Acknowledgement History Styles */
+.acknowledgement-info {
+    font-size: 0.875rem;
+}
+
+.acknowledgement-info i {
+    color: #6c757d;
+}
+
+/* Breadcrumb Styles */
+.breadcrumb {
+    background-color: transparent;
+    padding: 0.5rem 0;
+}
+
+.breadcrumb-item a {
+    color: #0d6efd;
+    text-decoration: none;
+}
+
+.breadcrumb-item a:hover {
+    text-decoration: underline;
+}
+
+/* Alert Card Styles */
+.card {
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+}
+
+/* Status Badge Styles */
+.badge {
+    padding: 0.35em 0.65em;
+}
+
+.badge.bg-danger {
+    background-color: #dc3545 !important;
+}
+
+.badge.bg-success {
+    background-color: #198754 !important;
+}
+
+.badge.bg-warning {
+    background-color: #ffc107 !important;
+}
+
+.badge.bg-secondary {
+    background-color: #6c757d !important;
+}
+
+/* Button Styles */
+.btn-outline-info {
+    border-color: #0dcaf0;
+    color: #0dcaf0;
+}
+
+.btn-outline-info:hover {
+    background-color: #0dcaf0;
+    color: #fff;
+}
+
+.btn-outline-secondary {
+    border-color: #6c757d;
+    color: #6c757d;
+}
+
+.btn-outline-secondary:hover {
+    background-color: #6c757d;
+    color: #fff;
+} 
