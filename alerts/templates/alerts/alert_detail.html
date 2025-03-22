@@ -248,6 +248,12 @@
         </button>
     </li>
     <li class="nav-item" role="presentation">
+        <button class="nav-link {% if active_tab == 'ack_history' %}active{% endif %}" id="ack-history-tab" data-bs-toggle="tab" data-bs-target="#ack_history" type="button" role="tab" aria-controls="ack_history" aria-selected="{% if active_tab == 'ack_history' %}true{% else %}false{% endif %}">
+            <i class="bi bi-check-circle"></i> Acknowledgements
+            <span class="badge bg-secondary rounded-pill">{{ acknowledgement_history.count }}</span>
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
         <button class="nav-link {% if active_tab == 'docs' %}active{% endif %}" id="docs-tab" data-bs-toggle="tab" data-bs-target="#docs" type="button" role="tab" aria-controls="docs" aria-selected="{% if active_tab == 'docs' %}true{% else %}false{% endif %}">
             <i class="bi bi-book"></i> Documentation 
             <span class="badge bg-secondary rounded-pill">{{ linked_documentation|length }}</span>

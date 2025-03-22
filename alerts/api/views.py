@@ -123,7 +123,7 @@ class AlertGroupViewSet(viewsets.ReadOnlyModelViewSet):
                 )
                 
                 # Then, acknowledge the alert
-                acknowledge_alert(alert_group, request.user)
+                acknowledge_alert(alert_group, request.user, comment_text)
                 return Response({
                     'status': 'success',
                     'message': 'Alert acknowledged successfully with comment'

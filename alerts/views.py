@@ -157,6 +157,11 @@ class AlertDetailView(LoginRequiredMixin, DetailView):
             
         context['instances'] = instances
         
+        # Get acknowledgement history
+        context['acknowledgement_history'] = self.object.acknowledgement_history.select_related(
+            'acknowledged_by', 'alert_instance'
+        ).order_by('-acknowledged_at')
+        
         # Get comments
         context['comments'] = self.object.comments.all().order_by('-created_at')
         
@@ -191,7 +196,7 @@ class AlertDetailView(LoginRequiredMixin, DetailView):
                 )
                 
                 # Then acknowledge the alert
-                acknowledge_alert(alert, request.user)
+                acknowledge_alert(alert, request.user, comment_text)
                 
                 messages.success(request, "Alert has been acknowledged successfully.")
                 return redirect('alerts:alert-detail', fingerprint=alert.fingerprint)

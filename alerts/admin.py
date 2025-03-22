@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import AlertGroup, AlertInstance, AlertComment
+from .models import AlertGroup, AlertInstance, AlertComment, AlertAcknowledgementHistory
 
 
 @admin.register(AlertGroup)
@@ -26,3 +26,11 @@ class AlertCommentAdmin(admin.ModelAdmin):
     list_filter = ('created_at',)
     search_fields = ('alert_group__name', 'user__username', 'content')
     date_hierarchy = 'created_at'
+
+
+@admin.register(AlertAcknowledgementHistory)
+class AlertAcknowledgementHistoryAdmin(admin.ModelAdmin):
+    list_display = ('alert_group', 'alert_instance', 'acknowledged_by', 'acknowledged_at')
+    list_filter = ('acknowledged_at',)
+    search_fields = ('alert_group__name', 'acknowledged_by__username')
+    date_hierarchy = 'acknowledged_at'

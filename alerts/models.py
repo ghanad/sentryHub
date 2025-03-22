@@ -2,8 +2,6 @@ from django.db import models
 from django.utils import timezone
 
 
-# alerts/models.py - تغییرات در مدل AlertGroup
-
 class AlertGroup(models.Model):
     fingerprint = models.CharField(max_length=255, unique=True, db_index=True)
     name = models.CharField(max_length=255)
@@ -112,3 +110,37 @@ class AlertComment(models.Model):
     
     class Meta:
         ordering = ['-created_at']
+
+
+class AlertAcknowledgementHistory(models.Model):
+    """
+    Track the history of alert acknowledgements.
+    This helps in determining who acknowledged which instance of an alert.
+    """
+    alert_group = models.ForeignKey(
+        'AlertGroup',
+        on_delete=models.CASCADE,
+        related_name='acknowledgement_history'
+    )
+    alert_instance = models.ForeignKey(
+        'AlertInstance',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='acknowledgements'
+    )
+    acknowledged_by = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='alert_acknowledgements'
+    )
+    acknowledged_at = models.DateTimeField(auto_now_add=True)
+    comment = models.TextField(null=True, blank=True)
+    
+    def __str__(self):
+        instance_info = f" (Instance ID: {self.alert_instance.id})" if self.alert_instance else ""
+        return f"Acknowledgement by {self.acknowledged_by.username} on {self.alert_group.name}{instance_info}"
+    
+    class Meta:
+        ordering = ['-acknowledged_at']

@@ -4,8 +4,9 @@ import re
 import logging
 import json
 
-from ..models import AlertGroup, AlertInstance
+from ..models import AlertGroup, AlertInstance, AlertAcknowledgementHistory
 from docs.services.documentation_matcher import match_documentation_to_alert
+
 
 logger = logging.getLogger(__name__)
 
@@ -119,6 +120,18 @@ def process_firing_alert(alert_group, labels, fingerprint, starts_at, annotation
     
     # Check if there's an active firing instance
     active_instance = get_active_firing_instance(alert_group)
+    
+    # Reset acknowledgement if this is a new firing after a previous resolution
+    # This only happens if there are no active firing instances or if this is a new firing with a different start time
+    if (not active_instance) or (active_instance and active_instance.started_at != starts_at):
+        if alert_group.acknowledged:
+            # Reset acknowledgement state
+            alert_group.acknowledged = False
+            alert_group.acknowledged_by = None
+            alert_group.acknowledgement_time = None
+            # Log this action
+            logger.info(f"Reset acknowledgement for alert group: {alert_group.name} (ID: {alert_group.id}) due to new firing")
+            alert_group.save()
     
     if active_instance and active_instance.started_at != starts_at:
         # If the start times differ, close the old instance but mark it as inferred resolution
@@ -357,20 +370,41 @@ def try_match_documentation(alert_group):
     else:
         logger.info(f"No matching documentation found for alert '{alert_group.name}'")
 
-def acknowledge_alert(alert_group, user):
+def acknowledge_alert(alert_group, user, comment=None):
     """
     Acknowledge an alert.
     
     Args:
         alert_group (AlertGroup): The alert group to acknowledge
         user (User): The user who acknowledged the alert
+        comment (str, optional): Comment for acknowledgement
         
     Returns:
         AlertGroup: The updated alert group
     """
+    # Update alert group acknowledgement status
     alert_group.acknowledged = True
     alert_group.acknowledged_by = user
     alert_group.acknowledgement_time = timezone.now()
     alert_group.save()
+    
+    # Get the current active firing instance if any
+    active_instance = AlertInstance.objects.filter(
+        alert_group=alert_group,
+        status='firing',
+        ended_at__isnull=True
+    ).first()
+    
+    # Create acknowledgement history entry
+    AlertAcknowledgementHistory.objects.create(
+        alert_group=alert_group,
+        alert_instance=active_instance,
+        acknowledged_by=user,
+        comment=comment
+    )
+    
+    logger.info(f"Alert acknowledged: {alert_group.name} (ID: {alert_group.id}) by {user.username}")
+    if active_instance:
+        logger.info(f"Acknowledgement associated with instance ID: {active_instance.id}")
     
     return alert_group

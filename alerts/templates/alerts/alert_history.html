@@ -90,7 +90,7 @@
                 </div>
                 
                 <!-- Complete History Timeline -->
-                <h5 class="border-bottom pb-2 mb-3">Complete History</h5>
+                <h5 class="border-bottom pb-2 mb-3">Alert Instances History</h5>
                 <div class="table-responsive">
                     <table class="table table-bordered table-hover">
                         <thead class="table-light">
@@ -100,6 +100,7 @@
                                 <th>Started At</th>
                                 <th>Resolved At</th>
                                 <th>Duration</th>
+                                <th>Acknowledged</th>
                                 <th>Details</th>
                             </tr>
                         </thead>
@@ -138,6 +139,16 @@
                                         --
                                         {% endif %}
                                     </span>
+                                </td>
+                                <td>
+                                    {% with ack=instance.acknowledgements.first %}
+                                    {% if ack %}
+                                    <span class="badge bg-success">Yes</span>
+                                    <small>by <strong>{{ ack.acknowledged_by.username }}</strong> at {{ ack.acknowledged_at|date:"Y-m-d H:i" }}</small>
+                                    {% else %}
+                                    <span class="badge bg-secondary">No</span>
+                                    {% endif %}
+                                    {% endwith %}
                                 </td>
                                 <td>
                                     <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#instanceModal{{ instance.id }}">
@@ -208,6 +219,28 @@
                                                             </td>
                                                         </tr>
                                                     </table>
+                                                    
+                                                    {% with ack=instance.acknowledgements.first %}
+                                                    {% if ack %}
+                                                    <h6 class="mt-4">Acknowledgement Information</h6>
+                                                    <table class="table table-sm">
+                                                        <tr>
+                                                            <th>Acknowledged By</th>
+                                                            <td>{{ ack.acknowledged_by.username }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>Acknowledged At</th>
+                                                            <td>{{ ack.acknowledged_at|date:"Y-m-d H:i:s" }}</td>
+                                                        </tr>
+                                                        {% if ack.comment %}
+                                                        <tr>
+                                                            <th>Comment</th>
+                                                            <td>{{ ack.comment }}</td>
+                                                        </tr>
+                                                        {% endif %}
+                                                    </table>
+                                                    {% endif %}
+                                                    {% endwith %}
                                                 </div>
                                                 <div class="modal-footer">
                                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -219,7 +252,42 @@
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="5" class="text-center">No history available</td>
+                                <td colspan="7" class="text-center">No history available</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Acknowledgement History -->
+                <h5 class="border-bottom pb-2 mb-3 mt-4">Acknowledgement History</h5>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date & Time</th>
+                                <th>User</th>
+                                <th>Instance</th>
+                                <th>Comment</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ack in alert.acknowledgement_history.all %}
+                            <tr>
+                                <td>{{ ack.acknowledged_at|date:"Y-m-d H:i:s" }}</td>
+                                <td>{{ ack.acknowledged_by.username }}</td>
+                                <td>
+                                    {% if ack.alert_instance %}
+                                    <span class="badge bg-info">{{ ack.alert_instance.started_at|date:"Y-m-d H:i" }}</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Unknown</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ ack.comment|default:"No comment" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center">No acknowledgement history available</td>
                             </tr>
                             {% endfor %}
                         </tbody>
