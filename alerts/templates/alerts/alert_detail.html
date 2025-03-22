@@ -244,13 +244,7 @@
     </li>
     <li class="nav-item" role="presentation">
         <button class="nav-link {% if active_tab == 'history' %}active{% endif %}" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab" aria-controls="history" aria-selected="{% if active_tab == 'history' %}true{% else %}false{% endif %}">
-            <i class="bi bi-clock-history"></i> History
-        </button>
-    </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link {% if active_tab == 'ack_history' %}active{% endif %}" id="ack-history-tab" data-bs-toggle="tab" data-bs-target="#ack_history" type="button" role="tab" aria-controls="ack_history" aria-selected="{% if active_tab == 'ack_history' %}true{% else %}false{% endif %}">
-            <i class="bi bi-check-circle"></i> Acknowledgements
-            <span class="badge bg-secondary rounded-pill">{{ acknowledgement_history.count }}</span>
+            <i class="bi bi-clock-history"></i> History & Acknowledgements
         </button>
     </li>
     <li class="nav-item" role="presentation">
@@ -420,6 +414,7 @@
                         <th>Started</th>
                         <th>Resolved</th>
                         <th>Duration</th>
+                        <th>Acknowledged</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -462,6 +457,19 @@
                             </span>
                         </td>
                         <td>
+                            {% with ack=instance.acknowledgements.first %}
+                            {% if ack %}
+                            <span class="badge bg-success">Yes</span>
+                            <small>by <strong>{{ ack.acknowledged_by.username }}</strong></small>
+                            <a href="#" data-bs-toggle="tooltip" title="At {{ ack.acknowledged_at|date:'Y-m-d H:i:s' }}{% if ack.comment %} - Comment: {{ ack.comment }}{% endif %}">
+                                <i class="bi bi-info-circle"></i>
+                            </a>
+                            {% else %}
+                            <span class="badge bg-secondary">No</span>
+                            {% endif %}
+                            {% endwith %}
+                        </td>
+                        <td>
                             <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#instanceModal{{ instance.id }}">
                                 <i class="bi bi-info-circle"></i> Details
                             </button>
@@ -502,6 +510,56 @@
                                                     {% endfor %}
                                                 </tbody>
                                             </table>
+                                            
+                                            <h6 class="mt-4">Timing Information</h6>
+                                            <table class="table table-sm">
+                                                <tr>
+                                                    <th>Status</th>
+                                                    <td>
+                                                        {% if instance.status == 'firing' %}
+                                                        <span class="badge bg-danger">Firing</span>
+                                                        {% else %}
+                                                        <span class="badge bg-success">Resolved</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <th>Started At</th>
+                                                    <td>{{ instance.started_at|date:"Y-m-d H:i:s" }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <th>Ended At</th>
+                                                    <td>
+                                                        {% if instance.ended_at %}
+                                                        {{ instance.ended_at|date:"Y-m-d H:i:s" }}
+                                                        {% else %}
+                                                        <em>Still active</em>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                            
+                                            {% with ack=instance.acknowledgements.first %}
+                                            {% if ack %}
+                                            <h6 class="mt-4">Acknowledgement Information</h6>
+                                            <table class="table table-sm">
+                                                <tr>
+                                                    <th>Acknowledged By</th>
+                                                    <td>{{ ack.acknowledged_by.username }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <th>Acknowledged At</th>
+                                                    <td>{{ ack.acknowledged_at|date:"Y-m-d H:i:s" }}</td>
+                                                </tr>
+                                                {% if ack.comment %}
+                                                <tr>
+                                                    <th>Comment</th>
+                                                    <td>{{ ack.comment }}</td>
+                                                </tr>
+                                                {% endif %}
+                                            </table>
+                                            {% endif %}
+                                            {% endwith %}
                                         </div>
                                         <div class="modal-footer">
                                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -513,7 +571,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6" class="text-center">No history available</td>
+                        <td colspan="7" class="text-center">No history available</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -554,6 +612,47 @@
             </nav>
             {% endif %}
         </div>
+        
+        <!-- Acknowledgement History Section -->
+        {% if acknowledgement_history.exists %}
+        <h5 class="border-bottom pb-2 mb-3 mt-5">Complete Acknowledgement History</h5>
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> Below is the complete history of all acknowledgements for this alert. Each time this alert gets acknowledged, it's recorded here.
+        </div>
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date & Time</th>
+                        <th>User</th>
+                        <th>Alert Instance</th>
+                        <th>Comment</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ack in acknowledgement_history %}
+                    <tr>
+                        <td>{{ ack.acknowledged_at|date:"Y-m-d H:i:s" }}</td>
+                        <td>{{ ack.acknowledged_by.username }}</td>
+                        <td>
+                            {% if ack.alert_instance %}
+                            Instance from {{ ack.alert_instance.started_at|date:"Y-m-d H:i" }}
+                            {% if ack.alert_instance.ended_at %}
+                            to {{ ack.alert_instance.ended_at|date:"Y-m-d H:i" }}
+                            {% else %}
+                            (still active)
+                            {% endif %}
+                            {% else %}
+                            <span class="badge bg-secondary">Unknown instance</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ ack.comment|default:"No comment provided" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
     </div>
     
     <!-- Documentation Tab -->
@@ -756,6 +855,12 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+
     // Function to format duration
     function formatDuration(seconds) {
         if (seconds < 60) {

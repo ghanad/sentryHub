@@ -89,7 +89,7 @@
                     </div>
                 </div>
                 
-                <!-- Complete History Timeline -->
+                <!-- Alert Instances History Timeline -->
                 <h5 class="border-bottom pb-2 mb-3">Alert Instances History</h5>
                 <div class="table-responsive">
                     <table class="table table-bordered table-hover">
@@ -144,7 +144,10 @@
                                     {% with ack=instance.acknowledgements.first %}
                                     {% if ack %}
                                     <span class="badge bg-success">Yes</span>
-                                    <small>by <strong>{{ ack.acknowledged_by.username }}</strong> at {{ ack.acknowledged_at|date:"Y-m-d H:i" }}</small>
+                                    <small>by <strong>{{ ack.acknowledged_by.username }}</strong></small>
+                                    <a href="#" data-bs-toggle="tooltip" title="At {{ ack.acknowledged_at|date:'Y-m-d H:i:s' }}{% if ack.comment %} - Comment: {{ ack.comment }}{% endif %}">
+                                        <i class="bi bi-info-circle"></i>
+                                    </a>
                                     {% else %}
                                     <span class="badge bg-secondary">No</span>
                                     {% endif %}
@@ -259,15 +262,19 @@
                     </table>
                 </div>
                 
-                <!-- Acknowledgement History -->
-                <h5 class="border-bottom pb-2 mb-3 mt-4">Acknowledgement History</h5>
+                <!-- Acknowledgement History Section -->
+                {% if alert.acknowledgement_history.exists %}
+                <h5 class="border-bottom pb-2 mb-3 mt-5">Complete Acknowledgement History</h5>
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> Below is the complete history of all acknowledgements for this alert. Each time this alert gets acknowledged, it's recorded here.
+                </div>
                 <div class="table-responsive">
                     <table class="table table-bordered table-hover">
                         <thead class="table-light">
                             <tr>
                                 <th>Date & Time</th>
                                 <th>User</th>
-                                <th>Instance</th>
+                                <th>Alert Instance</th>
                                 <th>Comment</th>
                             </tr>
                         </thead>
@@ -278,12 +285,17 @@
                                 <td>{{ ack.acknowledged_by.username }}</td>
                                 <td>
                                     {% if ack.alert_instance %}
-                                    <span class="badge bg-info">{{ ack.alert_instance.started_at|date:"Y-m-d H:i" }}</span>
+                                    Instance from {{ ack.alert_instance.started_at|date:"Y-m-d H:i" }}
+                                    {% if ack.alert_instance.ended_at %}
+                                    to {{ ack.alert_instance.ended_at|date:"Y-m-d H:i" }}
                                     {% else %}
-                                    <span class="badge bg-secondary">Unknown</span>
+                                    (still active)
+                                    {% endif %}
+                                    {% else %}
+                                    <span class="badge bg-secondary">Unknown instance</span>
                                     {% endif %}
                                 </td>
-                                <td>{{ ack.comment|default:"No comment" }}</td>
+                                <td>{{ ack.comment|default:"No comment provided" }}</td>
                             </tr>
                             {% empty %}
                             <tr>
@@ -293,6 +305,7 @@
                         </tbody>
                     </table>
                 </div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -302,6 +315,12 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+    
     // Function to format duration
     function formatDuration(seconds) {
         if (seconds < 60) {
