@@ -1,6 +1,6 @@
 from django.urls import path, include
+from core.views import DashboardView
 from .views import (
-    DashboardView,
     AlertListView,
     AlertDetailView,
     AlertHistoryView,
