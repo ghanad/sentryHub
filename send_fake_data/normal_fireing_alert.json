@@ -37,7 +37,8 @@
             "endsAt": "2025-03-21T10:10:47.348Z",
             "generatorURL": "http://DESKTOP-JSRUK7R:9090/graph?g0.expr=up+%21%3D+1&g0.tab=1",
             "fingerprint": "354d7ef36cec3766"
-        },        {
+        },
+        {
             "status": "firing",
             "labels": {
                 "alertname": "NodeDown",
