@@ -7,6 +7,17 @@ DocumentationAlertGroup.objects.all().delete()
 AlertGroup.objects.all().delete()
 AlertDocumentation.objects.all().delete()
 
+# Remove all comments from database
+from alerts.models import AlertComment
+comments = AlertComment.objects.all()
+for comment in comments:
+    print(f"Deleting comment id {comment.id}")
+    comment.delete()
+
+# Remove all acknowledgements from database
+from alerts.models import AlertAcknowledgementHistory
+AlertAcknowledgementHistory.objects.all().delete()
+
 
 
 # query on database
