@@ -64,7 +64,28 @@
         // Handle messages from Django messages framework
         {% if messages %}
             {% for message in messages %}
-                toastr.{{ message.tags }}("{{ message|escapejs }}");
+                var messageText = "{{ message|escapejs }}";
+                // Remove any quotes and brackets if present (happens with JSON-like strings)
+                if (messageText.startsWith("{") || messageText.startsWith("'") || messageText.startsWith("\"")) {
+                    try {
+                        // Try to extract message from JSON-like string
+                        var match = messageText.match(/['"]message['"]:\s*['"]([^'"]+)['"]/);
+                        if (match && match[1]) {
+                            messageText = match[1];
+                        }
+                    } catch (e) {
+                        console.error("Error processing message:", e);
+                    }
+                }
+                
+                // Get the correct message tag (success, error, etc.)
+                var tag = "{{ message.tags }}";
+                if (tag.indexOf(' ') > -1) {
+                    tag = tag.split(' ')[0];  // Get first tag if multiple
+                }
+                
+                // Display the message
+                toastr[tag](messageText);
             {% endfor %}
         {% endif %}
     });
@@ -72,4 +93,4 @@
     
     {% block extra_js %}{% endblock %}
 </body>
-</html> 
+</html>
