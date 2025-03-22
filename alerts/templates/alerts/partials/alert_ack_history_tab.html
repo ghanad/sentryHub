@@ -1,0 +1,54 @@
+<!-- Acknowledgement History Tab -->
+<div class="tab-pane fade {% if active_tab == 'ack_history' %}show active{% endif %}" id="ack_history" role="tabpanel" aria-labelledby="ack-history-tab">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Complete Acknowledgement History</h5>
+    </div>
+    
+    <!-- <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i> Below is the complete history of all acknowledgements for this alert. Each time this alert gets acknowledged, it's recorded here.
+    </div> -->
+    
+    {% if acknowledgement_history.exists %}
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th>Date & Time</th>
+                    <th>User</th>
+                    <th>Alert Instance</th>
+                    <th>Comment</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ack in acknowledgement_history %}
+                <tr>
+                    <td>{{ ack.acknowledged_at|date:"Y-m-d H:i:s" }}</td>
+                    <td>{{ ack.acknowledged_by.username }}</td>
+                    <td>
+                        {% if ack.alert_instance %}
+                        Instance from {{ ack.alert_instance.started_at|date:"Y-m-d H:i" }}
+                        {% if ack.alert_instance.ended_at %}
+                        to {{ ack.alert_instance.ended_at|date:"Y-m-d H:i" }}
+                        {% else %}
+                        (still active)
+                        {% endif %}
+                        {% else %}
+                        <span class="badge bg-secondary">Unknown instance</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ ack.comment|default:"No comment provided" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="text-center">No acknowledgement history available</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle"></i> No acknowledgement history is available for this alert.
+    </div>
+    {% endif %}
+</div>

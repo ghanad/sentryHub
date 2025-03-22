@@ -211,45 +211,4 @@
         </nav>
         {% endif %}
     </div>
-    
-    <!-- Acknowledgement History Section -->
-    {% if acknowledgement_history.exists %}
-    <h5 class="border-bottom pb-2 mb-3 mt-5">Complete Acknowledgement History</h5>
-    <div class="alert alert-info">
-        <i class="bi bi-info-circle"></i> Below is the complete history of all acknowledgements for this alert. Each time this alert gets acknowledged, it's recorded here.
-    </div>
-    <div class="table-responsive">
-        <table class="table table-bordered table-hover">
-            <thead class="table-light">
-                <tr>
-                    <th>Date & Time</th>
-                    <th>User</th>
-                    <th>Alert Instance</th>
-                    <th>Comment</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for ack in acknowledgement_history %}
-                <tr>
-                    <td>{{ ack.acknowledged_at|date:"Y-m-d H:i:s" }}</td>
-                    <td>{{ ack.acknowledged_by.username }}</td>
-                    <td>
-                        {% if ack.alert_instance %}
-                        Instance from {{ ack.alert_instance.started_at|date:"Y-m-d H:i" }}
-                        {% if ack.alert_instance.ended_at %}
-                        to {{ ack.alert_instance.ended_at|date:"Y-m-d H:i" }}
-                        {% else %}
-                        (still active)
-                        {% endif %}
-                        {% else %}
-                        <span class="badge bg-secondary">Unknown instance</span>
-                        {% endif %}
-                    </td>
-                    <td>{{ ack.comment|default:"No comment provided" }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% endif %}
-</div> 
+</div>
