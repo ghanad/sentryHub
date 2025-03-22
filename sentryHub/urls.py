@@ -1,3 +1,5 @@
+# sentryHub/urls.py (updated)
+
 """
 sentryHub URL Configuration
 """
@@ -14,6 +16,7 @@ urlpatterns = [
     path('api-auth/', include('rest_framework.urls')),
     path('docs/', include('docs.urls', namespace='docs')),
     path('tinymce/', include('tinymce.urls')),
+    path('admin-dashboard/', include('admin_dashboard.urls', namespace='admin_dashboard')),
 ]
 
 # Change admin site header

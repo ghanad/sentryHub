@@ -34,6 +34,29 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'docs:documentation-list' %}">Documentation</a>
                     </li>
+                    {% if user.is_staff %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" 
+                           data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-shield-lock"></i> Admin
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="adminDropdown">
+                            <li><a class="dropdown-item" href="{% url 'admin_dashboard:dashboard' %}">
+                                <i class="bi bi-speedometer2"></i> Admin Dashboard
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'admin_dashboard:comments' %}">
+                                <i class="bi bi-chat-dots"></i> Manage Comments
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'admin_dashboard:acknowledgements' %}">
+                                <i class="bi bi-check-circle"></i> Manage Acknowledgements
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/admin/">
+                                <i class="bi bi-gear"></i> Django Admin
+                            </a></li>
+                        </ul>
+                    </li>
+                    {% endif %}
                 </ul>
             </div>
         </div>

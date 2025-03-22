@@ -1,0 +1,148 @@
+{# Path: admin_dashboard/templates/admin_dashboard/dashboard.html #}
+{% extends "admin_dashboard/base.html" %}
+
+{% block title %}Admin Dashboard - SentryHub{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="mb-4">Admin Dashboard</h1>
+        <p class="lead">Welcome to the SentryHub admin dashboard. Here you can manage and monitor system activity.</p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <!-- Stats Cards -->
+    <div class="col-md-4 mb-3">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <h5 class="card-title">Total Comments</h5>
+                <div class="display-4">{{ total_comments }}</div>
+                <a href="{% url 'admin_dashboard:comments' %}" class="btn btn-sm btn-primary mt-3">View All Comments</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <h5 class="card-title">Total Acknowledgements</h5>
+                <div class="display-4">{{ total_acknowledgements }}</div>
+                <a href="{% url 'admin_dashboard:acknowledgements' %}" class="btn btn-sm btn-primary mt-3">View All Acknowledgements</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <h5 class="card-title">Admin Actions</h5>
+                <ul class="list-group mt-3">
+                    <li class="list-group-item"><a href="{% url 'admin_dashboard:comments' %}">Manage Comments</a></li>
+                    <li class="list-group-item"><a href="{% url 'admin_dashboard:acknowledgements' %}">Manage Acknowledgements</a></li>
+                    <li class="list-group-item"><a href="#">User Management</a></li>
+                    <li class="list-group-item"><a href="#">System Settings</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Recent Comments</h5>
+                <a href="{% url 'admin_dashboard:comments' %}" class="btn btn-sm btn-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if recent_comments %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Alert</th>
+                                <th>User</th>
+                                <th>Comment</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for comment in recent_comments %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'alerts:alert-detail' comment.alert_group.fingerprint %}">
+                                        {{ comment.alert_group.name }}
+                                    </a>
+                                </td>
+                                <td>{{ comment.user.username }}</td>
+                                <td>{{ comment.content|truncatechars:50 }}</td>
+                                <td>{{ comment.created_at|date:"Y-m-d H:i:s" }}</td>
+                                <td>
+                                    <a href="{% url 'alerts:alert-detail' comment.alert_group.fingerprint %}?tab=comments" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i> View
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">No comments found in the system.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Recent Acknowledgements</h5>
+                <a href="{% url 'admin_dashboard:acknowledgements' %}" class="btn btn-sm btn-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if recent_acknowledgements %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Alert</th>
+                                <th>User</th>
+                                <th>Comment</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ack in recent_acknowledgements %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'alerts:alert-detail' ack.alert_group.fingerprint %}">
+                                        {{ ack.alert_group.name }}
+                                    </a>
+                                </td>
+                                <td>{{ ack.acknowledged_by.username }}</td>
+                                <td>{{ ack.comment|default:"No comment"|truncatechars:50 }}</td>
+                                <td>{{ ack.acknowledged_at|date:"Y-m-d H:i:s" }}</td>
+                                <td>
+                                    <a href="{% url 'alerts:alert-detail' ack.alert_group.fingerprint %}?tab=ack_history" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i> View
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">No acknowledgements found in the system.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

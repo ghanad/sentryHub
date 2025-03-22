@@ -1,0 +1,99 @@
+{# Path: admin_dashboard/templates/admin_dashboard/base.html #}
+{% extends "alerts/base.html" %}
+
+{% block extra_css %}
+<style>
+    .admin-sidebar {
+        background-color: #212529;
+        color: #fff;
+        min-height: calc(100vh - 56px);
+    }
+    .admin-sidebar .nav-link {
+        color: rgba(255, 255, 255, 0.75);
+        padding: 0.5rem 1rem;
+        border-radius: 0;
+    }
+    .admin-sidebar .nav-link:hover {
+        color: rgba(255, 255, 255, 1);
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+    .admin-sidebar .nav-link.active {
+        color: #fff;
+        background-color: #0d6efd;
+    }
+    .admin-content {
+        padding: 1.5rem;
+    }
+    .admin-header {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        border-radius: 0.25rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 d-md-block bg-dark sidebar admin-sidebar collapse">
+            <div class="position-sticky">
+                <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                    <span>Admin Panel</span>
+                </h6>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'admin_dashboard:dashboard' %}">
+                            <i class="bi bi-speedometer2 me-2"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'comments' %}active{% endif %}" href="{% url 'admin_dashboard:comments' %}">
+                            <i class="bi bi-chat-dots me-2"></i> Comments
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'acknowledgements' %}active{% endif %}" href="{% url 'admin_dashboard:acknowledgements' %}">
+                            <i class="bi bi-check-circle me-2"></i> Acknowledgements
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            <i class="bi bi-people me-2"></i> Users
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            <i class="bi bi-gear me-2"></i> Settings
+                        </a>
+                    </li>
+                </ul>
+                
+                <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                    <span>System</span>
+                </h6>
+                <ul class="nav flex-column mb-2">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'alerts:dashboard' %}">
+                            <i class="bi bi-arrow-left-circle me-2"></i> Return to SentryHub
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/">
+                            <i class="bi bi-shield-lock me-2"></i> Django Admin
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Main content -->
+        <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4 admin-content">
+            {% block admin_content %}
+                {{ block.super }}
+            {% endblock %}
+        </div>
+    </div>
+</div>
+{% endblock %}

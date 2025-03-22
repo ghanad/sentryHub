@@ -1,0 +1,119 @@
+/* Path: admin_dashboard/static/admin_dashboard/css/admin.css */
+
+/* Admin Dashboard Styles */
+.admin-header {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    border-radius: 0.25rem;
+}
+
+/* Admin Card Styles */
+.admin-card {
+    transition: transform 0.3s;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.admin-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.admin-stat {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #0d6efd;
+}
+
+/* Admin Sidebar Styles */
+.admin-sidebar {
+    background-color: #212529;
+    color: #fff;
+    min-height: calc(100vh - 56px);
+}
+
+.admin-sidebar .nav-link {
+    color: rgba(255, 255, 255, 0.75);
+    padding: 0.5rem 1rem;
+    border-radius: 0;
+}
+
+.admin-sidebar .nav-link:hover {
+    color: rgba(255, 255, 255, 1);
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.admin-sidebar .nav-link.active {
+    color: #fff;
+    background-color: #0d6efd;
+}
+
+/* Admin Table Styles */
+.admin-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.admin-table tbody tr {
+    transition: background-color 0.2s;
+}
+
+.admin-table tbody tr:hover {
+    background-color: rgba(13, 110, 253, 0.1);
+}
+
+/* Admin Content Section */
+.admin-content {
+    padding: 1.5rem;
+}
+
+/* Admin Action Buttons */
+.admin-actions .btn {
+    margin-right: 0.5rem;
+}
+
+/* Admin Dropdown Menu */
+.admin-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.admin-dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #f9f9f9;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1;
+    right: 0;
+}
+
+.admin-dropdown-content a {
+    color: black;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+}
+
+.admin-dropdown-content a:hover {
+    background-color: #f1f1f1;
+}
+
+.admin-dropdown:hover .admin-dropdown-content {
+    display: block;
+}
+
+/* Admin Filter Form */
+.admin-filter-form label {
+    font-weight: 600;
+}
+
+/* Admin Pagination */
+.admin-pagination .page-link {
+    color: #0d6efd;
+}
+
+.admin-pagination .page-item.active .page-link {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}

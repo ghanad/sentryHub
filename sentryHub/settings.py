@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     # Project apps
     'alerts',
     'docs',
+    'admin_dashboard',
 ]
 
 MIDDLEWARE = [
