@@ -1,0 +1,94 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% load core_tags %}
+
+{% block title %}Welcome to SentryHub{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1 class="display-4">Welcome to SentryHub</h1>
+        <p class="lead">Your centralized platform for monitoring and managing system alerts.</p>
+        <p>SentryHub provides a comprehensive solution for tracking, analyzing, and responding to system alerts across your infrastructure.</p>
+    </div>
+    <div class="col-md-4 text-center">
+        <img src="{% static 'core/img/logo.png' %}" alt="SentryHub Logo" class="img-fluid" style="max-height: 150px;">
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2>System Overview</h2>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Active Alerts</h5>
+                        <p class="card-text display-6">{{ active_alerts_count|default:"0" }}</p>
+                        <a href="{% url 'alerts:alert-list' %}" class="btn btn-primary">View Alerts</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">System Status</h5>
+                        <p class="card-text">
+                            <span class="badge bg-{{ system_status_color|default:'success' }}">
+                                {{ system_status|default:'Healthy' }}
+                            </span>
+                        </p>
+                        <a href="{% url 'alerts:dashboard' %}" class="btn btn-primary">View Dashboard</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Recent Updates</h5>
+                        <p class="card-text">{{ last_update|time_ago|default:'No recent updates' }}</p>
+                        <a href="{% url 'docs:documentation-list' %}" class="btn btn-primary">View Documentation</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <h3>Recent Alerts</h3>
+        <div class="list-group">
+            {% for alert in recent_alerts|slice:":5" %}
+            <a href="{% url 'alerts:alert-detail' alert.id %}" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1">{{ alert.title }}</h5>
+                    <small>{{ alert.created_at|time_ago }}</small>
+                </div>
+                <p class="mb-1">{{ alert.description|truncatewords:20 }}</p>
+                <small>Status: {{ alert.status|status_badge }}</small>
+            </a>
+            {% empty %}
+            <p class="text-muted">No recent alerts</p>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="col-md-6">
+        <h3>Quick Links</h3>
+        <div class="list-group">
+            <a href="{% url 'alerts:dashboard' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+            <a href="{% url 'alerts:alert-list' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-exclamation-triangle"></i> All Alerts
+            </a>
+            <a href="{% url 'docs:documentation-list' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-book"></i> Documentation
+            </a>
+            <a href="{% url 'core:about' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-info-circle"></i> About SentryHub
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %} 

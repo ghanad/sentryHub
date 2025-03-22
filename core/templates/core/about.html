@@ -1,0 +1,81 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}About SentryHub{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1 class="display-4">About SentryHub</h1>
+        <p class="lead">A comprehensive alert management system for modern infrastructure.</p>
+        
+        <div class="card mb-4">
+            <div class="card-body">
+                <h2>Our Mission</h2>
+                <p>SentryHub aims to simplify the process of monitoring and managing system alerts across your infrastructure. We provide a centralized platform that helps teams respond quickly and effectively to system issues.</p>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h2>Key Features</h2>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item">
+                        <i class="bi bi-check-circle-fill text-success"></i> Real-time alert monitoring
+                    </li>
+                    <li class="list-group-item">
+                        <i class="bi bi-check-circle-fill text-success"></i> Customizable alert rules
+                    </li>
+                    <li class="list-group-item">
+                        <i class="bi bi-check-circle-fill text-success"></i> Team collaboration tools
+                    </li>
+                    <li class="list-group-item">
+                        <i class="bi bi-check-circle-fill text-success"></i> Comprehensive documentation
+                    </li>
+                    <li class="list-group-item">
+                        <i class="bi bi-check-circle-fill text-success"></i> Advanced analytics and reporting
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <h2>Contact Us</h2>
+                <p>Have questions or need support? Our team is here to help.</p>
+                <a href="mailto:support@sentryhub.com" class="btn btn-primary">
+                    <i class="bi bi-envelope"></i> Contact Support
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h3>System Status</h3>
+                <p>Current Version: 1.0.0</p>
+                <p>Last Updated: {% now "F j, Y" %}</p>
+                <p>Support Status: Active</p>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-body">
+                <h3>Quick Links</h3>
+                <div class="list-group">
+                    <a href="{% url 'docs:documentation-list' %}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-book"></i> Documentation
+                    </a>
+                    <a href="{% url 'alerts:dashboard' %}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
+                    <a href="{% url 'admin_dashboard:dashboard' %}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-shield-lock"></i> Admin Panel
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

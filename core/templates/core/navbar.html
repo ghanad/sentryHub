@@ -1,0 +1,69 @@
+{% load static %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+        <a class="navbar-brand" href="{% url 'core:home' %}">
+            <img src="{% static 'core/img/logo.png' %}" alt="SentryHub" height="30">
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.namespace == 'core' and request.resolver_match.url_name == 'home' %}active{% endif %}" 
+                       href="{% url 'core:home' %}">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.namespace == 'alerts' %}active{% endif %}" 
+                       href="{% url 'alerts:dashboard' %}">Alerts</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.namespace == 'docs' %}active{% endif %}" 
+                       href="{% url 'docs:documentation-list' %}">Documentation</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.namespace == 'core' and request.resolver_match.url_name == 'about' %}active{% endif %}" 
+                       href="{% url 'core:about' %}">About</a>
+                </li>
+            </ul>
+            <ul class="navbar-nav">
+                {% if user.is_authenticated %}
+                    {% if user.is_staff %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" 
+                           data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-shield-lock"></i> Admin
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="adminDropdown">
+                            <li><a class="dropdown-item" href="{% url 'admin_dashboard:dashboard' %}">
+                                <i class="bi bi-speedometer2"></i> Admin Dashboard
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'admin_dashboard:comments' %}">
+                                <i class="bi bi-chat-dots"></i> Manage Comments
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'admin_dashboard:acknowledgements' %}">
+                                <i class="bi bi-check-circle"></i> Manage Acknowledgements
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/admin/">
+                                <i class="bi bi-gear"></i> Django Admin
+                            </a></li>
+                        </ul>
+                    </li>
+                    {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'logout' %}">
+                            <i class="bi bi-box-arrow-right"></i> Logout
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'login' %}">
+                            <i class="bi bi-box-arrow-in-right"></i> Login
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav> 

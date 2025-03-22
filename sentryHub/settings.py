@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     'tinymce',
     
     # Project apps
+    'core.apps.CoreConfig',
     'alerts',
     'docs',
     'admin_dashboard',
@@ -170,7 +171,7 @@ REST_FRAMEWORK = {
 
 # Login/Logout URLs
 LOGIN_URL = '/admin/login/'
-LOGIN_REDIRECT_URL = '/'
+LOGIN_REDIRECT_URL = '/' 
 LOGOUT_REDIRECT_URL = '/admin/login/'
 
 # API Webhook settings - for production, this should require authentication
