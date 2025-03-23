@@ -5,14 +5,14 @@ from django.utils import timezone
 from datetime import timedelta
 from alerts.models import AlertGroup
 from django.db.models.functions import TruncHour
+from django.shortcuts import redirect
 
-class HomeView(TemplateView):
+class HomeView(LoginRequiredMixin, TemplateView):
     template_name = 'core/home.html'
     
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        # Add any context data needed for the home page
-        return context
+    def get(self, request, *args, **kwargs):
+        # Redirect to alerts dashboard
+        return redirect('alerts:dashboard')
 
 class AboutView(TemplateView):
     template_name = 'core/about.html'
