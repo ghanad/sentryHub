@@ -1,7 +1,6 @@
 // Function to handle comment submission
-function submitComment(alertId) {
-    const commentForm = document.getElementById(`comment-form-${alertId}`);
-    const commentText = document.getElementById(`comment-text-${alertId}`).value;
+function submitComment(form) {
+    const commentText = form.querySelector('textarea[name="content"]').value;
     
     if (!commentText.trim()) {
         SentryNotification.warning('Please enter a comment before submitting.');
@@ -11,32 +10,47 @@ function submitComment(alertId) {
     // Get CSRF token from cookie
     const csrftoken = getCookie('csrftoken');
 
+    // Get the alert fingerprint from the URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const fingerprint = urlParams.get('fingerprint');
+
     // Send the comment to the server
-    fetch(`/alerts/${alertId}/add-comment/`, {
+    fetch(window.location.href, {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': csrftoken
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrftoken,
+            'X-Requested-With': 'XMLHttpRequest'
         },
-        body: JSON.stringify({
-            text: commentText
+        body: new URLSearchParams({
+            'content': commentText,
+            'comment': '1',
+            'csrfmiddlewaretoken': csrftoken
         })
     })
     .then(response => response.json())
     .then(data => {
         if (data.status === 'success') {
             // Clear the comment input
-            document.getElementById(`comment-text-${alertId}`).value = '';
+            form.querySelector('textarea[name="content"]').value = '';
             
             // Check if we're on the first page before attempting to add the comment to the UI
-            const urlParams = new URLSearchParams(window.location.search);
             const currentPage = parseInt(urlParams.get('comments_page') || '1');
             
             if (currentPage === 1) {
                 // Add the new comment to the list
-                const commentsList = document.getElementById(`comments-list-${alertId}`);
-                const newComment = createCommentElement(data.comment);
+                const commentsList = document.getElementById('comments-list');
+                const newComment = createCommentElement({
+                    user: data.user,
+                    text: data.content
+                });
                 commentsList.insertBefore(newComment, commentsList.firstChild);
+                
+                // Remove the "no comments" message if it exists
+                const noCommentsMessage = document.getElementById('no-comments-message');
+                if (noCommentsMessage) {
+                    noCommentsMessage.remove();
+                }
                 
                 // Update comment count
                 const commentCountElement = document.getElementById('comments-count');
@@ -53,11 +67,11 @@ function submitComment(alertId) {
                 viewNewCommentLink.className = 'alert alert-info mt-3';
                 viewNewCommentLink.innerHTML = `
                     <p class="mb-0">Your comment was added successfully. 
-                    <a href="?fingerprint=${alertId}&tab=comments&comments_page=1">
+                    <a href="?fingerprint=${fingerprint}&tab=comments&comments_page=1">
                         View your comment on the first page
                     </a>.</p>
                 `;
-                document.getElementById(`comments-list-${alertId}`).before(viewNewCommentLink);
+                document.getElementById('comments-list').before(viewNewCommentLink);
                 
                 // Show success notification
                 SentryNotification.success('Comment added successfully.');
@@ -117,11 +131,10 @@ function getCookie(name) {
 // Initialize comment forms when the document is ready
 document.addEventListener('DOMContentLoaded', function() {
     // Add event listeners to all comment forms
-    document.querySelectorAll('[id^="comment-form-"]').forEach(form => {
+    document.querySelectorAll('.comment-form').forEach(form => {
         form.addEventListener('submit', function(e) {
             e.preventDefault();
-            const alertId = this.id.split('-')[2];
-            submitComment(alertId);
+            submitComment(this);
         });
     });
 }); 
