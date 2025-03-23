@@ -1,36 +1,8 @@
-{# Path: admin_dashboard/templates/admin_dashboard/base.html #}
 {% extends "alerts/base.html" %}
+{% load static %}
 
 {% block extra_css %}
-<style>
-    .admin-sidebar {
-        background-color: #212529;
-        color: #fff;
-        min-height: calc(100vh - 56px);
-    }
-    .admin-sidebar .nav-link {
-        color: rgba(255, 255, 255, 0.75);
-        padding: 0.5rem 1rem;
-        border-radius: 0;
-    }
-    .admin-sidebar .nav-link:hover {
-        color: rgba(255, 255, 255, 1);
-        background-color: rgba(255, 255, 255, 0.1);
-    }
-    .admin-sidebar .nav-link.active {
-        color: #fff;
-        background-color: #0d6efd;
-    }
-    .admin-content {
-        padding: 1.5rem;
-    }
-    .admin-header {
-        background-color: #f8f9fa;
-        padding: 1rem;
-        margin-bottom: 1.5rem;
-        border-radius: 0.25rem;
-    }
-</style>
+<link rel="stylesheet" href="{% static 'admin_dashboard/css/admin.css' %}">
 {% endblock %}
 
 {% block content %}
