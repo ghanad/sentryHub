@@ -1,147 +1,90 @@
-// File: /static/alerts/js/revised-comments.js
+// Function to handle comment submission
+function submitComment(alertId) {
+    const commentForm = document.getElementById(`comment-form-${alertId}`);
+    const commentText = document.getElementById(`comment-text-${alertId}`).value;
+    
+    if (!commentText.trim()) {
+        SentryNotification.warning('Please enter a comment before submitting.');
+        return;
+    }
+
+    // Get CSRF token from cookie
+    const csrftoken = getCookie('csrftoken');
+
+    // Send the comment to the server
+    fetch(`/alerts/${alertId}/add-comment/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({
+            text: commentText
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Clear the comment input
+            document.getElementById(`comment-text-${alertId}`).value = '';
+            
+            // Add the new comment to the comments list
+            const commentsList = document.getElementById(`comments-list-${alertId}`);
+            const newComment = createCommentElement(data.comment);
+            commentsList.insertBefore(newComment, commentsList.firstChild);
+            
+            // Show success notification
+            SentryNotification.success('Comment added successfully.');
+        } else {
+            SentryNotification.error(data.errors || 'Error adding comment.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        SentryNotification.error('Error adding comment. Please try again.');
+    });
+}
+
+// Function to create a comment element
+function createCommentElement(comment) {
+    const commentDiv = document.createElement('div');
+    commentDiv.className = 'comment mb-3';
+    commentDiv.innerHTML = `
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <strong>${comment.user}</strong>
+                <small class="text-muted ms-2">${comment.created_at}</small>
+            </div>
+        </div>
+        <p class="mb-0">${comment.text}</p>
+    `;
+    return commentDiv;
+}
+
+// Function to get CSRF token from cookie
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Initialize comment forms when the document is ready
 document.addEventListener('DOMContentLoaded', function() {
-    // Clear any existing toastr notifications first
-    if (typeof toastr !== 'undefined') {
-        toastr.clear();
-    }
-
-    // Function to detect Persian text
-    function isPersianText(text) {
-        // Persian Unicode range: \u0600-\u06FF
-        const persianRegex = /[\u0600-\u06FF]/;
-        return persianRegex.test(text);
-    }
-
-    // Function to set text direction based on content
-    function setTextDirection(element) {
-        if (isPersianText(element.textContent)) {
-            element.style.direction = 'rtl';
-            element.style.textAlign = 'right';
-        } else {
-            element.style.direction = 'ltr';
-            element.style.textAlign = 'left';
-        }
-    }
-
-    // Function to handle input direction
-    function handleInputDirection(event) {
-        const textarea = event.target;
-        if (isPersianText(textarea.value)) {
-            textarea.style.direction = 'rtl';
-            textarea.style.textAlign = 'right';
-        } else {
-            textarea.style.direction = 'ltr';
-            textarea.style.textAlign = 'left';
-        }
-    }
-
-    // Apply RTL detection to existing comments
-    document.querySelectorAll('.comment-content').forEach(setTextDirection);
-
-    // Add input event listener to comment textarea
-    const commentTextarea = document.querySelector('#commentText');
-    if (commentTextarea) {
-        commentTextarea.addEventListener('input', handleInputDirection);
-        // Set initial direction
-        handleInputDirection({ target: commentTextarea });
-    }
-
-    // Handle comment form submission
-    const commentForm = document.getElementById('commentForm');
-    if (commentForm) {
-        commentForm.addEventListener('submit', function(e) {
+    // Add event listeners to all comment forms
+    document.querySelectorAll('[id^="comment-form-"]').forEach(form => {
+        form.addEventListener('submit', function(e) {
             e.preventDefault();
-            e.stopPropagation(); // Prevent other handlers from catching this event
-            
-            const submitButton = this.querySelector('button[type="submit"]');
-            submitButton.disabled = true;
-            
-            const formData = new FormData(this);
-            formData.append('comment', 'true');
-            
-            fetch(window.location.href, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    // Clear all existing toasts first
-                    toastr.clear();
-                    
-                    // Then show success message
-                    toastr.success("Comment added successfully.");
-                    
-                    // Clear the form
-                    this.reset();
-                    
-                    // Add the new comment to the list
-                    const commentsContainer = document.getElementById('comments-list');
-                    
-                    // Remove the "no comments" message if it exists
-                    const noCommentsMessage = document.getElementById('no-comments-message');
-                    if (noCommentsMessage) {
-                        noCommentsMessage.remove();
-                    }
-                    
-                    // Create a new comment element
-                    const newComment = document.createElement('div');
-                    newComment.className = 'comment-item card border-0 border-start border-light-subtle ps-2 mb-1 rounded-0 hover-bg-light transition-all';
-                    newComment.setAttribute('role', 'listitem');
-                    newComment.innerHTML = `
-                        <div class="card-body py-0.5 px-2">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div class="d-flex align-items-center">
-                                    <span class="badge bg-light text-dark me-2 small">
-                                        ${data.user}
-                                    </span>
-                                    <small class="text-muted">
-                                        <i class="bi bi-clock me-1" aria-hidden="true"></i>
-                                        Just now
-                                    </small>
-                                </div>
-                            </div>
-                            <div class="comment-content small lh-1.3">
-                                ${data.content}
-                            </div>
-                        </div>
-                    `;
-                    
-                    // Insert at the beginning of the comments list
-                    if (commentsContainer.firstChild) {
-                        commentsContainer.insertBefore(newComment, commentsContainer.firstChild);
-                    } else {
-                        commentsContainer.appendChild(newComment);
-                    }
-                    
-                    // Apply RTL detection to the new comment
-                    const newCommentText = newComment.querySelector('.comment-content');
-                    setTextDirection(newCommentText);
-                    
-                    // Update the comment count
-                    const commentCount = document.getElementById('comments-count');
-                    if (commentCount) {
-                        const currentCount = parseInt(commentCount.textContent);
-                        commentCount.textContent = (currentCount + 1).toString();
-                    }
-                } else {
-                    // Clear all existing toasts first
-                    toastr.clear();
-                    
-                    toastr.error(data.errors || "Error adding comment.");
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                toastr.error("Error adding comment. Please try again.");
-            })
-            .finally(() => {
-                submitButton.disabled = false;
-            });
+            const alertId = this.id.split('-')[2];
+            submitComment(alertId);
         });
-    }
-});
+    });
+}); 
