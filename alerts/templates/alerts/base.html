@@ -1,124 +1,18 @@
+{% extends "core/base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}SentryHub{% endblock %}</title>
-    
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
-    <!-- Toastr CSS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
-    
-    {% block extra_css %}{% endblock %}
-</head>
-<body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="{% url 'alerts:dashboard' %}">SentryHub</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'alerts:dashboard' %}">Dashboard</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'alerts:alert-list' %}">Alerts</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'docs:documentation-list' %}">Documentation</a>
-                    </li>
-                    {% if user.is_staff %}
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" 
-                           data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-shield-lock"></i> Admin
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="adminDropdown">
-                            <li><a class="dropdown-item" href="{% url 'admin_dashboard:dashboard' %}">
-                                <i class="bi bi-speedometer2"></i> Admin Dashboard
-                            </a></li>
-                            <li><a class="dropdown-item" href="{% url 'admin_dashboard:comments' %}">
-                                <i class="bi bi-chat-dots"></i> Manage Comments
-                            </a></li>
-                            <li><a class="dropdown-item" href="{% url 'admin_dashboard:acknowledgements' %}">
-                                <i class="bi bi-check-circle"></i> Manage Acknowledgements
-                            </a></li>
-                            <li><a class="dropdown-item {% if request.resolver_match.namespace == 'users' %}active{% endif %}" href="{% url 'users:user_list' %}">
-                                <i class="bi bi-people"></i> Manage Users
-                            </a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="/admin/">
-                                <i class="bi bi-gear"></i> Django Admin
-                            </a></li>
-                        </ul>
-                    </li>
-                    {% endif %}
-                </ul>
-            </div>
-        </div>
-    </nav>
 
-    <!-- Main Content -->
-    <div class="container mt-4">
-        {% block content %}{% endblock %}
-    </div>
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'alerts/css/alerts.css' %}">
+{% endblock %}
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- jQuery (required for Toastr) -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <!-- Toastr JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
-    <!-- SentryHub Notifications -->
-    <script src="{% static 'alerts/js/notifications.js' %}"></script>
-    
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Configure Toastr options
-        toastr.options = {
-            "closeButton": true,
-            "progressBar": true,
-            "positionClass": "toast-top-right",
-            "timeOut": "5000"
-        };
+{% block content %}
+<div class="container mt-4">
+    {% block alerts_content %}{% endblock %}
+</div>
+{% endblock %}
 
-        // Handle messages from Django messages framework
-        {% if messages %}
-            {% for message in messages %}
-                var messageText = "{{ message|escapejs }}";
-                // Remove any quotes and brackets if present (happens with JSON-like strings)
-                if (messageText.startsWith("{") || messageText.startsWith("'") || messageText.startsWith("\"")) {
-                    try {
-                        // Try to extract message from JSON-like string
-                        var match = messageText.match(/['"]message['"]:\s*['"]([^'"]+)['"]/);
-                        if (match && match[1]) {
-                            messageText = match[1];
-                        }
-                    } catch (e) {
-                        console.error("Error processing message:", e);
-                    }
-                }
-                
-                // Get the correct message tag (success, error, etc.)
-                var tag = "{{ message.tags }}";
-                if (tag.indexOf(' ') > -1) {
-                    tag = tag.split(' ')[0];  // Get first tag if multiple
-                }
-                
-                // Display the message
-                toastr[tag](messageText);
-            {% endfor %}
-        {% endif %}
-    });
-    </script>
-    
-    {% block extra_js %}{% endblock %}
-</body>
-</html>
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'alerts/js/notifications.js' %}"></script>
+{% endblock %}

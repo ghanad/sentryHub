@@ -1,6 +1,6 @@
 from django.shortcuts import render
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView
-from django.contrib.auth.mixins import UserPassesTestMixin
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView, TemplateView
+from django.contrib.auth.mixins import UserPassesTestMixin, LoginRequiredMixin
 from django.contrib.auth.models import User
 from django.urls import reverse_lazy
 from django.http import JsonResponse
@@ -13,6 +13,14 @@ from .forms import CustomUserCreationForm, CustomUserChangeForm
 class AdminRequiredMixin(UserPassesTestMixin):
     def test_func(self):
         return self.request.user.is_authenticated and self.request.user.is_staff
+
+class UserProfileView(LoginRequiredMixin, TemplateView):
+    template_name = 'users/profile.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['user'] = self.request.user
+        return context
 
 class UserListView(AdminRequiredMixin, ListView):
     model = User

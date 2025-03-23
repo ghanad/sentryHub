@@ -5,18 +5,26 @@ sentryHub URL Configuration
 """
 from django.contrib import admin
 from django.urls import path, include
-from django.contrib.auth import views as auth_views
+from django.contrib.auth import views as auth_views, logout
 from django.views.generic.base import RedirectView
+from django.shortcuts import redirect
 from core.views import HomeView
+
+def logout_view(request):
+    logout(request)
+    return redirect('login')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/login/', auth_views.LoginView.as_view(), name='login'),
-    path('accounts/logout/', auth_views.LogoutView.as_view(
-        template_name='registration/logged_out.html',
-        next_page='/accounts/login/',
-        http_method_names=['get', 'post']
-    ), name='logout'),
+    path('accounts/logout/', logout_view, name='logout'),
+    # Password change URLs with custom templates
+    path('accounts/password_change/', auth_views.PasswordChangeView.as_view(
+        template_name='registration/password_change.html'
+    ), name='password_change'),
+    path('accounts/password_change/done/', auth_views.PasswordChangeDoneView.as_view(
+        template_name='registration/password_change_done.html'
+    ), name='password_change_done'),
     # Password reset URLs
     path('accounts/password_reset/', auth_views.PasswordResetView.as_view(), name='password_reset'),
     path('accounts/password_reset/done/', auth_views.PasswordResetDoneView.as_view(), name='password_reset_done'),
