@@ -13,6 +13,8 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
     <!-- Toastr CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+    <!-- Custom Notifications CSS -->
+    <link rel="stylesheet" href="{% static 'core/css/notifications.css' %}">
     
     {% block extra_css %}{% endblock %}
 </head>
@@ -34,46 +36,11 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- Toastr JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <!-- Custom Notifications JS -->
+    <script src="{% static 'core/js/notifications.js' %}"></script>
     
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Configure Toastr options
-        toastr.options = {
-            "closeButton": true,
-            "progressBar": true,
-            "positionClass": "toast-top-right",
-            "timeOut": "5000"
-        };
-
-        // Handle messages from Django messages framework
-        {% if messages %}
-            {% for message in messages %}
-                var messageText = "{{ message|escapejs }}";
-                // Remove any quotes and brackets if present (happens with JSON-like strings)
-                if (messageText.startsWith("{") || messageText.startsWith("'") || messageText.startsWith("\"")) {
-                    try {
-                        // Try to extract message from JSON-like string
-                        var match = messageText.match(/['"]message['"]:\s*['"]([^'"]+)['"]/);
-                        if (match && match[1]) {
-                            messageText = match[1];
-                        }
-                    } catch (e) {
-                        console.error("Error processing message:", e);
-                    }
-                }
-                
-                // Get the correct message tag (success, error, etc.)
-                var tag = "{{ message.tags }}";
-                if (tag.indexOf(' ') > -1) {
-                    tag = tag.split(' ')[0];  // Get first tag if multiple
-                }
-                
-                // Display the message
-                toastr[tag](messageText);
-            {% endfor %}
-        {% endif %}
-    });
-    </script>
+    <!-- Include notifications partial -->
+    {% include 'core/partials/notifications.html' %}
     
     {% block extra_js %}{% endblock %}
 </body>

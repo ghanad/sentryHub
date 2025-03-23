@@ -1,0 +1,21 @@
+<!-- core/templates/core/partials/notifications.html -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Process Django messages and convert them to notifications
+    {% if django_messages %}
+        {% for message in django_messages %}
+            {% if message.level == 'success' %}
+                SentryNotification.success('{{ message.message|escapejs }}');
+            {% elif message.level == 'error' %}
+                SentryNotification.error('{{ message.message|escapejs }}');
+            {% elif message.level == 'warning' %}
+                SentryNotification.warning('{{ message.message|escapejs }}');
+            {% elif message.level == 'info' %}
+                SentryNotification.info('{{ message.message|escapejs }}');
+            {% else %}
+                SentryNotification.info('{{ message.message|escapejs }}');
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+});
+</script> 

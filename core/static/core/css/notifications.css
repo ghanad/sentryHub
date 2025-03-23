@@ -1,0 +1,38 @@
+/* سفارشی‌سازی‌های اضافی برای toastr */
+.toast-success {
+    background-color: #4caf50;
+}
+
+.toast-error {
+    background-color: #f44336;
+}
+
+.toast-info {
+    background-color: #2196F3;
+}
+
+.toast-warning {
+    background-color: #ff9800;
+}
+
+/* انیمیشن نوتیفیکیشن */
+.toast {
+    opacity: 1 !important;
+}
+
+#toast-container > div {
+    box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16), 0 2px 10px 0 rgba(0,0,0,0.12);
+    border-radius: 4px;
+}
+
+/* استایل برای موبایل */
+@media (max-width: 576px) {
+    #toast-container {
+        width: 100%;
+        padding: 0 15px;
+    }
+    
+    #toast-container > div {
+        width: 100%;
+    }
+} 
