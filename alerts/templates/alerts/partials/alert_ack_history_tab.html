@@ -1,54 +1,210 @@
 <!-- Acknowledgement History Tab -->
 <div class="tab-pane fade {% if active_tab == 'ack_history' %}show active{% endif %}" id="ack_history" role="tabpanel" aria-labelledby="ack-history-tab">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="mb-0">Complete Acknowledgement History</h5>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h5 class="mb-1">Acknowledgement History</h5>
+            <p class="text-muted small mb-0">Complete record of all alert acknowledgments</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#ackFilters" aria-expanded="false" aria-controls="ackFilters">
+                <i class="bi bi-funnel"></i> Filter
+            </button>
+        </div>
     </div>
-    
-    <!-- <div class="alert alert-info">
-        <i class="bi bi-info-circle"></i> Below is the complete history of all acknowledgements for this alert. Each time this alert gets acknowledged, it's recorded here.
-    </div> -->
+
+    <!-- Filters Section -->
+    <div class="collapse mb-4" id="ackFilters">
+        <div class="card card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label for="dateRange" class="form-label small">Date Range</label>
+                    <input type="text" class="form-control form-control-sm" id="dateRange" placeholder="Select date range">
+                </div>
+                <div class="col-md-4">
+                    <label for="userFilter" class="form-label small">User</label>
+                    <select class="form-select form-select-sm" id="userFilter">
+                        <option value="">All Users</option>
+                        {% for user in users %}
+                        <option value="{{ user.id }}">{{ user.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
     
     {% if acknowledgement_history.exists %}
     <div class="table-responsive">
-        <table class="table table-bordered table-hover">
-            <thead class="table-light">
+        <table class="table table-hover align-middle" aria-label="Acknowledgement history">
+            <thead>
                 <tr>
-                    <th>Date & Time</th>
-                    <th>User</th>
-                    <th>Alert Instance</th>
-                    <th>Comment</th>
+                    <th scope="col" class="sortable" data-sort="date">
+                        Date & Time <i class="bi bi-arrow-down-up ms-1"></i>
+                    </th>
+                    <th scope="col" class="sortable" data-sort="user">
+                        User <i class="bi bi-arrow-down-up ms-1"></i>
+                    </th>
+                    <th scope="col">Alert Instance</th>
+                    <th scope="col">Comment</th>
                 </tr>
             </thead>
             <tbody>
                 {% for ack in acknowledgement_history %}
                 <tr>
-                    <td>{{ ack.acknowledged_at|date:"Y-m-d H:i:s" }}</td>
-                    <td>{{ ack.acknowledged_by.username }}</td>
+                    <td>
+                        <div class="d-flex flex-column">
+                            <span class="fw-medium">{{ ack.acknowledged_at|date:"M d, Y" }}</span>
+                            <small class="text-muted">{{ ack.acknowledged_at|date:"H:i:s" }}</small>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="avatar-circle me-2">
+                                {{ ack.acknowledged_by.username|first|upper }}
+                            </div>
+                            <span>{{ ack.acknowledged_by.username }}</span>
+                        </div>
+                    </td>
                     <td>
                         {% if ack.alert_instance %}
-                        Instance from {{ ack.alert_instance.started_at|date:"Y-m-d H:i" }}
-                        {% if ack.alert_instance.ended_at %}
-                        to {{ ack.alert_instance.ended_at|date:"Y-m-d H:i" }}
-                        {% else %}
-                        (still active)
-                        {% endif %}
+                        <div class="d-flex flex-column">
+                            <span class="badge {% if ack.alert_instance.ended_at %}bg-secondary{% else %}bg-success{% endif %} mb-1">
+                                {% if ack.alert_instance.ended_at %}Ended{% else %}Active{% endif %}
+                            </span>
+                            <small class="text-muted">
+                                {{ ack.alert_instance.started_at|date:"M d, H:i" }}
+                                {% if ack.alert_instance.ended_at %}
+                                - {{ ack.alert_instance.ended_at|date:"M d, H:i" }}
+                                {% endif %}
+                            </small>
+                        </div>
                         {% else %}
                         <span class="badge bg-secondary">Unknown instance</span>
                         {% endif %}
                     </td>
-                    <td>{{ ack.comment|default:"No comment provided" }}</td>
+                    <td>
+                        <div class="comment-wrapper">
+                            <span class="comment-text">{{ ack.comment|default:"No comment provided" }}</span>
+                            {% if ack.comment|length > 100 %}
+                            <button class="btn btn-link btn-sm p-0 ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#comment-{{ ack.id }}">
+                                Show more
+                            </button>
+                            {% endif %}
+                        </div>
+                    </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="4" class="text-center">No acknowledgement history available</td>
+                    <td colspan="4" class="text-center py-5">
+                        <div class="text-muted">
+                            <i class="bi bi-inbox display-4"></i>
+                            <p class="mt-2 mb-0">No acknowledgement history available</p>
+                        </div>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+
+    <!-- Pagination -->
+    {% if acknowledgement_history.has_other_pages %}
+    <nav aria-label="Acknowledgement history pagination" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if acknowledgement_history.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ acknowledgement_history.previous_page_number }}&tab=ack_history" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+            {% endif %}
+            
+            {% for num in acknowledgement_history.paginator.page_range %}
+            <li class="page-item {% if num == acknowledgement_history.number %}active{% endif %}">
+                <a class="page-link" href="?page={{ num }}&tab=ack_history">{{ num }}</a>
+            </li>
+            {% endfor %}
+            
+            {% if acknowledgement_history.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ acknowledgement_history.next_page_number }}&tab=ack_history" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
     {% else %}
-    <div class="alert alert-warning">
-        <i class="bi bi-exclamation-triangle"></i> No acknowledgement history is available for this alert.
+    <div class="alert alert-warning d-flex align-items-center" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <div>No acknowledgement history is available for this alert.</div>
     </div>
     {% endif %}
 </div>
+
+<style>
+.avatar-circle {
+    width: 32px;
+    height: 32px;
+    background-color: #e9ecef;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 500;
+    color: #495057;
+}
+
+.sortable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.sortable:hover {
+    background-color: rgba(0,0,0,.03);
+}
+
+.comment-wrapper {
+    max-width: 300px;
+}
+
+.comment-text {
+    display: inline-block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+    .table-responsive {
+        margin: 0 -1rem;
+    }
+    
+    .comment-wrapper {
+        max-width: 200px;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize date range picker
+    if (typeof flatpickr !== 'undefined') {
+        flatpickr("#dateRange", {
+            mode: "range",
+            dateFormat: "Y-m-d",
+            placeholder: "Select date range"
+        });
+    }
+
+    // Handle sorting
+    document.querySelectorAll('.sortable').forEach(header => {
+        header.addEventListener('click', function() {
+            const sortBy = this.dataset.sort;
+            // Implement sorting logic here
+        });
+    });
+});
+</script>
