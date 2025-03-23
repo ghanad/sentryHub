@@ -1,3 +1,4 @@
+<!-- File: /alerts/templates/alerts/partials/alert_comments_tab.html -->
 <!-- Comments Tab -->
 {% load static %}
 <div class="tab-pane fade {% if active_tab == 'comments' %}show active{% endif %}" id="comments" role="tabpanel" aria-labelledby="comments-tab">
@@ -6,14 +7,14 @@
     <div class="d-flex align-items-center mb-3 text-muted border-bottom pb-2">
         <span class="d-flex align-items-center">
             <i class="bi bi-chat-dots me-1" aria-hidden="true"></i>
-            <span class="small">{{ alert.comments.count }} comment{{ alert.comments.count|pluralize }}</span>
+            <span class="small"><span id="comments-count">{{ alert.comments.count }}</span> comment{{ alert.comments.count|pluralize }}</span>
         </span>
     </div>
     
     <!-- Comment Form -->
     <div class="card mb-4 shadow-sm">
         <div class="card-body py-2">
-            <form id="commentForm" method="post" action="{% url 'alerts:alert-detail' alert.fingerprint %}" class="comment-form">
+            <form id="commentForm" class="comment-form" data-js-handled="true">
                 {% csrf_token %}
                 <div class="mb-2">
                     <label for="commentText" class="visually-hidden">Comment</label>
@@ -30,7 +31,7 @@
     </div>
     
     <!-- Comments List -->
-    <div class="comments-list" role="list">
+    <div id="comments-list" class="comments-list" role="list">
         {% for comment in alert.comments.all %}
         <div class="comment-item card border-0 border-start border-light-subtle ps-2 mb-1 rounded-0 hover-bg-light transition-all" role="listitem">
             <div class="card-body py-0.5 px-2">
@@ -51,12 +52,10 @@
             </div>
         </div>
         {% empty %}
-        <div class="alert alert-light text-center py-2" role="alert">
+        <div id="no-comments-message" class="alert alert-light text-center py-2" role="alert">
             <i class="bi bi-chat-dots text-muted mb-1" style="font-size: 1.25rem;"></i>
             <p class="text-muted small mb-0">No comments yet. Be the first to comment!</p>
         </div>
         {% endfor %}
     </div>
 </div>
-
-<link rel="stylesheet" href="{% static 'alerts/css/comments.css' %}">

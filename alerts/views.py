@@ -169,9 +169,6 @@ class AlertDetailView(LoginRequiredMixin, DetailView):
         context['acknowledge_form'] = AlertAcknowledgementForm()
         context['comment_form'] = AlertCommentForm()
         
-        # Format messages for JavaScript
-        context['messages'] = [{'message': str(message), 'tags': message.tags} for message in messages.get_messages(self.request)]
-        
         # Add active tab to context
         context['active_tab'] = self.request.GET.get('tab', 'details')
         
@@ -180,7 +177,8 @@ class AlertDetailView(LoginRequiredMixin, DetailView):
     def post(self, request, *args, **kwargs):
         alert = self.get_object()
         logger.info(f"Processing POST request for alert: {alert.name} (ID: {alert.id})")
-        
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
         # Handle acknowledgement with required comment
         if 'acknowledge' in request.POST:
             form = AlertAcknowledgementForm(request.POST)
@@ -198,11 +196,13 @@ class AlertDetailView(LoginRequiredMixin, DetailView):
                 # Then acknowledge the alert
                 acknowledge_alert(alert, request.user, comment_text)
                 
-                messages.success(request, "Alert has been acknowledged successfully.")
+                if not is_ajax:
+                    messages.success(request, "Alert has been acknowledged successfully.")
                 return redirect('alerts:alert-detail', fingerprint=alert.fingerprint)
             else:
                 logger.warning(f"Invalid acknowledgement form for alert: {alert.name}")
-                messages.error(request, "Please provide a comment when acknowledging an alert.")
+                if not is_ajax:
+                    messages.error(request, "Please provide a comment when acknowledging an alert.")
                 return self.get(request, *args, **kwargs)
         
         # Handle comment
@@ -215,18 +215,20 @@ class AlertDetailView(LoginRequiredMixin, DetailView):
                 comment.save()
                 logger.info(f"Added new comment to alert: {alert.name}")
                 
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                if is_ajax:
+                    # برای درخواست‌های AJAX فقط JSON برمی‌گردانیم، بدون استفاده از پیام‌های جنگو
                     return JsonResponse({
                         'status': 'success',
                         'user': request.user.username,
                         'content': form.cleaned_data['content']
                     })
                 else:
+                    # برای درخواست‌های معمولی از پیام‌های جنگو استفاده می‌کنیم
                     messages.success(request, "Comment added successfully.")
                     return redirect('alerts:alert-detail', fingerprint=alert.fingerprint)
             else:
                 logger.warning(f"Invalid comment form for alert: {alert.name}")
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                if is_ajax:
                     return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
                 else:
                     messages.error(request, "Please provide a valid comment.")

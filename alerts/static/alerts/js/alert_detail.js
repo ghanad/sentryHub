@@ -1,57 +1,27 @@
-// Function to detect Persian text
-function isPersianText(text) {
-    // Persian Unicode range: \u0600-\u06FF
-    const persianRegex = /[\u0600-\u06FF]/;
-    return persianRegex.test(text);
-}
-
-// Function to set text direction based on content
-function setTextDirection(element) {
-    if (isPersianText(element.textContent)) {
-        element.style.direction = 'rtl';
-        element.style.textAlign = 'right';
-    } else {
-        element.style.direction = 'ltr';
-        element.style.textAlign = 'left';
-    }
-}
-
-// Function to handle input direction
-function handleInputDirection(event) {
-    const textarea = event.target;
-    if (isPersianText(textarea.value)) {
-        textarea.style.direction = 'rtl';
-        textarea.style.textAlign = 'right';
-    } else {
-        textarea.style.direction = 'ltr';
-        textarea.style.textAlign = 'left';
-    }
-}
-
-// Function to format duration
-function formatDuration(seconds) {
-    if (seconds < 60) {
-        return seconds + " seconds";
-    } else if (seconds < 3600) {
-        return Math.floor(seconds / 60) + " min " + (seconds % 60) + " sec";
-    } else if (seconds < 86400) {
-        const hours = Math.floor(seconds / 3600);
-        const minutes = Math.floor((seconds % 3600) / 60);
-        return hours + " hr " + minutes + " min";
-    } else {
-        const days = Math.floor(seconds / 86400);
-        const hours = Math.floor((seconds % 86400) / 3600);
-        return days + " days " + hours + " hr";
-    }
-}
-
-// Initialize when DOM is loaded
+// File: /static/alerts/js/alert_detail.js
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize tooltips
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl)
     });
+
+    // Function to format duration
+    function formatDuration(seconds) {
+        if (seconds < 60) {
+            return seconds + " seconds";
+        } else if (seconds < 3600) {
+            return Math.floor(seconds / 60) + " min " + (seconds % 60) + " sec";
+        } else if (seconds < 86400) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            return hours + " hr " + minutes + " min";
+        } else {
+            const days = Math.floor(seconds / 86400);
+            const hours = Math.floor((seconds % 86400) / 3600);
+            return days + " days " + hours + " hr";
+        }
+    }
 
     // Calculate durations for completed periods
     document.querySelectorAll('.duration').forEach(function(el) {
@@ -96,6 +66,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // COMMENT FUNCTIONALITY IS NOW MOVED TO revised-comments.js
+    // THE CODE BELOW IS INTENTIONALLY DISABLED
+
+    /*
     // Apply RTL detection to existing comments
     const commentTexts = document.querySelectorAll('.card-text');
     commentTexts.forEach(setTextDirection);
@@ -187,4 +161,5 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
-}); 
+    */
+});
