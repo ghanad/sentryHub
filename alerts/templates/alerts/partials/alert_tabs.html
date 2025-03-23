@@ -20,7 +20,7 @@
     <li class="nav-item" role="presentation">
         <button class="nav-link {% if active_tab == 'comments' %}active{% endif %}" id="comments-tab" data-bs-toggle="tab" data-bs-target="#comments" type="button" role="tab" aria-controls="comments" aria-selected="{% if active_tab == 'comments' %}true{% else %}false{% endif %}">
             <i class="bi bi-chat-dots"></i> Comments 
-            <span class="badge bg-secondary rounded-pill">{{ comments.count }}</span>
+            <span class="badge bg-secondary rounded-pill">{{ comments.paginator.count }}</span>
         </button>
     </li>
     <li class="nav-item" role="presentation">

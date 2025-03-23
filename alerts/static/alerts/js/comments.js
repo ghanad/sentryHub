@@ -52,12 +52,14 @@ function submitComment(form) {
                     noCommentsMessage.remove();
                 }
                 
-                // Update comment count
-                const commentCountElement = document.getElementById('comments-count');
-                if (commentCountElement) {
-                    const currentCount = parseInt(commentCountElement.textContent);
-                    commentCountElement.textContent = (currentCount + 1).toString();
-                }
+                // Update comment count in both the tab badge and the comments header
+                const commentCountElements = document.querySelectorAll('#comments-count, #comments-tab .badge');
+                commentCountElements.forEach(element => {
+                    const currentCount = parseInt(element.textContent);
+                    if (!isNaN(currentCount)) {
+                        element.textContent = (currentCount + 1).toString();
+                    }
+                });
                 
                 // Show success notification
                 SentryNotification.success('Comment added successfully.');
@@ -72,6 +74,15 @@ function submitComment(form) {
                     </a>.</p>
                 `;
                 document.getElementById('comments-list').before(viewNewCommentLink);
+                
+                // Update comment count in both the tab badge and the comments header
+                const commentCountElements = document.querySelectorAll('#comments-count, #comments-tab .badge');
+                commentCountElements.forEach(element => {
+                    const currentCount = parseInt(element.textContent);
+                    if (!isNaN(currentCount)) {
+                        element.textContent = (currentCount + 1).toString();
+                    }
+                });
                 
                 // Show success notification
                 SentryNotification.success('Comment added successfully.');
