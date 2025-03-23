@@ -4,17 +4,27 @@
         <h5 class="mb-0">Alert Documentation</h5>
     </div>
     
-    {% if alert.documentation %}
+    {% if linked_documentation %}
     <div class="card">
         <div class="card-body">
-            <div class="docs-content">
-                {{ alert.documentation|safe }}
+            {% for doc_link in linked_documentation %}
+            <div class="documentation-section mb-4">
+                <h5><i class="bi bi-book"></i> {{ doc_link.documentation.title }}</h5>
+                <div class="documentation-content">
+                    {{ doc_link.documentation.description|safe }}
+                </div>
+                <div class="mt-2">
+                    <a href="{% url 'docs:documentation-detail' doc_link.documentation.id %}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-eye"></i> View Full Documentation
+                    </a>
+                </div>
             </div>
+            {% endfor %}
         </div>
     </div>
     {% else %}
     <div class="alert alert-info">
-        <i class="bi bi-info-circle"></i> No documentation available for this alert.
+        <i class="bi bi-info-circle"></i> No documentation available for this alert. Documentation is automatically linked based on alert name.
     </div>
     {% endif %}
-</div> 
+</div>
