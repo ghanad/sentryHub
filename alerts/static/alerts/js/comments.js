@@ -28,13 +28,40 @@ function submitComment(alertId) {
             // Clear the comment input
             document.getElementById(`comment-text-${alertId}`).value = '';
             
-            // Add the new comment to the comments list
-            const commentsList = document.getElementById(`comments-list-${alertId}`);
-            const newComment = createCommentElement(data.comment);
-            commentsList.insertBefore(newComment, commentsList.firstChild);
+            // Check if we're on the first page before attempting to add the comment to the UI
+            const urlParams = new URLSearchParams(window.location.search);
+            const currentPage = parseInt(urlParams.get('comments_page') || '1');
             
-            // Show success notification
-            SentryNotification.success('Comment added successfully.');
+            if (currentPage === 1) {
+                // Add the new comment to the list
+                const commentsList = document.getElementById(`comments-list-${alertId}`);
+                const newComment = createCommentElement(data.comment);
+                commentsList.insertBefore(newComment, commentsList.firstChild);
+                
+                // Update comment count
+                const commentCountElement = document.getElementById('comments-count');
+                if (commentCountElement) {
+                    const currentCount = parseInt(commentCountElement.textContent);
+                    commentCountElement.textContent = (currentCount + 1).toString();
+                }
+                
+                // Show success notification
+                SentryNotification.success('Comment added successfully.');
+            } else {
+                // If we're not on page 1, offer to navigate there to see the new comment
+                const viewNewCommentLink = document.createElement('div');
+                viewNewCommentLink.className = 'alert alert-info mt-3';
+                viewNewCommentLink.innerHTML = `
+                    <p class="mb-0">Your comment was added successfully. 
+                    <a href="?fingerprint=${alertId}&tab=comments&comments_page=1">
+                        View your comment on the first page
+                    </a>.</p>
+                `;
+                document.getElementById(`comments-list-${alertId}`).before(viewNewCommentLink);
+                
+                // Show success notification
+                SentryNotification.success('Comment added successfully.');
+            }
         } else {
             SentryNotification.error(data.errors || 'Error adding comment.');
         }
@@ -48,15 +75,25 @@ function submitComment(alertId) {
 // Function to create a comment element
 function createCommentElement(comment) {
     const commentDiv = document.createElement('div');
-    commentDiv.className = 'comment mb-3';
+    commentDiv.className = 'comment-item card border-0 border-start border-light-subtle ps-2 mb-1 rounded-0 hover-bg-light transition-all';
+    commentDiv.setAttribute('role', 'listitem');
     commentDiv.innerHTML = `
-        <div class="d-flex justify-content-between align-items-start">
-            <div>
-                <strong>${comment.user}</strong>
-                <small class="text-muted ms-2">${comment.created_at}</small>
+        <div class="card-body py-0.5 px-2">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <span class="badge bg-light text-dark me-2 small">
+                        ${comment.user}
+                    </span>
+                    <small class="text-muted">
+                        <i class="bi bi-clock me-1" aria-hidden="true"></i>
+                        Just now
+                    </small>
+                </div>
+            </div>
+            <div class="comment-content small lh-1.3">
+                ${comment.text}
             </div>
         </div>
-        <p class="mb-0">${comment.text}</p>
     `;
     return commentDiv;
 }

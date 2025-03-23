@@ -163,7 +163,23 @@ class AlertDetailView(LoginRequiredMixin, DetailView):
         ).order_by('-acknowledged_at')
         
         # Get comments
-        context['comments'] = self.object.comments.all().order_by('-created_at')
+        comments_page = self.request.GET.get('comments_page', 1)
+        try:
+            comments_page = int(comments_page)
+        except (TypeError, ValueError):
+            comments_page = 1
+            
+        comments = self.object.comments.all().order_by('-created_at')
+        comments_paginator = Paginator(comments, 10)  # 10 comments per page
+        
+        try:
+            paginated_comments = comments_paginator.page(comments_page)
+        except PageNotAnInteger:
+            paginated_comments = comments_paginator.page(1)
+        except EmptyPage:
+            paginated_comments = comments_paginator.page(comments_paginator.num_pages)
+            
+        context['comments'] = paginated_comments
         
         # Add forms to context
         context['acknowledge_form'] = AlertAcknowledgementForm()

@@ -2,6 +2,7 @@
 .comments-list {
     max-height: 600px;
     overflow-y: auto;
+    min-height: 100px; /* Prevent layout jump when switching between pages with different numbers of comments */
 }
 
 .comment-content {
@@ -70,11 +71,11 @@
 }
 
 .comment-item {
-    transition: background-color 0.2s ease;
+    transition: background-color 0.2s ease-in-out;
 }
 
 .comment-item:hover {
-    background-color: var(--bs-light);
+    background-color: rgba(0, 0, 0, 0.02);
 }
 
 .comment-content {
@@ -90,4 +91,38 @@
     .comment-item .card-body {
         padding: 0.25rem 0.5rem;
     }
+}
+
+/* Pagination Styles */
+#comments .pagination {
+    margin-top: 1.5rem;
+}
+
+#comments .pagination .page-link {
+    color: #6c757d;
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+}
+
+#comments .pagination .page-item.active .page-link {
+    color: #fff;
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+#comments .pagination .page-link:hover {
+    background-color: #e9ecef;
+    border-color: #dee2e6;
+}
+
+/* RTL Support */
+[dir="rtl"] .comment-item {
+    border-left: none !important;
+    border-right: 2px solid #dee2e6 !important;
+    padding-left: 0 !important;
+    padding-right: 0.5rem !important;
+}
+
+[dir="rtl"] .comment-content {
+    text-align: right;
 } 
