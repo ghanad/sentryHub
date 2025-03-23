@@ -4,10 +4,13 @@ from django.contrib.auth.models import User
 from .models import UserProfile
 
 class CustomUserCreationForm(UserCreationForm):
-    email = forms.EmailField(required=True)
-    department = forms.CharField(max_length=100, required=False)
-    phone_number = forms.CharField(max_length=20, required=False)
-    is_staff = forms.BooleanField(required=False, label='Admin Access')
+    email = forms.EmailField(required=True, widget=forms.EmailInput(attrs={'class': 'form-control'}))
+    department = forms.CharField(max_length=100, required=False, widget=forms.TextInput(attrs={'class': 'form-control'}))
+    phone_number = forms.CharField(max_length=20, required=False, widget=forms.TextInput(attrs={'class': 'form-control'}))
+    is_staff = forms.BooleanField(required=False, label='Admin Access', widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}))
+    username = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}))
+    password1 = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}))
+    password2 = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}))
 
     class Meta:
         model = User
@@ -32,8 +35,11 @@ class CustomUserCreationForm(UserCreationForm):
         return user
 
 class CustomUserChangeForm(UserChangeForm):
-    department = forms.CharField(max_length=100, required=False)
-    phone_number = forms.CharField(max_length=20, required=False)
+    department = forms.CharField(max_length=100, required=False, widget=forms.TextInput(attrs={'class': 'form-control'}))
+    phone_number = forms.CharField(max_length=20, required=False, widget=forms.TextInput(attrs={'class': 'form-control'}))
+    username = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}))
+    email = forms.EmailField(widget=forms.EmailInput(attrs={'class': 'form-control'}))
+    is_staff = forms.BooleanField(required=False, label='Admin Access', widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}))
 
     class Meta:
         model = User
