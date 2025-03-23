@@ -1,4 +1,4 @@
-/* سفارشی‌سازی‌های اضافی برای toastr */
+/* Additional customizations for toastr */
 .toast-success {
     background-color: #4caf50;
 }
@@ -15,7 +15,7 @@
     background-color: #ff9800;
 }
 
-/* انیمیشن نوتیفیکیشن */
+/* Notification animation */
 .toast {
     opacity: 1 !important;
 }
@@ -25,7 +25,7 @@
     border-radius: 4px;
 }
 
-/* استایل برای موبایل */
+/* Mobile styles */
 @media (max-width: 576px) {
     #toast-container {
         width: 100%;
