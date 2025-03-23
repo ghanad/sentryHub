@@ -50,6 +50,9 @@
                             <li><a class="dropdown-item" href="{% url 'admin_dashboard:acknowledgements' %}">
                                 <i class="bi bi-check-circle"></i> Manage Acknowledgements
                             </a></li>
+                            <li><a class="dropdown-item {% if request.resolver_match.namespace == 'users' %}active{% endif %}" href="{% url 'users:user_list' %}">
+                                <i class="bi bi-people"></i> Manage Users
+                            </a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="/admin/">
                                 <i class="bi bi-gear"></i> Django Admin

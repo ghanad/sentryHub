@@ -19,6 +19,7 @@ urlpatterns = [
     path('docs/', include('docs.urls', namespace='docs')),
     path('tinymce/', include('tinymce.urls')),
     path('admin-dashboard/', include('admin_dashboard.urls', namespace='admin_dashboard')),
+    path('users/', include('users.urls', namespace='users')),
 ]
 
 # Change admin site header

@@ -1,0 +1,48 @@
+/* Core Layout Styles */
+html, body {
+    height: 100%;
+    margin: 0;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* Main Content */
+.container {
+    flex: 1 0 auto;
+    padding-bottom: 2rem;
+}
+
+/* Footer */
+.footer {
+    flex-shrink: 0;
+    background-color: #f8f9fa;
+    border-top: 1px solid #dee2e6;
+}
+
+.footer a {
+    text-decoration: none;
+    color: #6c757d;
+}
+
+.footer a:hover {
+    color: #343a40;
+}
+
+/* Card Styles */
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.card-title {
+    margin-bottom: 0;
+    font-weight: 600;
+} 

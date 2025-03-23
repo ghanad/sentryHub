@@ -1,0 +1,107 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'core/css/users.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">{% if form.instance.pk %}Edit User{% else %}Create New User{% endif %}</h3>
+                </div>
+                <div class="card-body">
+                    <form id="userForm" method="post">
+                        {% csrf_token %}
+                        {% for field in form %}
+                        <div class="form-group">
+                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ field.errors }}
+                            </div>
+                            {% endif %}
+                            {% if field.help_text %}
+                            <small class="form-text text-muted">{{ field.help_text }}</small>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                        <div class="mt-3">
+                            <button type="submit" class="btn btn-primary">{% if form.instance.pk %}Update{% else %}Create{% endif %}</button>
+                            <a href="{% url 'users:user_list' %}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('userForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const url = this.action;
+    
+    fetch(url, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            toastr.success('{% if form.instance.pk %}User updated successfully{% else %}User created successfully{% endif %}', 'Success', {
+                timeOut: 3000,
+                closeButton: true,
+                progressBar: true
+            });
+            setTimeout(() => {
+                window.location.href = "{% url 'users:user_list' %}";
+            }, 1000);
+        } else {
+            // Clear previous errors
+            document.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
+            document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+            
+            // Display new errors
+            if (data.errors) {
+                Object.entries(data.errors).forEach(([field, errors]) => {
+                    const input = document.querySelector(`[name="${field}"]`);
+                    if (input) {
+                        input.classList.add('is-invalid');
+                        const errorDiv = document.createElement('div');
+                        errorDiv.className = 'invalid-feedback d-block';
+                        errorDiv.textContent = errors[0];
+                        input.parentNode.appendChild(errorDiv);
+                    }
+                });
+            }
+            
+            toastr.error(data.message || 'Please correct the errors below.', 'Error', {
+                timeOut: 5000,
+                closeButton: true,
+                progressBar: true
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        toastr.error('An error occurred while processing your request.', 'Error', {
+            timeOut: 5000,
+            closeButton: true,
+            progressBar: true
+        });
+    });
+});
+</script>
+{% endblock %} 

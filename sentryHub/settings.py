@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     'alerts',
     'docs',
     'admin_dashboard',
+    'users',
 ]
 
 MIDDLEWARE = [
