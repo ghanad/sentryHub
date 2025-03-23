@@ -67,4 +67,27 @@
 .no-comments-alert {
     background-color: #f8f9fa;
     border-color: #e9ecef;
+}
+
+.comment-item {
+    transition: background-color 0.2s ease;
+}
+
+.comment-item:hover {
+    background-color: var(--bs-light);
+}
+
+.comment-content {
+    color: var(--bs-body-color);
+}
+
+.comment-form textarea:focus {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.15);
+}
+
+@media (max-width: 576px) {
+    .comment-item .card-body {
+        padding: 0.25rem 0.5rem;
+    }
 } 
