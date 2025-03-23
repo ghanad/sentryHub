@@ -2,13 +2,15 @@ from django.views.generic import TemplateView, ListView, DetailView, FormView
 from django.db.models import Count, Q
 from django.utils import timezone
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import get_object_or_404, redirect
-from django.urls import reverse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse, reverse_lazy
 from django.http import JsonResponse
 from django.contrib import messages
 from django.views.generic.detail import SingleObjectMixin
 import logging
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+from django.contrib.auth import login, authenticate
+from django.contrib.auth.forms import AuthenticationForm
 
 from .models import AlertGroup, AlertInstance, AlertComment
 from .forms import AlertAcknowledgementForm, AlertCommentForm
@@ -265,3 +267,21 @@ class AlertHistoryView(LoginRequiredMixin, DetailView):
         context['instances'] = self.object.instances.all().order_by('-started_at')
         
         return context
+
+
+def login_view(request):
+    if request.method == 'POST':
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            username = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password')
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                login(request, user)
+                next_url = request.GET.get('next')
+                if next_url:
+                    return redirect(next_url)
+                return redirect('alerts:dashboard')
+    else:
+        form = AuthenticationForm()
+    return render(request, 'alerts/login.html', {'form': form})
