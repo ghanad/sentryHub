@@ -232,14 +232,12 @@ class AlertDetailView(LoginRequiredMixin, DetailView):
                 logger.info(f"Added new comment to alert: {alert.name}")
                 
                 if is_ajax:
-                    # برای درخواست‌های AJAX فقط JSON برمی‌گردانیم، بدون استفاده از پیام‌های جنگو
                     return JsonResponse({
                         'status': 'success',
                         'user': request.user.username,
                         'content': form.cleaned_data['content']
                     })
                 else:
-                    # برای درخواست‌های معمولی از پیام‌های جنگو استفاده می‌کنیم
                     messages.success(request, "Comment added successfully.")
                     return redirect('alerts:alert-detail', fingerprint=alert.fingerprint)
             else:
