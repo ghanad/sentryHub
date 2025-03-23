@@ -5,7 +5,7 @@
 }
 
 .comment-item {
-    transition: background-color 0.15s ease;
+    transition: background-color 0.2s ease;
     position: relative;
     padding-bottom: 0.5rem;
 }
@@ -17,6 +17,7 @@
 .comment-content {
     overflow-wrap: break-word;
     word-wrap: break-word;
+    word-break: break-word;
     hyphens: auto;
     margin-right: 0.5rem;
     line-height: 1.4;
@@ -190,4 +191,45 @@
 
 [dir="rtl"] .comment-content {
     text-align: right;
+}
+
+/* RTL text support */
+.rtl-text {
+    direction: rtl;
+    text-align: right;
+    font-family: system-ui, -apple-system, "Segoe UI", Tahoma, Arial, sans-serif;
+}
+
+.rtl-text textarea {
+    text-align: right;
+    direction: rtl;
+}
+
+/* Ensure dropdown arrows are properly positioned in RTL */
+.rtl-text .dropdown-toggle::after {
+    margin-right: 0.255em;
+    margin-left: 0;
+}
+
+/* Adjust icons in RTL context */
+.rtl-text .bi {
+    margin-left: 0.5rem;
+    margin-right: 0;
+}
+
+/* Ensure proper padding for RTL text */
+.comment-content.rtl-text {
+    padding-right: 0;
+    padding-left: 1rem;
+}
+
+/* Character counter positioning for RTL */
+.rtl-text ~ .text-muted {
+    left: 0.5rem;
+    right: auto;
+}
+
+/* Loading state */
+#comment-loading {
+    background: rgba(255, 255, 255, 0.8);
 } 

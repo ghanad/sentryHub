@@ -1,92 +1,125 @@
-// Function to handle comment submission
+// RTL text support
+function isPersianText(text) {
+    // Persian Unicode range: \u0600-\u06FF
+    // Arabic Unicode range: \u0750-\u077F
+    // Arabic Supplement range: \u0870-\u089F
+    // Arabic Extended-A range: \u08A0-\u08FF
+    // Arabic Presentation Forms-A: \uFB50-\uFDFF
+    // Arabic Presentation Forms-B: \uFE70-\uFEFF
+    const rtlRegex = /[\u0600-\u06FF\u0750-\u077F\u0870-\u089F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+    return rtlRegex.test(text);
+}
+
+function setTextDirection(element) {
+    if (isPersianText(element.textContent)) {
+        element.style.direction = 'rtl';
+        element.style.textAlign = 'right';
+        // Add a class for additional RTL styling if needed
+        element.classList.add('rtl-text');
+    } else {
+        element.style.direction = 'ltr';
+        element.style.textAlign = 'left';
+        element.classList.remove('rtl-text');
+    }
+}
+
+function handleInputDirection(textarea) {
+    if (isPersianText(textarea.value)) {
+        textarea.style.direction = 'rtl';
+        textarea.style.textAlign = 'right';
+        textarea.classList.add('rtl-text');
+    } else {
+        textarea.style.direction = 'ltr';
+        textarea.style.textAlign = 'left';
+        textarea.classList.remove('rtl-text');
+    }
+}
+
+// Character count functionality
+function updateCharCount(textarea) {
+    const maxLength = textarea.maxLength;
+    const currentLength = textarea.value.length;
+    document.getElementById('charCount').textContent = currentLength;
+    // Also update text direction when content changes
+    handleInputDirection(textarea);
+}
+
+// Form validation
+function validateCommentForm(form) {
+    form.classList.add('was-validated');
+    return form.checkValidity();
+}
+
+// Comment submission
 function submitComment(form) {
-    const commentText = form.querySelector('textarea[name="content"]').value;
-    
-    if (!commentText.trim()) {
-        SentryNotification.warning('Please enter a comment before submitting.');
+    if (!validateCommentForm(form)) {
         return;
     }
 
-    // Get CSRF token from cookie
-    const csrftoken = getCookie('csrftoken');
+    const commentText = form.querySelector('textarea[name="content"]').value;
+    if (!commentText.trim()) {
+        return;
+    }
 
-    // Get the alert fingerprint from the URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const fingerprint = urlParams.get('fingerprint');
+    // Show loading indicator
+    document.getElementById('comment-loading').style.display = 'block';
+    form.querySelector('button[type="submit"]').disabled = true;
 
-    // Send the comment to the server
+    const formData = new FormData(form);
+    formData.append('comment', 'true');
+
     fetch(window.location.href, {
         method: 'POST',
+        body: formData,
         headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'X-CSRFToken': csrftoken,
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
             'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: new URLSearchParams({
-            'content': commentText,
-            'comment': '1',
-            'csrfmiddlewaretoken': csrftoken
-        })
+        }
     })
     .then(response => response.json())
     .then(data => {
         if (data.status === 'success') {
-            // Clear the comment input
-            form.querySelector('textarea[name="content"]').value = '';
-            
-            // Check if we're on the first page before attempting to add the comment to the UI
-            const currentPage = parseInt(urlParams.get('comments_page') || '1');
-            
-            if (currentPage === 1) {
-                // Add the new comment to the list
-                const commentsList = document.getElementById('comments-list');
-                const newComment = createCommentElement({
-                    user: data.user,
-                    text: data.content
-                });
-                commentsList.insertBefore(newComment, commentsList.firstChild);
-                
-                // Remove the "no comments" message if it exists
+            // Reset form
+            form.reset();
+            form.classList.remove('was-validated');
+            document.getElementById('charCount').textContent = '0';
+
+            // Hide form container
+            document.getElementById('comment-form-container').style.display = 'none';
+
+            if (document.querySelector('#comments-list .comment-item:first-child')) {
+                // We're on the first page, add the new comment
+                const newComment = createCommentElement(data);
+                document.querySelector('#comments-list').insertBefore(newComment, document.querySelector('#comments-list').firstChild);
+
+                // Remove no-comments message if it exists
                 const noCommentsMessage = document.getElementById('no-comments-message');
                 if (noCommentsMessage) {
                     noCommentsMessage.remove();
                 }
-                
-                // Update comment count in both the tab badge and the comments header
-                const commentCountElements = document.querySelectorAll('#comments-count, #comments-tab .badge');
-                commentCountElements.forEach(element => {
-                    const currentCount = parseInt(element.textContent);
-                    if (!isNaN(currentCount)) {
-                        element.textContent = (currentCount + 1).toString();
-                    }
-                });
-                
-                // Show success notification
-                SentryNotification.success('Comment added successfully.');
             } else {
-                // If we're not on page 1, offer to navigate there to see the new comment
+                // If we're not on page 1, offer to navigate there
                 const viewNewCommentLink = document.createElement('div');
                 viewNewCommentLink.className = 'alert alert-info mt-3';
                 viewNewCommentLink.innerHTML = `
                     <p class="mb-0">Your comment was added successfully. 
-                    <a href="?fingerprint=${fingerprint}&tab=comments&comments_page=1">
+                    <a href="?fingerprint=${window.location.href.split('fingerprint=')[1].split('&')[0]}&tab=comments&comments_page=1">
                         View your comment on the first page
                     </a>.</p>
                 `;
-                document.getElementById('comments-list').before(viewNewCommentLink);
-                
-                // Update comment count in both the tab badge and the comments header
-                const commentCountElements = document.querySelectorAll('#comments-count, #comments-tab .badge');
-                commentCountElements.forEach(element => {
-                    const currentCount = parseInt(element.textContent);
-                    if (!isNaN(currentCount)) {
-                        element.textContent = (currentCount + 1).toString();
-                    }
-                });
-                
-                // Show success notification
-                SentryNotification.success('Comment added successfully.');
+                document.querySelector('#comments-list').before(viewNewCommentLink);
             }
+
+            // Update comment counts
+            const commentCountElements = document.querySelectorAll('#comments-count, #comments-tab .badge');
+            commentCountElements.forEach(element => {
+                const currentCount = parseInt(element.textContent);
+                if (!isNaN(currentCount)) {
+                    element.textContent = (currentCount + 1).toString();
+                }
+            });
+
+            SentryNotification.success('Comment added successfully.');
         } else {
             SentryNotification.error(data.errors || 'Error adding comment.');
         }
@@ -94,238 +127,154 @@ function submitComment(form) {
     .catch(error => {
         console.error('Error:', error);
         SentryNotification.error('Error adding comment. Please try again.');
+    })
+    .finally(() => {
+        // Hide loading indicator and re-enable submit button
+        document.getElementById('comment-loading').style.display = 'none';
+        form.querySelector('button[type="submit"]').disabled = false;
     });
 }
 
-// Function to create a comment element
-function createCommentElement(comment) {
-    const commentDiv = document.createElement('div');
-    commentDiv.className = 'comment-item card border-0 border-start border-light-subtle ps-2 mb-1 rounded-0 hover-bg-light transition-all';
-    commentDiv.setAttribute('role', 'listitem');
-    commentDiv.innerHTML = `
-        <div class="card-body py-0.5 px-2">
-            <div class="d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center">
-                    <span class="badge bg-light text-dark me-2 small">
-                        ${comment.user}
-                    </span>
-                    <small class="text-muted">
-                        <i class="bi bi-clock me-1" aria-hidden="true"></i>
-                        Just now
-                    </small>
-                </div>
+// Create comment element
+function createCommentElement(data) {
+    const now = new Date();
+    const timeString = now.toLocaleString('default', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    
+    const div = document.createElement('div');
+    div.className = 'list-group-item comment-item p-2 border-start-0 border-end-0 border-top-0';
+    div.innerHTML = `
+        <div class="d-flex justify-content-between align-items-start mb-1">
+            <div class="d-flex align-items-center">
+                <span class="text-muted small me-2">${timeString}</span>
+                <span class="fw-medium text-muted text-truncate" style="max-width: 150px;">${data.user}</span>
             </div>
-            <div class="comment-content small lh-1.3">
-                ${comment.text}
+            <div class="dropdown">
+                <button class="btn btn-sm btn-link text-muted p-0 dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-three-dots-vertical"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="#" data-comment-id="${data.id}" onclick="editComment(this)">
+                        <i class="bi bi-pencil me-2"></i>Edit
+                    </a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger" href="#" data-comment-id="${data.id}" onclick="deleteComment(this)">
+                        <i class="bi bi-trash me-2"></i>Delete
+                    </a></li>
+                </ul>
             </div>
         </div>
+        <div class="comment-content small lh-sm ps-0 text-wrap" style="white-space: pre-wrap;">${data.content}</div>
     `;
-    return commentDiv;
+
+    // Apply RTL detection to the new comment content
+    const commentContent = div.querySelector('.comment-content');
+    setTextDirection(commentContent);
+    
+    return div;
 }
 
-// Function to get CSRF token from cookie
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
+// Edit comment functionality
+function editComment(element) {
+    const commentId = element.dataset.commentId;
+    const commentItem = element.closest('.comment-item');
+    const commentContent = commentItem.querySelector('.comment-content');
+    const originalContent = commentContent.textContent;
+
+    // Create edit form
+    const editForm = document.createElement('form');
+    editForm.className = 'edit-comment-form mb-2';
+    editForm.innerHTML = `
+        <div class="mb-2 position-relative">
+            <textarea class="form-control form-control-sm" rows="2" required maxlength="1000">${originalContent}</textarea>
+            <small class="text-muted position-absolute end-0 bottom-0 pe-2 mb-1">
+                <span class="edit-char-count">${originalContent.length}</span>/1000
+            </small>
+        </div>
+        <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="cancelEdit(this)">Cancel</button>
+            <button type="submit" class="btn btn-sm btn-primary">Save</button>
+        </div>
+    `;
+
+    // Hide original content and show edit form
+    commentContent.style.display = 'none';
+    commentContent.after(editForm);
+
+    // Add character count listener and set initial text direction
+    const textarea = editForm.querySelector('textarea');
+    handleInputDirection(textarea);
+    textarea.addEventListener('input', () => {
+        editForm.querySelector('.edit-char-count').textContent = textarea.value.length;
+        handleInputDirection(textarea);
+    });
+
+    // Handle form submission
+    editForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        // TODO: Implement edit submission
+        SentryNotification.info('Edit functionality coming soon');
+        cancelEdit(this.querySelector('button[type="button"]'));
+    });
+}
+
+// Cancel edit
+function cancelEdit(button) {
+    const editForm = button.closest('.edit-comment-form');
+    const commentContent = editForm.previousElementSibling;
+    commentContent.style.display = '';
+    editForm.remove();
+}
+
+// Delete comment functionality
+function deleteComment(element) {
+    const commentId = element.dataset.commentId;
+    if (confirm('Are you sure you want to delete this comment?')) {
+        // TODO: Implement delete functionality
+        SentryNotification.info('Delete functionality coming soon');
     }
-    return cookieValue;
 }
 
-// Initialize comment forms when the document is ready
+// Initialize comment functionality
 document.addEventListener('DOMContentLoaded', function() {
-    // Function to detect Persian text
-    function isPersianText(text) {
-        // Persian Unicode range: \u0600-\u06FF
-        const persianRegex = /[\u0600-\u06FF]/;
-        return persianRegex.test(text);
-    }
-
-    // Function to set text direction based on content
-    function setTextDirection(element) {
-        if (isPersianText(element.textContent)) {
-            element.style.direction = 'rtl';
-            element.style.textAlign = 'right';
-        } else {
-            element.style.direction = 'ltr';
-            element.style.textAlign = 'left';
-        }
-    }
-
-    // Function to handle input direction
-    function handleInputDirection(event) {
-        const textarea = event.target;
-        if (isPersianText(textarea.value)) {
-            textarea.style.direction = 'rtl';
-            textarea.style.textAlign = 'right';
-        } else {
-            textarea.style.direction = 'ltr';
-            textarea.style.textAlign = 'left';
-        }
-    }
-
-    // Apply RTL detection to existing comments
-    document.querySelectorAll('.comment-content').forEach(setTextDirection);
-
-    // Add input event listener to comment textarea
-    const commentTextarea = document.querySelector('#commentText');
-    if (commentTextarea) {
-        commentTextarea.addEventListener('input', handleInputDirection);
-        // Set initial direction
-        handleInputDirection({ target: commentTextarea });
-    }
-
-    // Toggle comment form visibility
-    const addCommentBtn = document.getElementById('add-comment-toggle');
-    const cancelCommentBtn = document.getElementById('cancel-comment');
+    // Toggle comment form
+    const addCommentToggle = document.getElementById('add-comment-toggle');
     const commentFormContainer = document.getElementById('comment-form-container');
+    const cancelCommentButton = document.getElementById('cancel-comment');
+    const commentForm = document.getElementById('commentForm');
+    const commentTextarea = document.getElementById('commentText');
 
-    if (addCommentBtn && commentFormContainer) {
-        addCommentBtn.addEventListener('click', function() {
+    if (addCommentToggle) {
+        addCommentToggle.addEventListener('click', function() {
             commentFormContainer.style.display = 'block';
-            addCommentBtn.style.display = 'none';
             commentTextarea.focus();
         });
     }
 
-    if (cancelCommentBtn && commentFormContainer && addCommentBtn) {
-        cancelCommentBtn.addEventListener('click', function() {
+    if (cancelCommentButton) {
+        cancelCommentButton.addEventListener('click', function() {
             commentFormContainer.style.display = 'none';
-            addCommentBtn.style.display = 'block';
-            commentTextarea.value = '';
+            commentForm.reset();
+            commentForm.classList.remove('was-validated');
+            document.getElementById('charCount').textContent = '0';
         });
     }
 
-    // Handle comment form submission
-    const commentForm = document.getElementById('commentForm');
+    if (commentTextarea) {
+        // Set initial direction
+        handleInputDirection(commentTextarea);
+        
+        commentTextarea.addEventListener('input', function() {
+            updateCharCount(this);
+        });
+    }
+
     if (commentForm) {
         commentForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            e.stopPropagation(); // Prevent other handlers from catching this event
-            
-            const submitButton = this.querySelector('button[type="submit"]');
-            submitButton.disabled = true;
-            
-            const formData = new FormData(this);
-            formData.append('comment', 'true');
-            
-            fetch(window.location.href, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    // Show success message with new notification system
-                    SentryNotification.success("Comment added successfully.");
-                    
-                    // Clear the form
-                    this.reset();
-                    
-                    // Hide the form and show the add button again
-                    commentFormContainer.style.display = 'none';
-                    addCommentBtn.style.display = 'block';
-                    
-                    // Check if we're on the first page before attempting to add the comment to the UI
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const currentPage = parseInt(urlParams.get('comments_page') || '1');
-                    
-                    if (currentPage === 1) {
-                        // Add the new comment to the list
-                        const commentsContainer = document.getElementById('comments-list');
-                        
-                        // Remove the "no comments" message if it exists
-                        const noCommentsMessage = document.getElementById('no-comments-message');
-                        if (noCommentsMessage) {
-                            noCommentsMessage.remove();
-                        }
-                        
-                        // Create a new comment element
-                        const newComment = document.createElement('div');
-                        newComment.className = 'list-group-item comment-item p-2 border-start-0 border-end-0';
-                        
-                        // Add border-bottom-0 class to the previous first item if it exists
-                        const firstItem = commentsContainer.querySelector('.comment-item');
-                        if (firstItem) {
-                            firstItem.classList.remove('border-bottom-0');
-                        }
-                        
-                        newComment.innerHTML = `
-                            <div class="d-flex align-items-baseline mb-1">
-                                <span class="fw-medium me-2 text-truncate" style="max-width: 150px;">${data.user}</span>
-                                <small class="text-muted ms-auto flex-shrink-0">Just now</small>
-                            </div>
-                            <div class="comment-content small lh-sm ps-0 text-wrap" style="white-space: pre-wrap;">${data.content}</div>
-                        `;
-                        
-                        // Insert at the beginning of the comments list
-                        if (commentsContainer.firstChild) {
-                            commentsContainer.insertBefore(newComment, commentsContainer.firstChild);
-                        } else {
-                            commentsContainer.appendChild(newComment);
-                        }
-                        
-                        // Apply RTL detection to the new comment
-                        const newCommentText = newComment.querySelector('.comment-content');
-                        setTextDirection(newCommentText);
-                        
-                        // Update pagination if needed
-                        const paginationNav = document.querySelector('#comments nav');
-                        if (!paginationNav && document.querySelectorAll('#comments-list .comment-item').length > 10) {
-                            // We've just crossed the threshold for pagination, reload the page to show pagination
-                            window.location.reload();
-                        }
-                    } else {
-                        // If we're not on page 1, offer to navigate there to see the new comment
-                        const viewNewCommentLink = document.createElement('div');
-                        viewNewCommentLink.className = 'alert alert-info mt-3';
-                        viewNewCommentLink.innerHTML = `
-                            <p class="mb-0">Your comment was added successfully. 
-                            <a href="?fingerprint=${window.location.href.split('fingerprint=')[1].split('&')[0]}&tab=comments&comments_page=1">
-                                View your comment on the first page
-                            </a>.</p>
-                        `;
-                        document.querySelector('#comments-list').before(viewNewCommentLink);
-                    }
-                    
-                    // Update the total comment count (in header and badge)
-                    const commentCountEl = document.getElementById('comments-count');
-                    if (commentCountEl) {
-                        const currentCount = parseInt(commentCountEl.textContent);
-                        if (!isNaN(currentCount)) {
-                            commentCountEl.textContent = (currentCount + 1).toString();
-                        }
-                    }
-                    
-                    const tabBadge = document.querySelector('#comments-tab .badge');
-                    if (tabBadge) {
-                        const badgeCount = parseInt(tabBadge.textContent);
-                        if (!isNaN(badgeCount)) {
-                            tabBadge.textContent = (badgeCount + 1).toString();
-                        }
-                    }
-                } else {
-                    SentryNotification.error(data.errors || "Error adding comment.");
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                SentryNotification.error("Error adding comment. Please try again.");
-            })
-            .finally(() => {
-                submitButton.disabled = false;
-            });
+            submitComment(this);
         });
     }
+
+    // Apply RTL detection to existing comments
+    document.querySelectorAll('.comment-content').forEach(setTextDirection);
 }); 
