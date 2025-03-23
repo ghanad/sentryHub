@@ -18,10 +18,20 @@ This document provides design guidelines to ensure consistency across the Sentry
 Always use these standard Bootstrap colors for their semantic meaning. Don't create custom colors without specific justification.
 
 ### Typography
-- Font Family: Bootstrap default (system fonts)
+- Font Family: 
+  - Default: Bootstrap default (system fonts)
+  - RTL Text: 'IranSansX', system-ui, -apple-system, 'Segoe UI', Tahoma, Arial, sans-serif
+  - Code/Pre: 'Consolas', 'Monaco', 'Courier New', monospace
 - Headings: Use Bootstrap's heading classes (h1-h6)
 - Body text: 1rem (Bootstrap default)
 - Small text: 0.875rem with class "small"
+- RTL Text Properties:
+  - Font weight: 400
+  - Line height: 1.8
+  - Letter spacing: 0
+  - Text rendering: optimizeLegibility
+  - Font smoothing: antialiased
+  - Font features: "ss01", "ss02", "ss03", "ss04"
 
 ### Components
 
@@ -394,26 +404,82 @@ For questions or clarifications about these guidelines, refer to the existing co
 
 ### RTL Support
 - Some content may need RTL (Right-to-Left) support
-- Use the following pattern for RTL text detection:
+- Use the following pattern for RTL text detection and styling:
 ```javascript
 function isPersianText(text) {
-    const persianRegex = /[\u0600-\u06FF]/;
-    return persianRegex.test(text);
+    // Persian Unicode range: \u0600-\u06FF
+    // Arabic Unicode range: \u0750-\u077F
+    // Arabic Supplement range: \u0870-\u089F
+    // Arabic Extended-A range: \u08A0-\u08FF
+    // Arabic Presentation Forms-A: \uFB50-\uFDFF
+    // Arabic Presentation Forms-B: \uFE70-\uFEFF
+    const rtlRegex = /[\u0600-\u06FF\u0750-\u077F\u0870-\u089F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+    return rtlRegex.test(text);
 }
 
 function setTextDirection(element) {
     if (isPersianText(element.textContent)) {
         element.style.direction = 'rtl';
         element.style.textAlign = 'right';
+        element.style.fontFamily = "'IranSansX', system-ui, -apple-system, 'Segoe UI', Tahoma, Arial, sans-serif";
+        element.style.fontWeight = '400';
+        element.style.lineHeight = '1.8';
+        element.style.letterSpacing = '0';
+        element.style.textRendering = 'optimizeLegibility';
+        element.style.webkitFontSmoothing = 'antialiased';
+        element.style.mozOsxFontSmoothing = 'grayscale';
+        element.style.fontFeatureSettings = '"ss01", "ss02", "ss03", "ss04"';
+        element.classList.add('rtl-text');
     } else {
         element.style.direction = 'ltr';
         element.style.textAlign = 'left';
+        element.style.fontFamily = '';
+        element.style.fontWeight = '';
+        element.style.lineHeight = '';
+        element.style.letterSpacing = '';
+        element.style.textRendering = '';
+        element.style.webkitFontSmoothing = '';
+        element.style.mozOsxFontSmoothing = '';
+        element.style.fontFeatureSettings = '';
+        element.classList.remove('rtl-text');
     }
 }
 
-// Apply to elements
-document.querySelectorAll('.comment-content').forEach(setTextDirection);
+// Apply to elements with data-rtl="true" attribute
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('[data-rtl="true"]').forEach(setTextDirection);
+});
 ```
+
+For TinyMCE editor configuration:
+```python
+TinyMCE(
+    attrs={'class': 'form-control'},
+    mce_attrs={
+        'directionality': 'rtl',
+        'content_style': '''
+            body {
+                font-family: 'IranSansX', system-ui, -apple-system, 'Segoe UI', Tahoma, Arial, sans-serif;
+                font-weight: 400;
+                line-height: 1.8;
+                letter-spacing: 0;
+                text-rendering: optimizeLegibility;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+                font-feature-settings: "ss01", "ss02", "ss03", "ss04";
+            }
+        ''',
+        # ... other TinyMCE settings ...
+    }
+)
+```
+
+Special considerations for RTL content:
+1. Code blocks and pre elements should always be LTR
+2. Tables should maintain their structure regardless of text direction
+3. Images and media should be properly aligned based on content direction
+4. Lists (ordered and unordered) should respect RTL direction
+5. Blockquotes should have border on the appropriate side based on direction
 
 ## JavaScript Patterns
 
