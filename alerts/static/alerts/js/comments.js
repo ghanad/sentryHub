@@ -1,40 +1,3 @@
-// RTL text support
-function isPersianText(text) {
-    // Persian Unicode range: \u0600-\u06FF
-    // Arabic Unicode range: \u0750-\u077F
-    // Arabic Supplement range: \u0870-\u089F
-    // Arabic Extended-A range: \u08A0-\u08FF
-    // Arabic Presentation Forms-A: \uFB50-\uFDFF
-    // Arabic Presentation Forms-B: \uFE70-\uFEFF
-    const rtlRegex = /[\u0600-\u06FF\u0750-\u077F\u0870-\u089F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
-    return rtlRegex.test(text);
-}
-
-function setTextDirection(element) {
-    if (isPersianText(element.textContent)) {
-        element.style.direction = 'rtl';
-        element.style.textAlign = 'right';
-        // Add a class for additional RTL styling if needed
-        element.classList.add('rtl-text');
-    } else {
-        element.style.direction = 'ltr';
-        element.style.textAlign = 'left';
-        element.classList.remove('rtl-text');
-    }
-}
-
-function handleInputDirection(textarea) {
-    if (isPersianText(textarea.value)) {
-        textarea.style.direction = 'rtl';
-        textarea.style.textAlign = 'right';
-        textarea.classList.add('rtl-text');
-    } else {
-        textarea.style.direction = 'ltr';
-        textarea.style.textAlign = 'left';
-        textarea.classList.remove('rtl-text');
-    }
-}
-
 // Character count functionality
 function updateCharCount(textarea) {
     const maxLength = textarea.maxLength;
@@ -163,7 +126,7 @@ function createCommentElement(data) {
                 </ul>
             </div>
         </div>
-        <div class="comment-content small lh-sm ps-0 text-wrap" style="white-space: pre-wrap;">${data.content}</div>
+        <div class="comment-content small lh-sm ps-0 text-wrap" style="white-space: pre-wrap;" data-rtl="true">${data.content}</div>
     `;
 
     // Apply RTL detection to the new comment content
@@ -185,7 +148,7 @@ function editComment(element) {
     editForm.className = 'edit-comment-form mb-2';
     editForm.innerHTML = `
         <div class="mb-2 position-relative">
-            <textarea class="form-control form-control-sm" rows="2" required maxlength="1000">${originalContent}</textarea>
+            <textarea class="form-control form-control-sm" rows="2" required maxlength="1000" data-rtl="true">${originalContent}</textarea>
             <small class="text-muted position-absolute end-0 bottom-0 pe-2 mb-1">
                 <span class="edit-char-count">${originalContent.length}</span>/1000
             </small>

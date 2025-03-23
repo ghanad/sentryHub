@@ -197,12 +197,19 @@
 .rtl-text {
     direction: rtl;
     text-align: right;
-    font-family: system-ui, -apple-system, "Segoe UI", Tahoma, Arial, sans-serif;
+    font-family: 'IranSansX', system-ui, -apple-system, "Segoe UI", Tahoma, Arial, sans-serif;
+    font-weight: 400;
+    line-height: 1.8;
+    letter-spacing: 0;
 }
 
 .rtl-text textarea {
     text-align: right;
     direction: rtl;
+    font-family: 'IranSansX', system-ui, -apple-system, "Segoe UI", Tahoma, Arial, sans-serif;
+    font-weight: 400;
+    line-height: 1.8;
+    letter-spacing: 0;
 }
 
 /* Ensure dropdown arrows are properly positioned in RTL */
@@ -232,4 +239,12 @@
 /* Loading state */
 #comment-loading {
     background: rgba(255, 255, 255, 0.8);
+}
+
+/* Optimize Persian text rendering */
+.rtl-text {
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "ss01", "ss02", "ss03", "ss04";
 } 

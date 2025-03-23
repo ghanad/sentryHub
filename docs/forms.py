@@ -16,6 +16,18 @@ class AlertDocumentationForm(forms.ModelForm):
                     'directionality': 'rtl',
                     'height': 400,
                     'width': '100%',
+                    'content_style': '''
+                        body {
+                            font-family: 'IranSansX', system-ui, -apple-system, 'Segoe UI', Tahoma, Arial, sans-serif;
+                            font-weight: 400;
+                            line-height: 1.8;
+                            letter-spacing: 0;
+                            text-rendering: optimizeLegibility;
+                            -webkit-font-smoothing: antialiased;
+                            -moz-osx-font-smoothing: grayscale;
+                            font-feature-settings: "ss01", "ss02", "ss03", "ss04";
+                        }
+                    ''',
                     'plugins': '''
                         textcolor save link image media preview table contextmenu
                         fileupload table code lists fullscreen insertdatetime nonbreaking

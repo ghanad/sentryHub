@@ -1,0 +1,138 @@
+/* IranSansX Font Face Definitions */
+@font-face {
+    font-family: 'IranSansX';
+    font-style: normal;
+    font-weight: 100;
+    src: url('../fonts/iransansx/woff/IRANSansX-UltraLight.woff') format('woff'),
+         url('../fonts/iransansx/woff2/IRANSansX-UltraLight.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'IranSansX';
+    font-style: normal;
+    font-weight: 200;
+    src: url('../fonts/iransansx/woff/IRANSansX-Thin.woff') format('woff'),
+         url('../fonts/iransansx/woff2/IRANSansX-Thin.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'IranSansX';
+    font-style: normal;
+    font-weight: 300;
+    src: url('../fonts/iransansx/woff/IRANSansX-Light.woff') format('woff'),
+         url('../fonts/iransansx/woff2/IRANSansX-Light.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'IranSansX';
+    font-style: normal;
+    font-weight: 400;
+    src: url('../fonts/iransansx/woff/IRANSansX-Regular.woff') format('woff'),
+         url('../fonts/iransansx/woff2/IRANSansX-Regular.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'IranSansX';
+    font-style: normal;
+    font-weight: 500;
+    src: url('../fonts/iransansx/woff/IRANSansX-Medium.woff') format('woff'),
+         url('../fonts/iransansx/woff2/IRANSansX-Medium.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'IranSansX';
+    font-style: normal;
+    font-weight: 600;
+    src: url('../fonts/iransansx/woff/IRANSansX-DemiBold.woff') format('woff'),
+         url('../fonts/iransansx/woff2/IRANSansX-DemiBold.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'IranSansX';
+    font-style: normal;
+    font-weight: 700;
+    src: url('../fonts/iransansx/woff/IRANSansX-Bold.woff') format('woff'),
+         url('../fonts/iransansx/woff2/IRANSansX-Bold.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'IranSansX';
+    font-style: normal;
+    font-weight: 800;
+    src: url('../fonts/iransansx/woff/IRANSansX-ExtraBold.woff') format('woff'),
+         url('../fonts/iransansx/woff2/IRANSansX-ExtraBold.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'IranSansX';
+    font-style: normal;
+    font-weight: 900;
+    src: url('../fonts/iransansx/woff/IRANSansX-Black.woff') format('woff'),
+         url('../fonts/iransansx/woff2/IRANSansX-Black.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'IranSansX';
+    font-style: normal;
+    font-weight: 950;
+    src: url('../fonts/iransansx/woff/IRANSansX-ExtraBlack.woff') format('woff'),
+         url('../fonts/iransansx/woff2/IRANSansX-ExtraBlack.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'IranSansX';
+    font-style: normal;
+    font-weight: 1000;
+    src: url('../fonts/iransansx/woff/IRANSansX-Heavy.woff') format('woff'),
+         url('../fonts/iransansx/woff2/IRANSansX-Heavy.woff2') format('woff2');
+}
+
+/* Persian Text Utility Classes */
+.persian-text {
+    font-family: 'IranSansX', system-ui, -apple-system, "Segoe UI", Tahoma, Arial, sans-serif;
+    direction: rtl;
+    text-align: right;
+    font-weight: 400;
+    line-height: 1.8;
+    letter-spacing: 0;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "ss01", "ss02", "ss03", "ss04";
+}
+
+.persian-text-thin { font-weight: 100; }
+.persian-text-ultralight { font-weight: 200; }
+.persian-text-light { font-weight: 300; }
+.persian-text-regular { font-weight: 400; }
+.persian-text-medium { font-weight: 500; }
+.persian-text-demibold { font-weight: 600; }
+.persian-text-bold { font-weight: 700; }
+.persian-text-extrabold { font-weight: 800; }
+.persian-text-black { font-weight: 900; }
+.persian-text-extrablack { font-weight: 950; }
+.persian-text-heavy { font-weight: 1000; }
+
+/* Persian Text Optimization */
+.persian {
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "ss01"; /* Persian numbers */
+}
+
+/* RTL Support */
+.rtl {
+    direction: rtl;
+    text-align: right;
+}
+
+/* Persian Input Fields */
+.persian-input {
+    font-family: IranSansX, system-ui, -apple-system, "Segoe UI", Tahoma, Arial, sans-serif;
+    direction: rtl;
+    text-align: right;
+    font-weight: 400;
+    line-height: 1.8;
+    letter-spacing: 0;
+} 
