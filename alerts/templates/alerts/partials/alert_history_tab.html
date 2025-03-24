@@ -1,4 +1,5 @@
 <!-- History Tab -->
+{% load date_format_tags %}
 <div class="tab-pane fade {% if active_tab == 'history' %}show active{% endif %}" id="history" role="tabpanel" aria-labelledby="history-tab">
     <div class="table-responsive">
         <table class="table table-hover border-bottom">
@@ -23,14 +24,34 @@
                         {% endif %}
                     </td>
                     <td>
-                        <span data-bs-toggle="tooltip" title="{{ instance.started_at|date:'Y-m-d H:i:s' }}">
-                            {{ instance.started_at|date:"M d, H:i" }}
+                        <span data-bs-toggle="tooltip" title="
+                         {% if user.profile.date_format_preference == 'jalali' %}
+                            {{ instance.started_at|force_jalali:"%Y-%m-%d %H:%M:%S" }}
+                        {% else %}
+                            {{ instance.started_at|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
+                        {% endif %}
+                        ">
+                             {% if user.profile.date_format_preference == 'jalali' %}
+                                    {{ instance.started_at|force_jalali:"%Y-%m-%d %H:%M:%S"  }}
+                                {% else %}
+                                    {{ instance.started_at|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
+                                {% endif %}
                         </span>
                     </td>
                     <td>
                         {% if instance.ended_at %}
-                            <span data-bs-toggle="tooltip" title="{{ instance.ended_at|date:'Y-m-d H:i:s' }}">
-                                {{ instance.ended_at|date:"M d, H:i" }}
+                            <span data-bs-toggle="tooltip" title="
+                             {% if user.profile.date_format_preference == 'jalali' %}
+                                {{ instance.ended_at|force_jalali:"%Y-%m-%d %H:%M:%S" }}
+                            {% else %}
+                                {{ instance.ended_at|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
+                            {% endif %}
+                            ">
+                                {% if user.profile.date_format_preference == 'jalali' %}
+                                    {{ instance.ended_at|force_jalali:"%Y-%m-%d %H:%M:%S" }}
+                                {% else %}
+                                    {{ instance.ended_at|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
+                                {% endif %}
                             </span>
                         {% elif instance.status == 'resolved' and instance.resolution_type == 'inferred' %}
                             <span class="badge bg-warning text-dark">Inferred</span>
@@ -59,7 +80,13 @@
                         {% with ack=instance.acknowledgements.first %}
                         {% if ack %}
                         <span class="text-success" data-bs-toggle="tooltip" 
-                              title="By {{ ack.acknowledged_by.username }} at {{ ack.acknowledged_at|date:'Y-m-d H:i:s' }}{% if ack.comment %} - {{ ack.comment }}{% endif %}">
+                              title="By {{ ack.acknowledged_by.username }} at
+                               {% if user.profile.date_format_preference == 'jalali' %}
+                                    {{ ack.acknowledged_at|force_jalali:"%Y-%m-%d %H:%M:%S" }}
+                                {% else %}
+                                    {{ ack.acknowledged_at|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
+                                {% endif %}
+                              {% if ack.comment %} - {{ ack.comment }}{% endif %}">
                             <i class="bi bi-check-circle-fill"></i>
                         </span>
                         {% else %}
@@ -153,13 +180,23 @@
                                                     </tr>
                                                     <tr>
                                                         <th>Started At</th>
-                                                        <td>{{ instance.started_at|date:"Y-m-d H:i:s" }}</td>
+                                                        <td>
+                                                             {% if user.profile.date_format_preference == 'jalali' %}
+                                                                {{ instance.started_at|force_jalali:"%Y-%m-%d %H:%M:%S" }}
+                                                            {% else %}
+                                                                {{ instance.started_at|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
+                                                            {% endif %}
+                                                        </td>
                                                     </tr>
                                                     <tr>
                                                         <th>Ended At</th>
                                                         <td>
-                                                            {% if instance.ended_at %}
-                                                            {{ instance.ended_at|date:"Y-m-d H:i:s" }}
+                                                             {% if instance.ended_at %}
+                                                                 {% if user.profile.date_format_preference == 'jalali' %}
+                                                                    {{ instance.ended_at|force_jalali:"%Y-%m-%d %H:%M:%S" }}
+                                                                {% else %}
+                                                                    {{ instance.ended_at|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
+                                                                {% endif %}
                                                             {% else %}
                                                             <em>Still active</em>
                                                             {% endif %}
@@ -189,7 +226,13 @@
                                                     </tr>
                                                     <tr>
                                                         <th>Acknowledged At</th>
-                                                        <td>{{ ack.acknowledged_at|date:"Y-m-d H:i:s" }}</td>
+                                                        <td>
+                                                             {% if user.profile.date_format_preference == 'jalali' %}
+                                                                {{ ack.acknowledged_at|force_jalali:"%Y-%m-%d %H:%M:%S" }}
+                                                            {% else %}
+                                                                {{ ack.acknowledged_at|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
+                                                            {% endif %}
+                                                        </td>
                                                     </tr>
                                                     {% if ack.comment %}
                                                     <tr>
