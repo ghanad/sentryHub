@@ -1,10 +1,12 @@
+{% load date_format_tags %}
+
 <!-- Alert Summary Card -->
 <div class="row mb-4">
     <div class="col-12">
         <div class="card">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
-                    <h4 class="alert-header severity-{{ alert.severity }}">{{ alert.name }} 
+                    <h4 class="alert-header severity-{{ alert.severity }}">{{ alert.name }}
                         {% if alert.current_status == 'firing' %}
                         <span class="badge bg-danger">Firing</span>
                         {% else %}
@@ -16,7 +18,7 @@
                         <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#acknowledgeModal">
                             <i class="bi bi-check-circle"></i> Acknowledge
                         </button>
-                        
+
                         <!-- Acknowledge Modal -->
                         <div class="modal fade" id="acknowledgeModal" tabindex="-1" aria-labelledby="acknowledgeModalLabel" aria-hidden="true">
                             <div class="modal-dialog">
@@ -30,7 +32,7 @@
                                             {% csrf_token %}
                                             <p>You are acknowledging the alert: <strong>{{ alert.name }}</strong></p>
                                             <p>Please provide a comment explaining the reason for acknowledgement or any actions being taken:</p>
-                                            
+
                                             <div class="mb-3">
                                                 <label for="id_comment" class="form-label">Comment <span class="text-danger">*</span></label>
                                                 {{ acknowledge_form.comment }}
@@ -76,7 +78,13 @@
                             </tr>
                             <tr>
                                 <th>First Occurrence</th>
-                                <td>{{ alert.first_occurrence|date:"Y-m-d H:i:s" }}</td>
+                                <td>
+                                    {% if user.profile.date_format_preference == 'jalali' %}
+                                        {{ alert.first_occurrence|force_jalali:"%Y-%m-%d %H:%M:%S" }}
+                                    {% else %}
+                                        {{ alert.first_occurrence|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
+                                    {% endif %}
+                                </td>
                             </tr>
                         </table>
                     </div>
@@ -84,7 +92,13 @@
                         <table class="table">
                             <tr>
                                 <th style="width: 30%">Last Occurrence</th>
-                                <td>{{ alert.last_occurrence|date:"Y-m-d H:i:s" }}</td>
+                                <td>
+                                    {% if user.profile.date_format_preference == 'jalali' %}
+                                        {{ alert.last_occurrence|force_jalali:"%Y-%m-%d %H:%M:%S" }}
+                                    {% else %}
+                                        {{ alert.last_occurrence|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
+                                    {% endif %}
+                                </td>
                             </tr>
                             <tr>
                                 <th>Total Firing Count</th>
@@ -94,7 +108,12 @@
                                 <th>Acknowledged</th>
                                 <td>
                                     {% if alert.acknowledged %}
-                                    Yes, by {{ alert.acknowledged_by.username }} at {{ alert.acknowledgement_time|date:"Y-m-d H:i:s" }}
+                                    Yes, by {{ alert.acknowledged_by.username }} at
+                                        {% if user.profile.date_format_preference == 'jalali' %}
+                                            {{ alert.acknowledgement_time|force_jalali:"%Y-%m-%d %H:%M:%S" }}
+                                        {% else %}
+                                            {{ alert.acknowledgement_time|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
+                                        {% endif %}
                                     {% else %}
                                     <span class="badge bg-secondary">No</span>
                                     {% endif %}
@@ -106,4 +125,4 @@
             </div>
         </div>
     </div>
-</div> 
+</div>
