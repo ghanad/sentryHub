@@ -1,5 +1,6 @@
 {# Path: admin_dashboard/templates/admin_dashboard/comments.html #}
 {% extends "admin_dashboard/base.html" %}
+{% load date_format_tags %}
 
 {% block title %}Admin Comments - SentryHub{% endblock %}
 
@@ -75,8 +76,20 @@
                                 </td>
                                 <td>{{ comment.user.username }}</td>
                                 <td>{{ comment.content|truncatechars:100 }}</td>
-                                <td>{{ comment.created_at|date:"Y-m-d H:i:s" }}</td>
-                                <td>{{ comment.alert_group.first_occurrence|date:"Y-m-d H:i:s" }}</td>
+                                <td>
+                                    {% if user.profile.date_format_preference == 'jalali' %}
+                                        {{ comment.created_at|force_jalali:"%Y-%m-%d %H:%M:%S" }}
+                                    {% else %}
+                                        {{ comment.created_at|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if user.profile.date_format_preference == 'jalali' %}
+                                        {{ comment.alert_group.first_occurrence|force_jalali:"%Y-%m-%d %H:%M:%S" }}
+                                    {% else %}
+                                        {{ comment.alert_group.first_occurrence|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
+                                    {% endif %}
+                                </td>
                                 <td>
                                     <a href="{% url 'alerts:alert-detail' comment.alert_group.fingerprint %}?tab=comments" class="btn btn-sm btn-outline-primary">
                                         <i class="bi bi-eye"></i> View
@@ -100,7 +113,13 @@
                                                     </div>
                                                     <p><strong>Alert:</strong> {{ comment.alert_group.name }}</p>
                                                     <p><strong>User:</strong> {{ comment.user.username }}</p>
-                                                    <p><strong>Date:</strong> {{ comment.created_at|date:"Y-m-d H:i:s" }}</p>
+                                                    <p><strong>Date:</strong> 
+                                                        {% if user.profile.date_format_preference == 'jalali' %}
+                                                            {{ comment.created_at|force_jalali:"%Y-%m-%d %H:%M:%S" }}
+                                                        {% else %}
+                                                            {{ comment.created_at|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
+                                                        {% endif %}
+                                                    </p>
                                                 </div>
                                                 <div class="modal-footer">
                                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>

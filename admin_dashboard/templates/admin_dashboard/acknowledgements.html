@@ -1,5 +1,6 @@
 {# Path: admin_dashboard/templates/admin_dashboard/acknowledgements.html #}
 {% extends "admin_dashboard/base.html" %}
+{% load date_format_tags %}
 
 {% block title %}Admin Acknowledgements - SentryHub{% endblock %}
 
@@ -74,8 +75,20 @@
                                     </a>
                                 </td>
                                 <td>{{ ack.acknowledged_by.username }}</td>
-                                <td>{{ ack.acknowledged_at|date:"Y-m-d H:i:s" }}</td>
-                                <td>{{ ack.alert_group.first_occurrence|date:"Y-m-d H:i:s" }}</td>
+                                <td>
+                                    {% if user.profile.date_format_preference == 'jalali' %}
+                                        {{ ack.acknowledged_at|force_jalali:"%Y-%m-%d %H:%M:%S" }}
+                                    {% else %}
+                                        {{ ack.acknowledged_at|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if user.profile.date_format_preference == 'jalali' %}
+                                        {{ ack.alert_group.first_occurrence|force_jalali:"%Y-%m-%d %H:%M:%S" }}
+                                    {% else %}
+                                        {{ ack.alert_group.first_occurrence|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
+                                    {% endif %}
+                                </td>
                                 <td>{{ ack.comment|default:"No comment"|truncatechars:100 }}</td>
                                 <td>
                                     <a href="{% url 'alerts:alert-detail' ack.alert_group.fingerprint %}?tab=ack_history" class="btn btn-sm btn-outline-primary">
@@ -98,7 +111,13 @@
                                                     <div class="alert alert-warning">
                                                         <p><strong>Alert:</strong> {{ ack.alert_group.name }}</p>
                                                         <p><strong>User:</strong> {{ ack.acknowledged_by.username }}</p>
-                                                        <p><strong>Date:</strong> {{ ack.acknowledged_at|date:"Y-m-d H:i:s" }}</p>
+                                                        <p><strong>Date:</strong> 
+                                                            {% if user.profile.date_format_preference == 'jalali' %}
+                                                                {{ ack.acknowledged_at|force_jalali:"%Y-%m-%d %H:%M:%S" }}
+                                                            {% else %}
+                                                                {{ ack.acknowledged_at|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
+                                                            {% endif %}
+                                                        </p>
                                                         {% if ack.comment %}
                                                         <p><strong>Comment:</strong> {{ ack.comment|truncatechars:150 }}</p>
                                                         {% endif %}
