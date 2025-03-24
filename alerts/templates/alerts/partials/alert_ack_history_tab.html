@@ -1,3 +1,4 @@
+{% load date_format_tags %}
 <!-- Acknowledgement History Tab -->
 <div class="tab-pane fade {% if active_tab == 'ack_history' %}show active{% endif %}" id="ack_history" role="tabpanel" aria-labelledby="ack-history-tab">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -53,8 +54,13 @@
                 <tr>
                     <td>
                         <div class="d-flex flex-column">
-                            <span class="fw-medium">{{ ack.acknowledged_at|date:"M d, Y" }}</span>
-                            <small class="text-muted">{{ ack.acknowledged_at|date:"H:i:s" }}</small>
+                            <span class="fw-medium">
+                                {% if user.profile.date_format_preference == 'jalali' %}
+                                    {{ ack.acknowledged_at|force_jalali:"%Y-%m-%d %H:%M:%S" }}
+                                {% else %}
+                                    {{ ack.acknowledged_at|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
+                                {% endif %}
+                            </span>
                         </div>
                     </td>
                     <td>
@@ -72,9 +78,18 @@
                                 {% if ack.alert_instance.ended_at %}Ended{% else %}Active{% endif %}
                             </span>
                             <small class="text-muted">
-                                {{ ack.alert_instance.started_at|date:"M d, H:i" }}
+                                {% if user.profile.date_format_preference == 'jalali' %}
+                                    {{ ack.alert_instance.started_at|force_jalali:"%Y-%m-%d %H:%M:%S" }}
+                                {% else %}
+                                    {{ ack.alert_instance.started_at|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
+                                {% endif %}
                                 {% if ack.alert_instance.ended_at %}
-                                - {{ ack.alert_instance.ended_at|date:"M d, H:i" }}
+                                -
+                                {% if user.profile.date_format_preference == 'jalali' %}
+                                    {{ ack.alert_instance.ended_at|force_jalali:"%Y-%m-%d %H:%M:%S" }}
+                                {% else %}
+                                    {{ ack.alert_instance.ended_at|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
+                                {% endif %}
                                 {% endif %}
                             </small>
                         </div>
@@ -114,7 +129,7 @@
             {% if acknowledgement_history.has_previous %}
             <li class="page-item">
                 <a class="page-link" href="?page={{ acknowledgement_history.previous_page_number }}&tab=ack_history" aria-label="Previous">
-                    <span aria-hidden="true">&laquo;</span>
+                    <span aria-hidden="true">«</span>
                 </a>
             </li>
             {% endif %}
@@ -128,7 +143,7 @@
             {% if acknowledgement_history.has_next %}
             <li class="page-item">
                 <a class="page-link" href="?page={{ acknowledgement_history.next_page_number }}&tab=ack_history" aria-label="Next">
-                    <span aria-hidden="true">&raquo;</span>
+                    <span aria-hidden="true">»</span>
                 </a>
             </li>
             {% endif %}
