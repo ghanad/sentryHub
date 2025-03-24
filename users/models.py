@@ -4,9 +4,20 @@ from django.contrib.auth.models import User
 # Create your models here.
 
 class UserProfile(models.Model):
+    DATE_FORMAT_CHOICES = [
+        ('gregorian', 'Gregorian (Western)'),
+        ('jalali', 'Jalali (Persian)')
+    ]
+    
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     department = models.CharField(max_length=100, blank=True)
     phone_number = models.CharField(max_length=20, blank=True)
+    date_format_preference = models.CharField(
+        max_length=10,
+        choices=DATE_FORMAT_CHOICES,
+        default='gregorian',
+        help_text='Choose your preferred date format'
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

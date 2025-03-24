@@ -1,11 +1,12 @@
 {% extends "users/base.html" %}
+{% load jalali_tags %}
 
 {% block title %}My Profile - SentryHub{% endblock %}
 
 {% block user_content %}
 <div class="row">
     <div class="col-md-8">
-        <div class="card">
+        <div class="card mb-4">
             <div class="card-header">
                 <h5 class="card-title mb-0">Profile Information</h5>
             </div>
@@ -28,12 +29,38 @@
                 </div>
                 <div class="row mb-3">
                     <div class="col-sm-3 text-muted">Date Joined:</div>
-                    <div class="col-sm-9">{{ user.date_joined|date:"F j, Y" }}</div>
+                    <div class="col-sm-9">{{ user.date_joined|to_jalali:"%Y/%m/%d" }}</div>
                 </div>
                 <div class="row mb-3">
                     <div class="col-sm-3 text-muted">Last Login:</div>
-                    <div class="col-sm-9">{{ user.last_login|date:"F j, Y, g:i a" }}</div>
+                    <div class="col-sm-9">{{ user.last_login|to_jalali_datetime:"%Y/%m/%d %H:%M" }}</div>
                 </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Preferences</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'users:update_preferences' %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="date_format_preference" class="form-label">Date Format Preference</label>
+                        <select name="date_format_preference" id="date_format_preference" class="form-select">
+                            <option value="gregorian" {% if user.profile.date_format_preference == 'gregorian' %}selected{% endif %}>
+                                Gregorian (Western)
+                            </option>
+                            <option value="jalali" {% if user.profile.date_format_preference == 'jalali' %}selected{% endif %}>
+                                Jalali (Persian)
+                            </option>
+                        </select>
+                        <div class="form-text">Choose how dates should be displayed throughout the application.</div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Save Preferences
+                    </button>
+                </form>
             </div>
         </div>
     </div>

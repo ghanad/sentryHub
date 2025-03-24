@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, TemplateView
 from django.contrib.auth.mixins import UserPassesTestMixin, LoginRequiredMixin
 from django.contrib.auth.models import User
@@ -6,7 +6,10 @@ from django.urls import reverse_lazy
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.db import models, IntegrityError
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from .forms import CustomUserCreationForm, CustomUserChangeForm
+from .models import UserProfile
 
 # Create your views here.
 
@@ -19,6 +22,8 @@ class UserProfileView(LoginRequiredMixin, TemplateView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        # Ensure user has a profile
+        profile, created = UserProfile.objects.get_or_create(user=self.request.user)
         context['user'] = self.request.user
         return context
 
@@ -125,3 +130,17 @@ class UserDeleteView(AdminRequiredMixin, DeleteView):
 
     def get_object(self):
         return get_object_or_404(User, pk=self.kwargs['pk'])
+
+@login_required
+def update_preferences(request):
+    if request.method == 'POST':
+        date_format = request.POST.get('date_format_preference')
+        if date_format in ['gregorian', 'jalali']:
+            # Get or create profile
+            profile, created = UserProfile.objects.get_or_create(user=request.user)
+            profile.date_format_preference = date_format
+            profile.save()
+            messages.success(request, 'Your preferences have been updated successfully.')
+        else:
+            messages.error(request, 'Invalid date format preference.')
+    return redirect('users:profile')

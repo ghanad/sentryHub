@@ -1,5 +1,6 @@
 {# docs/templates/docs/documentation_detail.html #}
 {% extends "alerts/base.html" %}
+{% load jalali_tags %}
 
 {% block title %}{{ documentation.title }} - SentryHub{% endblock %}
 
@@ -125,11 +126,23 @@
                             </tr>
                             <tr>
                                 <th>Created At</th>
-                                <td>{{ documentation.created_at|date:"Y-m-d H:i" }}</td>
+                                <td>
+                                    {% if user.profile.date_format_preference == 'jalali' %}
+                                        {{ documentation.created_at|force_jalali }}
+                                    {% else %}
+                                        {{ documentation.created_at|force_gregorian }}
+                                    {% endif %}
+                                </td>
                             </tr>
                             <tr>
                                 <th>Last Updated</th>
-                                <td>{{ documentation.updated_at|date:"Y-m-d H:i" }}</td>
+                                <td>
+                                    {% if user.profile.date_format_preference == 'jalali' %}
+                                        {{ documentation.updated_at|force_jalali }}
+                                    {% else %}
+                                        {{ documentation.updated_at|force_gregorian }}
+                                    {% endif %}
+                                </td>
                             </tr>
                         </table>
                     </div>
@@ -178,7 +191,13 @@
                                     {% endif %}
                                 </td>
                                 <td>{{ alert.name }}</td>
-                                <td>{{ alert.last_occurrence|date:"Y-m-d H:i:s" }}</td>
+                                <td>
+                                    {% if user.profile.date_format_preference == 'jalali' %}
+                                        {{ alert.last_occurrence|force_jalali:"%Y-%m-%d %H:%M:%S" }}
+                                    {% else %}
+                                        {{ alert.last_occurrence|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
+                                    {% endif %}
+                                </td>
                                 <td>
                                     <a href="{% url 'alerts:alert-detail' alert.fingerprint %}" class="btn btn-sm btn-outline-primary">
                                         <i class="bi bi-eye"></i> View
