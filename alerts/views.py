@@ -253,22 +253,6 @@ class AlertDetailView(LoginRequiredMixin, DetailView):
         return redirect('alerts:alert-detail', fingerprint=alert.fingerprint)
 
 
-class AlertHistoryView(LoginRequiredMixin, DetailView):
-    model = AlertGroup
-    template_name = 'alerts/alert_history.html'
-    context_object_name = 'alert'
-    slug_field = 'fingerprint'
-    slug_url_kwarg = 'fingerprint'
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        
-        # Get all instances for this alert group
-        context['instances'] = self.object.instances.all().order_by('-started_at')
-        
-        return context
-
-
 def login_view(request):
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
