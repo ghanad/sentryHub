@@ -128,9 +128,9 @@
                                 <th>Created At</th>
                                 <td>
                                     {% if user.profile.date_format_preference == 'jalali' %}
-                                        {{ documentation.created_at|force_jalali }}
+                                        {{ documentation.created_at|force_jalali:"%Y-%m-%d %H:%M:%S" }}
                                     {% else %}
-                                        {{ documentation.created_at|force_gregorian }}
+                                        {{ documentation.created_at|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
                                     {% endif %}
                                 </td>
                             </tr>
@@ -138,9 +138,9 @@
                                 <th>Last Updated</th>
                                 <td>
                                     {% if user.profile.date_format_preference == 'jalali' %}
-                                        {{ documentation.updated_at|force_jalali }}
+                                        {{ documentation.updated_at|force_jalali:"%Y-%m-%d %H:%M:%S" }}
                                     {% else %}
-                                        {{ documentation.updated_at|force_gregorian }}
+                                        {{ documentation.updated_at|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
                                     {% endif %}
                                 </td>
                             </tr>

@@ -1,5 +1,6 @@
 {# docs/templates/docs/documentation_list.html #}
 {% extends "alerts/base.html" %}
+{% load date_format_tags %}
 
 {% block title %}Alert Documentation - SentryHub{% endblock %}
 
@@ -61,7 +62,13 @@
                             <tr>
                                 <td>{{ doc.title }}</td>
                                 <td>{{ doc.created_by.username|default:"System" }}</td>
-                                <td>{{ doc.updated_at|date:"Y-m-d H:i" }}</td>
+                                <td>
+                                    {% if user.profile.date_format_preference == 'jalali' %}
+                                        {{ doc.updated_at|force_jalali:"%Y-%m-%d %H:%M" }}
+                                    {% else %}
+                                        {{ doc.updated_at|force_gregorian:"%Y-%m-%d %H:%M" }}
+                                    {% endif %}
+                                </td>
                                 <td>
                                     <a href="{% url 'docs:documentation-detail' doc.pk %}" class="btn btn-sm btn-outline-primary">
                                         <i class="bi bi-eye"></i> View
