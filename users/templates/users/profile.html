@@ -1,5 +1,5 @@
 {% extends "users/base.html" %}
-{% load jalali_tags %}
+{% load date_format_tags %}
 
 {% block title %}My Profile - SentryHub{% endblock %}
 
@@ -29,11 +29,23 @@
                 </div>
                 <div class="row mb-3">
                     <div class="col-sm-3 text-muted">Date Joined:</div>
-                    <div class="col-sm-9">{{ user.date_joined|to_jalali:"%Y/%m/%d" }}</div>
+                    <div class="col-sm-9">
+                        {% if user.profile.date_format_preference == 'jalali' %}
+                            {{ user.date_joined|force_jalali:"%Y-%m-%d %H:%M:%S" }}
+                        {% else %}
+                            {{ user.date_joined|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
+                        {% endif %}
+                    </div>
                 </div>
                 <div class="row mb-3">
                     <div class="col-sm-3 text-muted">Last Login:</div>
-                    <div class="col-sm-9">{{ user.last_login|to_jalali_datetime:"%Y/%m/%d %H:%M" }}</div>
+                    <div class="col-sm-9">
+                        {% if user.profile.date_format_preference == 'jalali' %}
+                            {{ user.last_login|force_jalali:"%Y-%m-%d %H:%M:%S" }}
+                        {% else %}
+                            {{ user.last_login|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
