@@ -1,0 +1,36 @@
+{% extends "users/base.html" %}
+{% load date_format_tags %}
+
+{% block title %}My Preferences - SentryHub{% endblock %}
+
+{% block user_content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">User Preferences</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'users:update_preferences' %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="date_format_preference" class="form-label">Date Format Preference</label>
+                        <select name="date_format_preference" id="date_format_preference" class="form-select">
+                            <option value="gregorian" {% if user.profile.date_format_preference == 'gregorian' %}selected{% endif %}>
+                                Gregorian (Western)
+                            </option>
+                            <option value="jalali" {% if user.profile.date_format_preference == 'jalali' %}selected{% endif %}>
+                                Jalali (Persian)
+                            </option>
+                        </select>
+                        <div class="form-text">Choose how dates should be displayed throughout the application.</div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Save Preferences
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -50,31 +50,6 @@
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Preferences</h5>
-            </div>
-            <div class="card-body">
-                <form method="post" action="{% url 'users:update_preferences' %}">
-                    {% csrf_token %}
-                    <div class="mb-3">
-                        <label for="date_format_preference" class="form-label">Date Format Preference</label>
-                        <select name="date_format_preference" id="date_format_preference" class="form-select">
-                            <option value="gregorian" {% if user.profile.date_format_preference == 'gregorian' %}selected{% endif %}>
-                                Gregorian (Western)
-                            </option>
-                            <option value="jalali" {% if user.profile.date_format_preference == 'jalali' %}selected{% endif %}>
-                                Jalali (Persian)
-                            </option>
-                        </select>
-                        <div class="form-text">Choose how dates should be displayed throughout the application.</div>
-                    </div>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-save"></i> Save Preferences
-                    </button>
-                </form>
-            </div>
-        </div>
     </div>
     
     <div class="col-md-4">
@@ -84,6 +59,9 @@
             </div>
             <div class="card-body">
                 <div class="d-grid gap-2">
+                    <a href="{% url 'users:preferences' %}" class="btn btn-primary mb-2">
+                        <i class="bi bi-gear me-2"></i>Preferences
+                    </a>
                     <a href="{% url 'password_change' %}" class="btn btn-primary">
                         <i class="bi bi-key me-2"></i>Change Password
                     </a>
@@ -97,4 +75,4 @@
         </div>
     </div>
 </div>
-{% endblock %} 
+{% endblock %}

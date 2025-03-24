@@ -17,6 +17,15 @@ class AdminRequiredMixin(UserPassesTestMixin):
     def test_func(self):
         return self.request.user.is_authenticated and self.request.user.is_staff
 
+class PreferencesView(LoginRequiredMixin, TemplateView):
+    template_name = 'users/preferences.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        profile, created = UserProfile.objects.get_or_create(user=self.request.user)
+        context['user'] = self.request.user
+        return context
+
 class UserProfileView(LoginRequiredMixin, TemplateView):
     template_name = 'users/profile.html'
     
@@ -143,4 +152,4 @@ def update_preferences(request):
             messages.success(request, 'Your preferences have been updated successfully.')
         else:
             messages.error(request, 'Invalid date format preference.')
-    return redirect('users:profile')
+    return redirect('users:preferences')
