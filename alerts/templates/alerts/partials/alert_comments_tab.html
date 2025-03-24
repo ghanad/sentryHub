@@ -1,8 +1,9 @@
+{% load static %}
+{% load date_format_tags %}  <!-- Load the template tags -->
 <!-- File: /alerts/templates/alerts/partials/alert_comments_tab.html -->
 <!-- Comments Tab -->
-{% load static %}
 <div class="tab-pane fade {% if active_tab == 'comments' %}show active{% endif %}" id="comments" role="tabpanel" aria-labelledby="comments-tab">
-    
+
     <!-- Comments Header -->
     <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
         <span class="d-flex align-items-center text-muted">
@@ -13,15 +14,15 @@
             <i class="bi bi-plus-circle me-1"></i>Add Comment
         </button>
     </div>
-    
+
     <!-- Comment Form - Initially Hidden -->
     <div class="card mb-3 shadow-sm border-0" id="comment-form-container" style="display: none;">
         <div class="card-body p-3">
             <form id="commentForm" class="comment-form needs-validation" novalidate>
                 {% csrf_token %}
                 <div class="mb-2 position-relative">
-                    <textarea class="form-control form-control-sm" id="commentText" name="content" 
-                        rows="2" placeholder="Add your comment..." aria-label="Comment text" 
+                    <textarea class="form-control form-control-sm" id="commentText" name="content"
+                        rows="2" placeholder="Add your comment..." aria-label="Comment text"
                         required maxlength="1000"></textarea>
                     <div class="invalid-feedback">
                         Please enter a comment before submitting.
@@ -55,7 +56,13 @@
         <div class="list-group-item comment-item p-2 border-start-0 border-end-0 border-top-0 {% if forloop.last %}border-bottom-0{% endif %}">
             <div class="d-flex justify-content-between align-items-start mb-1">
                 <div class="d-flex align-items-center">
-                    <span class="text-muted small me-2">{{ comment.created_at|date:"M d, H:i" }}</span>
+                    <span class="text-muted small me-2">
+                        {% if user.profile.date_format_preference == 'jalali' %}
+                            {{ comment.created_at|force_jalali:"%Y-%m-%d %H:%M:%S" }}
+                        {% else %}
+                            {{ comment.created_at|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
+                        {% endif %}
+                    </span>
                     <span class="fw-medium text-muted text-truncate" style="max-width: 150px;">{{ comment.user.username }}</span>
                 </div>
                 {% if user == comment.user or user.is_staff %}
