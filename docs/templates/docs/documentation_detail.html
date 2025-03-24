@@ -1,81 +1,12 @@
 {# docs/templates/docs/documentation_detail.html #}
 {% extends "alerts/base.html" %}
+{% load static %}
 {% load date_format_tags %}
 
 {% block title %}{{ documentation.title }} - SentryHub{% endblock %}
 
 {% block extra_css %}
-<style>
-.documentation-content {
-    direction: rtl;
-    text-align: right;
-    font-family: 'IranSansX', system-ui, -apple-system, 'Segoe UI', Tahoma, Arial, sans-serif;
-    font-weight: 400;
-    line-height: 1.8;
-    letter-spacing: 0;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    font-feature-settings: "ss01", "ss02", "ss03", "ss04";
-}
-
-.documentation-content p {
-    direction: rtl;
-    text-align: right;
-}
-
-.documentation-content p:has(code),
-.documentation-content pre,
-.documentation-content code {
-    direction: ltr;
-    text-align: left;
-    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-}
-
-.documentation-content img {
-    max-width: 100%;
-    height: auto;
-}
-
-.documentation-content table {
-    width: 100%;
-    margin-bottom: 1rem;
-    border-collapse: collapse;
-}
-
-.documentation-content table th,
-.documentation-content table td {
-    padding: 0.75rem;
-    border: 1px solid #dee2e6;
-}
-
-.documentation-content table th {
-    background-color: #f8f9fa;
-}
-
-.documentation-content pre {
-    background-color: #f8f9fa;
-    padding: 1rem;
-    border-radius: 0.25rem;
-    overflow-x: auto;
-    direction: ltr;
-    text-align: left;
-}
-
-.documentation-content blockquote {
-    border-right: 4px solid #dee2e6;
-    padding-right: 1rem;
-    margin: 1rem 0;
-    color: #6c757d;
-}
-
-.documentation-section {
-    padding: 15px;
-    margin-bottom: 15px;
-    border-radius: 5px;
-    background-color: #f8f9fa;
-}
-</style>
+<link rel="stylesheet" href="{% static 'docs/css/documentation_detail.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -137,7 +68,7 @@
                             <tr>
                                 <th>Last Updated</th>
                                 <td>
-                                    {% if user.profile.date_format_preference == 'jalali' %}
+                                    {% if user.proprofile.date_format_preference == 'jalali' %}
                                         {{ documentation.updated_at|force_jalali:"%Y-%m-%d %H:%M:%S" }}
                                     {% else %}
                                         {{ documentation.updated_at|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
@@ -171,7 +102,7 @@
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-hover">
+                    <table class="table table_hover">
                         <thead>
                             <tr>
                                 <th>Status</th>
@@ -219,32 +150,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Function to detect Persian text
-    function isPersianText(text) {
-        // Persian Unicode range: \u0600-\u06FF
-        const persianRegex = /[\u0600-\u06FF]/;
-        return persianRegex.test(text);
-    }
-
-    // Function to set text direction based on content
-    function setTextDirection(element) {
-        if (isPersianText(element.textContent)) {
-            element.style.direction = 'rtl';
-            element.style.textAlign = 'right';
-        } else {
-            element.style.direction = 'ltr';
-            element.style.textAlign = 'left';
-        }
-    }
-
-    // Apply RTL/LTR detection to all paragraphs in documentation content
-    const documentationContent = document.querySelector('.documentation-content');
-    if (documentationContent) {
-        const paragraphs = documentationContent.querySelectorAll('p');
-        paragraphs.forEach(setTextDirection);
-    }
-});
-</script>
+<script src="{% static 'docs/js/documentation_detail.js' %}"></script>
 {% endblock %}
