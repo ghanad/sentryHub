@@ -1,4 +1,6 @@
 {% extends "alerts/base.html" %}
+{% load static %}
+{% load date_format_tags %}
 
 {% block title %}Dashboard - SentryHub{% endblock %}
 
@@ -83,7 +85,13 @@
                                     <span class="badge bg-info text-dark">Info</span>
                                     {% endif %}
                                 </td>
-                                <td>{{ alert.last_occurrence|date:"Y-m-d H:i:s" }}</td>
+                                <td>
+                                    {% if user.profile.date_format_preference == 'jalali' %}
+                                        {{ alert.last_occurrence|force_jalali:"%Y-%m-%d %H:%M:%S" }}
+                                    {% else %}
+                                        {{ alert.last_occurrence|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
+                                    {% endif %}
+                                </td>
                                 <td>
                                     <a href="{% url 'alerts:alert-detail' alert.fingerprint %}" class="btn btn-sm btn-outline-primary">
                                         <i class="bi bi-eye"></i> View
