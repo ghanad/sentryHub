@@ -1,3 +1,5 @@
+{% load date_format_tags %}
+
 <!-- Alert Details Tab -->
 <div class="tab-pane fade {% if active_tab == 'details' %}show active{% endif %}" id="details" role="tabpanel" aria-labelledby="details-tab">
     <div class="row">
@@ -99,7 +101,12 @@
                     <th>Acknowledged</th>
                     <td>
                         {% if alert.acknowledged %}
-                        Yes, by {{ alert.acknowledged_by.username }} at {{ alert.acknowledgement_time|date:"Y-m-d H:i:s" }}
+                        Yes, by {{ alert.acknowledged_by.username }} at
+                            {% if user.profile.date_format_preference == 'jalali' %}
+                                {{ alert.acknowledgement_time|force_jalali:"%Y-%m-%d %H:%M:%S" }}
+                            {% else %}
+                                {{ alert.acknowledgement_time|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
+                            {% endif %}
                         {% else %}
                         <span class="badge bg-secondary">No</span>
                         {% endif %}
@@ -107,11 +114,23 @@
                 </tr>
                 <tr>
                     <th>First Occurrence</th>
-                    <td>{{ alert.first_occurrence|date:"Y-m-d H:i:s" }}</td>
+                    <td>
+                        {% if user.profile.date_format_preference == 'jalali' %}
+                            {{ alert.first_occurrence|force_jalali:"%Y-%m-%d %H:%M:%S" }}
+                        {% else %}
+                            {{ alert.first_occurrence|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
+                        {% endif %}
+                    </td>
                 </tr>
                 <tr>
                     <th>Last Occurrence</th>
-                    <td>{{ alert.last_occurrence|date:"Y-m-d H:i:s" }}</td>
+                    <td>
+                        {% if user.profile.date_format_preference == 'jalali' %}
+                            {{ alert.last_occurrence|force_jalali:"%Y-%m-%d %H:%M:%S" }}
+                        {% else %}
+                            {{ alert.last_occurrence|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
+                        {% endif %}
+                    </td>
                 </tr>
                 <tr>
                     <th>Total Firing Count</th>
@@ -132,4 +151,4 @@
             </table>
         </div>
     </div>
-</div> 
+</div>
