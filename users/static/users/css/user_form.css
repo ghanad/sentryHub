@@ -1,0 +1,17 @@
+/* Specific styles for user form */
+.user-form {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.user-form .form-control {
+    margin-bottom: 1rem;
+}
+
+.user-form .form-check {
+    margin-bottom: 1.5rem;
+}
+
+.user-form .btn-group {
+    margin-top: 1.5rem;
+}

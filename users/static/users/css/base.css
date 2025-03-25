@@ -1,0 +1,25 @@
+/* Base styles for users app */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.card {
+    margin-bottom: 20px;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.btn {
+    margin-right: 5px;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.invalid-feedback {
+    color: #dc3545;
+    display: block;
+    margin-top: 0.25rem;
+}

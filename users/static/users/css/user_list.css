@@ -1,0 +1,21 @@
+/* Specific styles for user list */
+.user-list {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.user-list .table {
+    margin-top: 20px;
+}
+
+.user-list .btn-group {
+    white-space: nowrap;
+}
+
+.user-list .pagination {
+    margin-top: 20px;
+}
+
+.user-list .breadcrumb {
+    margin-bottom: 20px;
+}
