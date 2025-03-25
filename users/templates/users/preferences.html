@@ -13,33 +13,39 @@
 {% endblock %}
 
 {% block user_content %}
-<div class="row">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">User Preferences</h5>
+<body class="preferences-page">
+<div class="preferences-container">
+    <div class="preferences-header">
+        <h1 class="preferences-title">Preferences</h1>
+        <p class="preferences-subtitle">Customize your SentryHub experience</p>
+    </div>
+
+    <div class="preferences-content">
+        <form method="post" action="{% url 'users:update_preferences' %}" class="preferences-form">
+            {% csrf_token %}
+            
+            <div class="form-section">
+                <h2 class="section-title">Display Settings</h2>
+                <div class="form-group">
+                    <label for="date_format_preference" class="form-label">Date Format</label>
+                    <select name="date_format_preference" id="date_format_preference" class="form-select">
+                        <option value="gregorian" {% if user.profile.date_format_preference == 'gregorian' %}selected{% endif %}>
+                            Gregorian (Western)
+                        </option>
+                        <option value="jalali" {% if user.profile.date_format_preference == 'jalali' %}selected{% endif %}>
+                            Jalali (Persian)
+                        </option>
+                    </select>
+                    <p class="form-hint">Choose how dates should be displayed throughout the application.</p>
+                </div>
             </div>
-            <div class="card-body">
-                <form method="post" action="{% url 'users:update_preferences' %}">
-                    {% csrf_token %}
-                    <div class="mb-3">
-                        <label for="date_format_preference" class="form-label">Date Format Preference</label>
-                        <select name="date_format_preference" id="date_format_preference" class="form-select">
-                            <option value="gregorian" {% if user.profile.date_format_preference == 'gregorian' %}selected{% endif %}>
-                                Gregorian (Western)
-                            </option>
-                            <option value="jalali" {% if user.profile.date_format_preference == 'jalali' %}selected{% endif %}>
-                                Jalali (Persian)
-                            </option>
-                        </select>
-                        <div class="form-text">Choose how dates should be displayed throughout the application.</div>
-                    </div>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-save"></i> Save Preferences
-                    </button>
-                </form>
+
+            <div class="form-actions">
+                <button type="submit" class="btn-save">
+                    <i class="bi bi-save"></i> Save Changes
+                </button>
             </div>
-        </div>
+        </form>
     </div>
 </div>
 {% endblock %}
