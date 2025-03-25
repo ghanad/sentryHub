@@ -11,7 +11,8 @@ def should_exclude(path):
         'jspdf.umd.min.js', 'html2canvas.min.js', 'jquery-3.6.0.min.js', 'jalalidatepicker.min.js',
         'codeBase.json', 'code_base_to_prompt.py', 'jalalidatepicker.min.css', 'media', 'fake_data',
         'logs', 'search2', 'excel_analysis.json', "__init__.py", "manage.py", "requirements.txt", "send_fake_data",
-        'alerts',"core","docs"
+        'staticfiles/admin/js/vendor/jquery/jquery.js','staticfiles/admin/js/vendor/jquery/jquery.min.js','staticfiles/admin/js/vendor/select2/select2.full.min.js',
+        'staticfiles/'
     ]
     
     return any(pattern in path.replace(os.sep, '/') or path.endswith(pattern) for pattern in exclude_patterns)

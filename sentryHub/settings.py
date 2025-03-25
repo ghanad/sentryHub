@@ -53,7 +53,7 @@ ROOT_URLCONF = 'sentryHub.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')],
+        'DIRS': [os.path.join(BASE_DIR, 'users/templates'), os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -173,9 +173,9 @@ REST_FRAMEWORK = {
 }
 
 # Login/Logout URLs
-LOGIN_URL = '/accounts/login/'
+LOGIN_URL = '/users/login/'
 LOGIN_REDIRECT_URL = '/alerts/dashboard/'
-LOGOUT_REDIRECT_URL = '/accounts/login/'
+LOGOUT_REDIRECT_URL = '/users/login/'
 
 # API Webhook settings - for production, this should require authentication
 WEBHOOK_REQUIRE_AUTH = False

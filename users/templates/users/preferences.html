@@ -1,7 +1,16 @@
 {% extends "users/base.html" %}
 {% load date_format_tags %}
+{% load static %}
 
 {% block title %}My Preferences - SentryHub{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'users/css/preferences.css' %}">
+{% endblock %}
+
+{% block extra_js %} 
+<script src="{% static 'users/js/preferences.js' %}"></script>
+{% endblock %}
 
 {% block user_content %}
 <div class="row">
