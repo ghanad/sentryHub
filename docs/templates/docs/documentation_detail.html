@@ -68,7 +68,7 @@
                             <tr>
                                 <th>Last Updated</th>
                                 <td>
-                                    {% if user.proprofile.date_format_preference == 'jalali' %}
+                                    {% if user.profile.date_format_preference == 'jalali' %}
                                         {{ documentation.updated_at|force_jalali:"%Y-%m-%d %H:%M:%S" }}
                                     {% else %}
                                         {{ documentation.updated_at|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
