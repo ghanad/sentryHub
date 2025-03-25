@@ -1,7 +1,7 @@
-# SentryHub Notification System Usage Guide
+# Notification System Guidelines
 
 ## Overview
-The SentryHub notification system provides a unified way to display toast-style notifications throughout the application. It's built as a wrapper around Toastr.js with added functionality and consistent styling.
+The project uses a unified notification system built as a wrapper around Toastr.js with added functionality and consistent styling.
 
 ## Basic Usage
 ```javascript
@@ -72,3 +72,6 @@ SentryNotification.clearAll();
 - Always use `SentryNotification` instead of direct toastr calls.
 - For form submissions, use this system instead of relying on Django messages.
 - Keep notification messages concise and actionable.
+- Use appropriate notification type based on message content.
+- Include specific error details when possible for error messages.
+- Set appropriate timeouts based on message importance.

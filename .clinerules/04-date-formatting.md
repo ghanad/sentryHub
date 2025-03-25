@@ -1,7 +1,8 @@
-# Date Formatting in SentryHub
+# Date Formatting Guidelines
 
 ## Overview
-SentryHub supports both Gregorian (Western) and Jalali (Persian) date formats. Users can choose their preferred date format in their profile settings. This document explains how to implement date formatting in templates.
+
+The project supports both Gregorian (Western) and Jalali (Persian) date formats. Users can choose their preferred date format in profile settings.
 
 ## Template Tags
 
@@ -13,7 +14,7 @@ SentryHub supports both Gregorian (Western) and Jalali (Persian) date formats. U
 ### Available Filters
 
 #### 1. force_jalali
-Always converts a date to Jalali format, regardless of user preference.
+Converts a date to Jalali format, regardless of user preference.
 
 ```html
 {{ date_value|force_jalali }}  <!-- Default format: YYYY-MM-DD -->
@@ -77,20 +78,6 @@ To respect user's date format preference:
 </tr>
 ```
 
-### In User Profile Template
-```html
-<tr>
-    <th>Date Joined</th>
-    <td>
-        {% if user.profile.date_format_preference == 'jalali' %}
-            {{ user.date_joined|force_jalali:"%Y-%m-%d %H:%M:%S" }}
-        {% else %}
-            {{ user.date_joined|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
-        {% endif %}
-    </td>
-</tr>
-```
-
 ## Technical Details
 
 ### Location
@@ -118,25 +105,3 @@ The template tags include built-in error handling:
 3. **Timezone Awareness**: All datetime values are converted to Tehran timezone for Jalali dates
 4. **User Preference**: Always respect user's date format preference unless there's a specific reason not to
 5. **Error Handling**: No need to add extra error checking in templates; the filters handle errors gracefully
-
-## Common Issues and Solutions
-
-### Issue: Dates Not Converting
-Check that:
-- Template tags are properly loaded
-- Date value is a valid datetime/date object or string
-- Format string matches the date value type
-
-### Issue: Wrong Timezone
-- Jalali dates are automatically converted to Tehran timezone
-- Ensure your datetime objects are timezone-aware
-
-### Issue: Format Not Applied
-- Verify the format string syntax
-- Check that the value is not None
-- Ensure the date string matches expected input format
-
-## Future Improvements
-- Add support for more date format patterns
-- Consider adding localized month names
-- Add support for relative dates ("2 days ago", etc.) 

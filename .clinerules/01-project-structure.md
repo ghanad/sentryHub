@@ -1,7 +1,5 @@
 # Project Structure Guidelines
 
-This document outlines the standard structure and conventions for the project.
-
 ## Directory Structure
 
 1. Each Django app should have its own directory with the following structure:
@@ -75,30 +73,3 @@ This document outlines the standard structure and conventions for the project.
    - Follow Django's class-based views when possible
    - Use Django's built-in form handling
    - Follow Django's security best practices
-
-4. Version Control:
-   - Keep `.gitignore` updated
-   - Commit messages should follow conventional commits
-   - Use feature branches for new development
-
-## Documentation
-
-1. Each app should have a `README.md` explaining its purpose and functionality
-2. Complex functionality should be documented in the code using docstrings
-3. API endpoints should be documented using Swagger/OpenAPI if applicable
-
-## Development Workflow
-
-1. Use virtual environments for Python dependencies
-2. Keep `requirements.txt` updated
-3. Follow PEP 8 for Python code style
-4. Use pre-commit hooks for code quality checks
-5. Write unit tests for all new functionality
-
-## Deployment
-
-1. Follow the 12-factor app methodology
-2. Use environment variables for configuration
-3. Implement proper logging
-4. Set up monitoring and alerting
-5. Follow security best practices for deployment
