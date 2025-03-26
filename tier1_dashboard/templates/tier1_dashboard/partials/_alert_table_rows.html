@@ -1,0 +1,49 @@
+{# Path: tier1_dashboard/templates/tier1_dashboard/partials/_alert_table_rows.html #}
+{% load date_format_tags %}
+
+{% for alert in alerts %}
+<tr class="severity-{{ alert.severity }}">
+    <td>
+        {% if alert.severity == 'critical' %}
+        <span class="badge bg-danger fs-6">Critical</span>
+        {% elif alert.severity == 'warning' %}
+        <span class="badge bg-warning text-dark fs-6">Warning</span>
+        {% else %}
+        <span class="badge bg-info text-dark fs-6">Info</span>
+        {% endif %}
+    </td>
+    <td>
+        <a href="{% url 'alerts:alert-detail' alert.fingerprint %}" class="fw-bold">{{ alert.name }}</a>
+    </td>
+    <td>{{ alert.instance|default:"-" }}</td>
+    <td>
+         <span data-bs-toggle="tooltip" title="
+             {% if user.profile.date_format_preference == 'jalali' %}
+                {{ alert.last_occurrence|force_jalali:'%Y-%m-%d %H:%M:%S' }}
+            {% else %}
+                {{ alert.last_occurrence|force_gregorian:'%Y-%m-%d %H:%M:%S' }}
+            {% endif %}
+         ">
+            {% if user.profile.date_format_preference == 'jalali' %}
+                {{ alert.last_occurrence|force_jalali:'%Y-%m-%d %H:%M' }}
+            {% else %}
+                {{ alert.last_occurrence|force_gregorian:'%Y-%m-%d %H:%M' }}
+            {% endif %}
+        </span>
+    </td>
+    <td>
+        <a href="{% url 'alerts:alert-detail' alert.fingerprint %}" class="btn btn-sm btn-outline-primary" title="View Details">
+            <i class="bi bi-eye"></i> View
+        </a>
+        <button type="button" class="btn btn-sm btn-outline-success ack-button"
+                data-bs-toggle="modal" data-bs-target="#acknowledgeModal"
+                data-alert-fingerprint="{{ alert.fingerprint }}"
+                data-alert-name="{{ alert.name }}"
+                title="Acknowledge">
+            <i class="bi bi-check-circle"></i> Ack
+        </button>
+    </td>
+</tr>
+{% empty %}
+{# This state is handled by the #no-alerts-message div in the main template #}
+{% endfor %}

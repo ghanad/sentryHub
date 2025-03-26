@@ -1,0 +1,33 @@
+/* Path: tier1_dashboard/static/tier1_dashboard/css/tier1_dashboard.css */
+
+#connection-status.connected .bi-check-circle-fill {
+    color: var(--bs-success);
+}
+
+#connection-status.error .bi-exclamation-triangle-fill {
+    color: var(--bs-danger);
+}
+
+#connection-status .spinner-border {
+    width: 1em;
+    height: 1em;
+    border-width: .15em;
+    vertical-align: -0.2em;
+}
+
+/* Highlight critical/warning rows slightly */
+.table tbody tr.severity-critical {
+    /* background-color: rgba(220, 53, 69, 0.05); */
+    border-left: 3px solid var(--bs-danger);
+}
+.table tbody tr.severity-warning {
+    /* background-color: rgba(255, 193, 7, 0.05); */
+     border-left: 3px solid var(--bs-warning);
+}
+.table tbody tr.severity-info {
+     border-left: 3px solid var(--bs-info);
+}
+
+.table th, .table td {
+    vertical-align: middle;
+}

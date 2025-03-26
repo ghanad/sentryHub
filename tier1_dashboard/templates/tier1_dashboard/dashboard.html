@@ -1,0 +1,86 @@
+{# Path: tier1_dashboard/templates/tier1_dashboard/dashboard.html #}
+{% extends "alerts/base.html" %}
+{% load static %}
+{% load date_format_tags %}
+
+{% block title %}Tier 1 Dashboard - SentryHub{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'tier1_dashboard/css/tier1_dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="row mb-3 align-items-center">
+    <div class="col">
+        <h1 class="mb-0">Active Alerts</h1>
+        {% comment %} <small class="text-muted">Showing active, unacknowledged alerts. Auto-refreshes every 30 seconds.</small> {% endcomment %}
+    </div>
+    <div class="col-auto text-end">
+        <span id="connection-status" class="badge bg-light text-dark p-2 me-2">
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...
+        </span>
+        <small class="text-muted">Last updated: <span id="last-updated-time">Never</span></small>
+    </div>
+</div>
+
+<!-- Alerts Table -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col" style="width: 10%;">Severity</th>
+                        <th scope="col">Alert Name</th>
+                        <th scope="col">Instance</th>
+                        <th scope="col" style="width: 20%;">Last Occurrence</th>
+                        <th scope="col" style="width: 15%;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="alert-table-body">
+                    {# Initial table rows loaded via include #}
+                    {% include 'tier1_dashboard/partials/_alert_table_rows.html' with alerts=alerts %}
+                </tbody>
+            </table>
+        </div>
+        <div id="no-alerts-message" class="text-center p-5 {% if alerts %}d-none{% endif %}">
+            <i class="bi bi-check-circle-fill text-success display-4"></i>
+            <p class="mt-3 text-muted fs-5">No active, unacknowledged alerts. Great job!</p>
+        </div>
+    </div>
+</div>
+
+{# Include Acknowledge Modal structure - Reuse or adapt from alerts app if possible #}
+{# Example: Copy relevant parts from alerts/templates/alerts/partials/alert_header.html #}
+<div class="modal fade" id="acknowledgeModal" tabindex="-1" aria-labelledby="acknowledgeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+             <form id="acknowledgeForm" method="post"> {# We'll handle submission via JS #}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="acknowledgeModalLabel">Acknowledge Alert</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <input type="hidden" name="alert_fingerprint" id="ack-alert-fingerprint">
+                    <p>Acknowledging alert: <strong id="ack-alert-name"></strong></p>
+                    <div class="mb-3">
+                        <label for="id_comment" class="form-label">Comment <span class="text-danger">*</span></label>
+                        <textarea name="comment" class="form-control" id="id_comment" rows="3" required></textarea>
+                        <div class="form-text">Required: Please provide details.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" name="acknowledge" class="btn btn-primary">Acknowledge</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'tier1_dashboard/js/tier1_dashboard.js' %}"></script>
+{% endblock %}
