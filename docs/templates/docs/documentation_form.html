@@ -16,7 +16,7 @@
     <div class="col-12">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{% url 'alerts:dashboard' %}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'dashboard:dashboard' %}">Dashboard</a></li>
                 <li class="breadcrumb-item"><a href="{% url 'docs:documentation-list' %}">Documentation</a></li>
                 <li class="breadcrumb-item active">{% if object %}Edit{% else %}Create{% endif %} Documentation</li>
             </ol>

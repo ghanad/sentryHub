@@ -376,7 +376,7 @@ For questions or clarifications about these guidelines, refer to the existing co
     <h1 class="display-1">404</h1>
     <p class="lead">Page not found</p>
     <p>The requested page could not be found.</p>
-    <a href="{% url 'alerts:dashboard' %}" class="btn btn-primary">
+    <a href="{% url 'dashboard:dashboard' %}" class="btn btn-primary">
         <i class="bi bi-house"></i> Return to Dashboard
     </a>
 </div>
@@ -390,7 +390,7 @@ For questions or clarifications about these guidelines, refer to the existing co
     <i class="bi bi-clipboard-x display-4 text-muted"></i>
     <h5 class="mt-3">No alerts found</h5>
     <p class="text-muted">There are no alerts matching your criteria.</p>
-    <a href="{% url 'alerts:dashboard' %}" class="btn btn-outline-primary">
+    <a href="{% url 'dashboard:dashboard' %}" class="btn btn-outline-primary">
         Return to Dashboard
     </a>
 </div>
@@ -628,7 +628,7 @@ This section provides a quick reference to common components used throughout Sen
     <div class="col-12">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{% url 'alerts:dashboard' %}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'dashboard:dashboard' %}">Dashboard</a></li>
                 <li class="breadcrumb-item active">Current Page</li>
             </ol>
         </nav>

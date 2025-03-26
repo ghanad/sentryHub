@@ -12,7 +12,7 @@ class HomeView(LoginRequiredMixin, TemplateView):
     
     def get(self, request, *args, **kwargs):
         # Redirect to alerts dashboard
-        return redirect('alerts:dashboard')
+        return redirect('dashboard:dashboard')
 
 class AboutView(TemplateView):
     template_name = 'core/about.html'

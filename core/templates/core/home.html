@@ -38,7 +38,7 @@
                                 {{ system_status|default:'Healthy' }}
                             </span>
                         </p>
-                        <a href="{% url 'alerts:dashboard' %}" class="btn btn-primary">View Dashboard</a>
+                        <a href="{% url 'dashboard:dashboard' %}" class="btn btn-primary">View Dashboard</a>
                     </div>
                 </div>
             </div>
@@ -76,7 +76,7 @@
     <div class="col-md-6">
         <h3>Quick Links</h3>
         <div class="list-group">
-            <a href="{% url 'alerts:dashboard' %}" class="list-group-item list-group-item-action">
+            <a href="{% url 'dashboard:dashboard' %}" class="list-group-item list-group-item-action">
                 <i class="bi bi-speedometer2"></i> Dashboard
             </a>
             <a href="{% url 'alerts:alert-list' %}" class="list-group-item list-group-item-action">

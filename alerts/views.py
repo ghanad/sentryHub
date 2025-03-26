@@ -220,7 +220,7 @@ def login_view(request):
                 next_url = request.GET.get('next')
                 if next_url:
                     return redirect(next_url)
-                return redirect('alerts:dashboard')
+                return redirect('dashboard:dashboard')
     else:
         form = AuthenticationForm()
     return render(request, 'alerts/login.html', {'form': form})
