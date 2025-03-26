@@ -7,8 +7,10 @@ AlertComment.objects.all().delete()
 DocumentationAlertGroup.objects.all().delete()
 AlertGroup.objects.all().delete()
 AlertDocumentation.objects.all().delete()
+```
 
 # Remove all comments from database
+```python
 from alerts.models import AlertComment
 comments = AlertComment.objects.all()
 for comment in comments:
@@ -17,16 +19,17 @@ for comment in comments:
 ```
 
 # Remove all acknowledgements from database
+```python
 from alerts.models import AlertAcknowledgementHistory
 AlertAcknowledgementHistory.objects.all().delete()
-
-
+```
 
 # query on database
+```python
 from alerts.models import AlertGroup, AlertInstance
 import json
 from django.core.serializers.json import DjangoJSONEncoder
-   
+
 alert_group = AlertGroup.objects.filter(
 name='NodeExporterNotScrape16',
 labels__instance='localhost:9100'
@@ -53,6 +56,7 @@ for i, instance in enumerate(instances, 1):
 	annotations = json.dumps(instance.annotations, indent=2, cls=DjangoJSONEncoder)
 	print(f"   Annotations: {annotations}")
 	print(f"   ID: {instance.id}")
+```
 
 # Tasks 
 1. ~~move /alerts/alerts to /alerts~~
