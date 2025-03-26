@@ -62,9 +62,10 @@ class AlertGroupViewSet(viewsets.ReadOnlyModelViewSet):
     """
     queryset = AlertGroup.objects.all()
     serializer_class = AlertGroupSerializer
-    filterset_fields = ['severity', 'current_status', 'acknowledged', 
-                       'instance', 'service', 'job', 'cluster', 'namespace']
-    search_fields = ['name', 'fingerprint', 'instance', 'service']
+    lookup_field = 'fingerprint' # Use fingerprint instead of pk for detail routes
+    # Removed 'service', 'job', 'cluster', 'namespace' as they are handled manually in get_queryset
+    filterset_fields = ['severity', 'current_status', 'acknowledged', 'instance'] 
+    search_fields = ['name', 'fingerprint', 'instance', 'service'] # Keep 'service' in search_fields if needed
     
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -107,8 +108,8 @@ class AlertGroupViewSet(viewsets.ReadOnlyModelViewSet):
         return queryset
     
     @action(detail=True, methods=['put'])
-    def acknowledge(self, request, pk=None):
-        alert_group = self.get_object()
+    def acknowledge(self, request, fingerprint=None): # Changed pk to fingerprint
+        alert_group = self.get_object() # get_object() will now use fingerprint
         serializer = AcknowledgeAlertSerializer(data=request.data)
         
         if serializer.is_valid():
@@ -147,14 +148,14 @@ class AlertGroupViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     @action(detail=True, methods=['get'])
-    def history(self, request, pk=None):
+    def history(self, request, fingerprint=None): # Changed pk to fingerprint
         alert_group = self.get_object()
         instances = alert_group.instances.all()
         serializer = AlertInstanceSerializer(instances, many=True)
         return Response(serializer.data)
     
     @action(detail=True, methods=['get', 'post'])
-    def comments(self, request, pk=None):
+    def comments(self, request, fingerprint=None): # Changed pk to fingerprint
         alert_group = self.get_object()
         
         if request.method == 'GET':
