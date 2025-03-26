@@ -16,10 +16,10 @@
         {% comment %} <small class="text-muted">Showing active, unacknowledged alerts. Auto-refreshes every 30 seconds.</small> {% endcomment %}
     </div>
     <div class="col-auto text-end">
-        <span id="connection-status" class="badge bg-light text-dark p-2 me-2">
+        <span id="connection-status" class="badge bg-light text-dark p-2 me-2 fs-6"> {# Added fs-6 #}
             <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...
         </span>
-        <small class="text-muted">Last updated: <span id="last-updated-time">Never</span></small>
+        <span class="text-muted fs-6">Last updated: <span id="last-updated-time">Never</span></span> {# Removed small, added span with fs-6 #}
     </div>
 </div>
 
