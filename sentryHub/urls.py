@@ -32,6 +32,7 @@ urlpatterns = [
     path('accounts/reset/done/', auth_views.PasswordResetCompleteView.as_view(), name='password_reset_complete'),
     path('', include('core.urls', namespace='core')),  # Include core URLs first
     path('alerts/', include('alerts.urls', namespace='alerts')),
+    path('dashboard/', include('main_dashboard.urls', namespace='dashboard')),
     path('api-auth/', include('rest_framework.urls')),
     path('docs/', include('docs.urls', namespace='docs')),
     path('tinymce/', include('tinymce.urls')),
