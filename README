@@ -52,3 +52,6 @@ for i, instance in enumerate(instances, 1):
 	print(f"   Annotations: {annotations}")
 	print(f"   ID: {instance.id}")
 
+# Tasks 
+# 1. move /alerts/alerts to /alerts
+# 2. upload conde to github
