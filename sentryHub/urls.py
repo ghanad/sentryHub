@@ -33,7 +33,7 @@ urlpatterns = [
     path('', include('core.urls', namespace='core')),  # Include core URLs first
     path('alerts/', include('alerts.urls', namespace='alerts')),
     path('dashboard/', include('main_dashboard.urls', namespace='dashboard')),
-    path('api/v1/', include('alerts.api.urls')), # Include the alerts API URLs
+    # path('api/v1/', include('alerts.api.urls')), # Removed redundant include; already in alerts.urls
     path('api-auth/', include('rest_framework.urls')),
     path('docs/', include('docs.urls', namespace='docs')),
     path('tinymce/', include('tinymce.urls')),

@@ -1,5 +1,7 @@
 from django.db import models
 from django.utils import timezone
+from django.contrib.auth.models import User
+import json # Added for SilenceRule __str__ potentially
 
 
 class AlertGroup(models.Model):
@@ -46,7 +48,9 @@ class AlertGroup(models.Model):
         blank=True,
         related_name='directly_linked_alerts'
     )
-    
+    is_silenced = models.BooleanField(default=False, help_text="Is this alert group currently silenced by an internal rule?")
+    silenced_until = models.DateTimeField(null=True, blank=True, help_text="If silenced, when does the current silence rule end?")
+
     def __str__(self):
         if self.instance:
             return f"{self.name} ({self.instance})"
@@ -144,3 +148,32 @@ class AlertAcknowledgementHistory(models.Model):
     
     class Meta:
         ordering = ['-acknowledged_at']
+
+
+class SilenceRule(models.Model):
+    matchers = models.JSONField(
+        help_text='Labels to match exactly. E.g., {"job": "node_exporter", "instance": "server1"}'
+    )
+    starts_at = models.DateTimeField(default=timezone.now)
+    ends_at = models.DateTimeField()
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_silence_rules')
+    comment = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def is_active(self):
+        now = timezone.now()
+        return self.starts_at <= now < self.ends_at
+
+    def __str__(self):
+        try:
+            match_str = ", ".join([f'{k}="{v}"' for k, v in self.matchers.items()])
+        except AttributeError: # Handle cases where matchers might not be a dict (e.g., null or invalid JSON)
+            match_str = "Invalid Matchers"
+        user_str = self.created_by.username if self.created_by else 'System'
+        return f"Silence rule for {match_str} (by {user_str})"
+
+    class Meta:
+        ordering = ['-starts_at']
+        verbose_name = "Silence Rule"
+        verbose_name_plural = "Silence Rules"

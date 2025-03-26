@@ -1,0 +1,162 @@
+{% extends "alerts/base.html" %}
+{% load core_tags date_format_tags %}
+{% load static %}
+
+{% block title %}Silence Rules - SentryHub{% endblock %}
+
+{% block extra_css %}
+<style>
+    .table th, .table td {
+        vertical-align: middle;
+    }
+    .matchers-column {
+        max-width: 300px; /* Adjust as needed */
+        word-wrap: break-word;
+        font-family: monospace;
+        font-size: 0.85em;
+    }
+    .comment-column {
+        max-width: 250px;
+        word-wrap: break-word;
+    }
+    .badge-scheduled { background-color: #6c757d; } /* Secondary */
+    .badge-active { background-color: #198754; } /* Success */
+    .badge-expired { background-color: #adb5bd; } /* Light gray */
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'dashboard:dashboard' %}">Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Silence Rules</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Silence Rules Management</h5>
+                <a href="{% url 'alerts:silence-rule-create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-1"></i> Create Silence Rule
+                </a>
+            </div>
+            <div class="card-body">
+                {% include 'core/partials/_messages.html' %}
+
+                <!-- Filter Form -->
+                <form method="get" class="row g-3 mb-4 align-items-end">
+                    <div class="col-md-4">
+                        <label for="search" class="form-label">Search</label>
+                        <input type="text" class="form-control" id="search" name="search" placeholder="Comment, User, Matchers..." value="{{ search }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select id="status" name="status" class="form-select">
+                            <option value="" {% if not status_filter %}selected{% endif %}>All</option>
+                            <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                            <option value="scheduled" {% if status_filter == 'scheduled' %}selected{% endif %}>Scheduled</option>
+                            <option value="expired" {% if status_filter == 'expired' %}selected{% endif %}>Expired</option>
+                        </select>
+                    </div>
+                    <div class="col-md-auto">
+                        <button type="submit" class="btn btn-secondary">
+                            <i class="bi bi-filter me-1"></i> Filter
+                        </button>
+                        <a href="{% url 'alerts:silence-rule-list' %}" class="btn btn-outline-secondary ms-2">
+                            <i class="bi bi-x-circle me-1"></i> Clear
+                        </a>
+                    </div>
+                </form>
+
+                <!-- Silence Rules Table -->
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped">
+                        <thead>
+                            <tr>
+                                <th>Status</th>
+                                <th class="matchers-column">Matchers</th>
+                                <th>Starts At</th>
+                                <th>Ends At</th>
+                                <th class="comment-column">Comment</th>
+                                <th>Created By</th>
+                                <th>Created At</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for rule in silence_rules %}
+                            <tr>
+                                <td>
+                                    {% if rule.is_active %}
+                                        <span class="badge badge-active">Active</span>
+                                    {% elif rule.starts_at > now %}
+                                        <span class="badge badge-scheduled">Scheduled</span>
+                                    {% else %}
+                                        <span class="badge badge-expired">Expired</span>
+                                    {% endif %}
+                                </td>
+                                <td class="matchers-column">
+                                    {% for key, value in rule.matchers.items %}
+                                        <span class="badge bg-secondary me-1">{{ key }}="{{ value }}"</span>
+                                    {% empty %}
+                                        <span class="text-muted">No matchers</span>
+                                    {% endfor %}
+                                </td>
+                                <td>
+                                    {% if user.profile.date_format_preference == 'jalali' %}
+                                        {{ rule.starts_at|force_jalali:"%Y-%m-%d %H:%M:%S" }}
+                                    {% else %}
+                                        {{ rule.starts_at|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if user.profile.date_format_preference == 'jalali' %}
+                                        {{ rule.ends_at|force_jalali:"%Y-%m-%d %H:%M:%S" }}
+                                    {% else %}
+                                        {{ rule.ends_at|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
+                                    {% endif %}
+                                </td>
+                                <td class="comment-column">{{ rule.comment|truncatechars:100 }}</td>
+                                <td>{{ rule.created_by.username|default:"System" }}</td>
+                                <td>
+                                    {% if user.profile.date_format_preference == 'jalali' %}
+                                        {{ rule.created_at|force_jalali:"%Y-%m-%d %H:%M:%S" }}
+                                    {% else %}
+                                        {{ rule.created_at|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'alerts:silence-rule-update' rule.pk %}" class="btn btn-sm btn-outline-primary me-1" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'alerts:silence-rule-delete' rule.pk %}" class="btn btn-sm btn-outline-danger" title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-4">
+                                    <i class="bi bi-bell-slash display-6"></i>
+                                    <p class="mt-2 mb-0">No silence rules found matching your criteria.</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% include 'core/partials/_pagination.html' with page_obj=page_obj %}
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

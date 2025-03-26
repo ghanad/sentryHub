@@ -58,6 +58,36 @@ for i, instance in enumerate(instances, 1):
 	print(f"   ID: {instance.id}")
 ```
 
+
+# Remove silence 
+```python
+from alerts.models import SilenceRule
+all_rules = SilenceRule.objects.all()
+count = all_rules.count()
+print(f"Found {count} SilenceRule object(s) to delete.")
+if count > 0:
+    # This is the command that actually deletes the records
+    deletion_result = all_rules.delete()
+    print(f"Deletion complete. Result: {deletion_result}")
+    print(f"Successfully deleted {deletion_result[0]} SilenceRule object(s).")
+else:
+    print("No SilenceRule objects found to delete.")
+```
+
+# Remove silence from alert
+```python
+from alerts.models import AlertGroup
+alerts_to_unsilence = AlertGroup.objects.filter(is_silenced=True)
+count = alerts_to_unsilence.count()
+print(f"Found {count} AlertGroup object(s) currently marked as silenced.")
+if count > 0:
+    print("Updating 'is_silenced' to False and 'silenced_until' to None for these alerts...")
+    num_updated = alerts_to_unsilence.update(is_silenced=False, silenced_until=None)
+    print(f"Successfully updated {num_updated} AlertGroup record(s).")
+else:
+    print("No silenced AlertGroup objects found to update.")
+```
+
 # Tasks 
 1. ~~move /alerts/alerts to /alerts~~
 2. ~~upload code to github~~

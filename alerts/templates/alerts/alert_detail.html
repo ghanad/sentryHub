@@ -23,4 +23,20 @@
 {% block extra_js %}
 <script src="{% static 'alerts/js/alert_detail.js' %}"></script>
 <script src="{% static 'alerts/js/comments.js' %}"></script>
+
+{# Add JS for silence button, similar to alert_list.html #}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Basic example for handling the "Silence" button click in the header
+    // It relies on the href attribute containing the labels query parameter
+    const silenceButton = document.querySelector('.card-body .btn-silence'); // Target button within header card body
+    if (silenceButton) {
+        silenceButton.addEventListener('click', function(event) {
+            // Default behavior redirects to the create form with labels pre-filled via GET params.
+            console.log('Silence button clicked in detail view, redirecting to create form with labels.');
+            // If a modal approach is preferred later, preventDefault() and trigger modal here.
+        });
+    }
+});
+</script>
 {% endblock %}

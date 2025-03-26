@@ -29,7 +29,8 @@ class Tier1AlertDataAPIView(APIView):
             )
             alerts = AlertGroup.objects.filter(
                 current_status='firing',
-                acknowledged=False
+                acknowledged=False,
+                is_silenced=False # <-- Add this filter to exclude silenced alerts
             ).annotate(
                 severity_priority=severity_order
             ).order_by('severity_priority', '-last_occurrence')

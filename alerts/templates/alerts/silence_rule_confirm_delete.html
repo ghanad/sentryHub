@@ -1,0 +1,58 @@
+{% extends "alerts/base.html" %}
+{% load core_tags %}
+
+{% block title %}Confirm Delete Silence Rule - SentryHub{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'dashboard:dashboard' %}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'alerts:silence-rule-list' %}">Silence Rules</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Confirm Delete</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">Confirm Deletion</h5>
+            </div>
+            <div class="card-body">
+                <p>Are you sure you want to delete the following silence rule?</p>
+                <ul class="list-unstyled mb-4">
+                    <li><strong>Matchers:</strong>
+                        <code class="d-block bg-light p-2 rounded mt-1">
+                        {% for key, value in object.matchers.items %}
+                            {{ key }}="{{ value }}"<br>
+                        {% empty %}
+                            No matchers
+                        {% endfor %}
+                        </code>
+                    </li>
+                    <li class="mt-2"><strong>Starts:</strong> {{ object.starts_at|format_datetime:user }}</li>
+                    <li><strong>Ends:</strong> {{ object.ends_at|format_datetime:user }}</li>
+                    <li><strong>Comment:</strong> {{ object.comment|default:"N/A" }}</li>
+                    <li><strong>Created By:</strong> {{ object.created_by.username|default:"System" }}</li>
+                </ul>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-end">
+                        <a href="{% url 'alerts:silence-rule-list' %}" class="btn btn-secondary me-2">
+                            <i class="bi bi-x-lg me-1"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash me-1"></i> Yes, Delete Rule
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

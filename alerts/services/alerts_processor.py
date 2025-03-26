@@ -4,8 +4,9 @@ import re
 import logging
 import json
 
-from ..models import AlertGroup, AlertInstance, AlertAcknowledgementHistory
+from ..models import AlertGroup, AlertInstance, AlertAcknowledgementHistory, SilenceRule # SilenceRule might not be needed directly, but good for context
 from docs.services.documentation_matcher import match_documentation_to_alert
+from .silence_matcher import check_alert_silence # Import the new function
 
 
 logger = logging.getLogger(__name__)
@@ -26,7 +27,15 @@ def process_alert(alert_data):
     
     # Get or create alert group
     alert_group = get_or_create_alert_group(fingerprint, status, labels)
-    
+
+    # Check for silence *before* further processing or status updates might rely on it
+    is_silenced = check_alert_silence(alert_group)
+    if is_silenced and status == 'firing':
+        logger.info(f"Alert {alert_group.name} (Group ID: {alert_group.id}) is firing but currently silenced until {alert_group.silenced_until}.")
+    elif not is_silenced and alert_group.is_silenced: # This case should be handled by check_alert_silence saving the model
+        logger.info(f"Alert {alert_group.name} (Group ID: {alert_group.id}) was silenced but is no longer.")
+
+
     # Process the alert
     if status == 'firing':
         process_firing_alert(alert_group, labels, fingerprint, starts_at, annotations, generator_url)

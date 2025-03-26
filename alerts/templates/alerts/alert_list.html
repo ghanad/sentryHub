@@ -1,7 +1,20 @@
 {% extends "alerts/base.html" %}
-{% load date_format_tags %}
+{% load date_format_tags core_tags %}
+{% load static %}
 
 {% block title %}Alerts - SentryHub{% endblock %}
+
+{% block extra_css %}
+<style>
+    .silenced-row {
+        opacity: 0.65;
+        background-color: #f8f9fa !important; /* Light background for silenced rows */
+    }
+    .silenced-row td {
+        font-style: italic;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="row mb-4">
@@ -48,9 +61,17 @@
                             <option value="false" {% if acknowledged == 'false' %}selected{% endif %}>Not Acknowledged</option>
                         </select>
                     </div>
-                    <div class="col-md-12">
+                    <div class="col-md-3"> {# Added Silenced Filter #}
+                        <label for="silenced" class="form-label">Silenced Status</label>
+                        <select class="form-select" id="silenced" name="silenced">
+                            <option value="" {% if not silenced_filter %}selected{% endif %}>Show All</option>
+                            <option value="no" {% if silenced_filter == 'no' %}selected{% endif %}>Hide Silenced</option>
+                            <option value="yes" {% if silenced_filter == 'yes' %}selected{% endif %}>Show Only Silenced</option>
+                        </select>
+                    </div>
+                    <div class="col-md-9"> {# Adjusted width #}
                         <label for="search" class="form-label">Search</label>
-                        <input type="text" class="form-control" id="search" name="search" value="{{ search }}" placeholder="Name or fingerprint">
+                        <input type="text" class="form-control" id="search" name="search" value="{{ search }}" placeholder="Name, Fingerprint, Instance...">
                     </div>
                     <div class="col-12">
                         <button type="submit" class="btn btn-primary">Apply Filters</button>
@@ -85,7 +106,7 @@
                         </thead>
                         <tbody>
                             {% for alert in alerts %}
-                            <tr>
+                            <tr class="{% if alert.is_silenced %}silenced-row{% endif %}">
                                 <td>
                                     {% if alert.current_status == 'firing' %}
                                     <span class="badge bg-danger">Firing</span>
@@ -93,7 +114,13 @@
                                     <span class="badge bg-success">Resolved</span>
                                     {% endif %}
                                 </td>
-                                <td>{{ alert.name }}</td>
+                                <td>
+                                    {{ alert.name }}
+                                    {% if alert.is_silenced %}
+                                        <i class="bi bi-bell-slash-fill text-secondary ms-1"
+                                           title="Silenced until {{ alert.silenced_until|format_datetime:user }}"></i>
+                                    {% endif %}
+                                </td>
                                 <td>{{ alert.instance|default:"-" }}</td>
                                 <td>
                                     {% if alert.severity == 'critical' %}
@@ -130,8 +157,15 @@
                                     <a href="{% url 'alerts:alert-detail' alert.fingerprint %}" class="btn btn-sm btn-outline-primary">
                                         <i class="bi bi-eye"></i> View
                                     </a>
-                                    <a href="{% url 'alerts:alert-detail' alert.fingerprint %}?tab=history" class="btn btn-sm btn-outline-secondary">
-                                        <i class="bi bi-clock-history"></i> History
+                                    <a href="{% url 'alerts:alert-detail' alert.fingerprint %}?tab=history" class="btn btn-sm btn-outline-secondary me-1" title="History">
+                                        <i class="bi bi-clock-history"></i>
+                                    </a>
+                                    {# Silence Button #}
+                                    <a href="{% url 'alerts:silence-rule-create' %}?labels={{ alert.labels|jsonify }}"
+                                       class="btn btn-sm btn-outline-warning btn-silence"
+                                       title="Create Silence Rule based on this alert's labels"
+                                       data-labels='{{ alert.labels|jsonify }}'>
+                                        <i class="bi bi-bell-slash"></i>
                                     </a>
                                 </td>
                             </tr>
@@ -190,4 +224,59 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Basic example for handling the "Silence" button click
+    // This could be enhanced to open a modal instead of redirecting
+    const silenceButtons = document.querySelectorAll('.btn-silence');
+    silenceButtons.forEach(button => {
+        button.addEventListener('click', function(event) {
+            // The default behavior is to follow the href, which includes the labels in the URL query params.
+            // The CreateView will pick these up.
+            // If using a modal, prevent default and open the modal here, passing the labels.
+            // event.preventDefault();
+            // const labelsJson = this.getAttribute('data-labels');
+            // openSilenceModal(labelsJson);
+            console.log('Silence button clicked, redirecting to create form with labels.');
+        });
+    });
+
+    // Function to handle filter submission (optional, could rely on form submit)
+    // const filterForm = document.querySelector('#filter-form-id'); // Add an ID to your form if needed
+    // filterForm.addEventListener('submit', function(e) {
+    //     // Can modify query params here if needed before submission
+    // });
+});
+
+// Example function if using a modal (requires modal HTML and JS)
+/*
+function openSilenceModal(labelsJson) {
+    const modal = new bootstrap.Modal(document.getElementById('silenceRuleModal')); // Assuming a modal with this ID exists
+    const form = document.getElementById('silenceRuleModalForm'); // Assuming form inside modal
+    const matchersTextarea = form.querySelector('#id_matchers'); // Assuming this is the ID
+
+    try {
+        const labels = JSON.parse(labelsJson);
+        // Pretty print JSON
+        matchersTextarea.value = JSON.stringify(labels, null, 2);
+    } catch (e) {
+        console.error("Error parsing labels for modal:", e);
+        matchersTextarea.value = labelsJson; // Fallback to raw JSON
+        // Optionally show an error to the user
+    }
+
+    // Clear other fields if needed
+    form.querySelector('#id_starts_at_0').value = ''; // Date
+    form.querySelector('#id_starts_at_1').value = ''; // Time
+    form.querySelector('#id_ends_at_0').value = '';
+    form.querySelector('#id_ends_at_1').value = '';
+    form.querySelector('#id_comment').value = '';
+
+    modal.show();
+}
+*/
+</script>
 {% endblock %}

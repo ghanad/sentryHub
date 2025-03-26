@@ -1,4 +1,4 @@
-{% load date_format_tags %}
+{% load date_format_tags core_tags %} {# Added core_tags for jsonify #}
 
 <!-- Alert Summary Card -->
 <div class="row mb-4">
@@ -12,8 +12,20 @@
                         {% else %}
                         <span class="badge bg-success">Resolved</span>
                         {% endif %}
+                        {# Silence Icon #}
+                        {% if alert.is_silenced %}
+                            <i class="bi bi-bell-slash-fill text-secondary ms-2 fs-5"
+                               title="Silenced until {{ alert.silenced_until|format_datetime:user }}"></i>
+                        {% endif %}
                     </h4>
                     <div>
+                        {# Silence Button #}
+                        <a href="{% url 'alerts:silence-rule-create' %}?labels={{ alert.labels|jsonify }}"
+                           class="btn btn-sm btn-outline-warning me-2"
+                           title="Create Silence Rule based on this alert's labels">
+                            <i class="bi bi-bell-slash"></i> Silence
+                        </a>
+
                         {% if not alert.acknowledged %}
                         <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#acknowledgeModal">
                             <i class="bi bi-check-circle"></i> Acknowledge
@@ -108,11 +120,11 @@
                                 <th>Acknowledged</th>
                                 <td>
                                     {% if alert.acknowledged %}
-                                    Yes, by {{ alert.acknowledged_by.username }} at
+                                    <span class="badge bg-success">Yes</span> by <strong>{{ alert.acknowledged_by.username }}</strong> at
                                         {% if user.profile.date_format_preference == 'jalali' %}
-                                            {{ alert.acknowledgement_time|force_jalali:"%Y-%m-%d %H:%M:%S" }}
+                                            {{ alert.acknowledgement_time|force_jalali:"%Y-%m-%d %H:%M" }} {# Shortened format #}
                                         {% else %}
-                                            {{ alert.acknowledgement_time|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
+                                            {{ alert.acknowledgement_time|force_gregorian:"%Y-%m-%d %H:%M" }} {# Shortened format #}
                                         {% endif %}
                                     {% else %}
                                     <span class="badge bg-secondary">No</span>
