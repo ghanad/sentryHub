@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'docs',
     'admin_dashboard',
     'users',
+    'main_dashboard',
 ]
 
 MIDDLEWARE = [
@@ -53,7 +54,11 @@ ROOT_URLCONF = 'sentryHub.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'users/templates'), os.path.join(BASE_DIR, 'templates')],
+        'DIRS': [
+            os.path.join(BASE_DIR, 'users/templates'), 
+            os.path.join(BASE_DIR, 'templates'),
+            os.path.join(BASE_DIR, 'main_dashboard/templates')
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

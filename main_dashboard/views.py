@@ -1,19 +1,9 @@
-from django.views.generic import TemplateView, ListView, DetailView, FormView
+from django.views.generic import TemplateView
 from django.db.models import Count, Q
-from django.utils import timezone
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
-from django.http import JsonResponse
-from django.contrib import messages
-from django.views.generic.detail import SingleObjectMixin
 import logging
-from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
-from django.contrib.auth import login, authenticate
-from django.contrib.auth.forms import AuthenticationForm
-
-from alerts.models import AlertGroup, AlertInstance, AlertComment
-from docs.services.documentation_matcher import match_documentation_to_alert
+from alerts.models import AlertGroup
 
 logger = logging.getLogger(__name__)
 
