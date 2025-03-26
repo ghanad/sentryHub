@@ -1,4 +1,5 @@
 # Remove Recodes from Database with shell
+```python
 from alerts.models import AlertGroup, AlertInstance, AlertComment
 from docs.models import AlertDocumentation, DocumentationAlertGroup
 AlertInstance.objects.all().delete()
@@ -13,6 +14,7 @@ comments = AlertComment.objects.all()
 for comment in comments:
     print(f"Deleting comment id {comment.id}")
     comment.delete()
+```
 
 # Remove all acknowledgements from database
 from alerts.models import AlertAcknowledgementHistory
@@ -53,5 +55,5 @@ for i, instance in enumerate(instances, 1):
 	print(f"   ID: {instance.id}")
 
 # Tasks 
-# 1. ~~move /alerts/alerts to /alerts~~
-# 2. upload conde to github
+1. ~~move /alerts/alerts to /alerts~~
+2. ~~upload code to github~~
