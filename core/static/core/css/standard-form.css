@@ -1,0 +1,23 @@
+/* --- Standard Form CSS (Based on Preview V5) --- */
+body { background-color: #f8f9fa; }
+.page-title { font-weight: 600; }
+.page-subtitle { color: #6c757d; }
+.section-title { font-weight: 600; margin-bottom: 1.5rem; padding-bottom: 0.75rem; border-bottom: 1px solid #eff2f5; }
+.form-container { background-color: #fff; padding: 2rem 3rem; border-radius: 0.375rem; box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.05); }
+.form-row-layout { padding-top: 1.25rem; padding-bottom: 1.25rem; align-items: flex-start; }
+.form-row-layout .col-md-4 .form-label { font-weight: 500; margin-bottom: 0.25rem; color: #343a40; display: block; padding-top: 0.3rem; }
+.form-row-layout .col-md-4 .form-help-text { font-size: 0.85rem; color: #6c757d; margin-bottom: 0; }
+.form-row-layout .col-md-7.offset-md-1 .form-control,
+.form-row-layout .col-md-7.offset-md-1 .form-select { border: 1px solid #ced4da; border-radius: 0.25rem; padding: 0.5rem 0.75rem; background-color: #fff; box-shadow: none; transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out; font-size: 0.95rem; }
+.form-row-layout .col-md-7.offset-md-1 .form-control:focus,
+.form-row-layout .col-md-7.offset-md-1 .form-select:focus { border-color: #86b7fe; box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, .25); background-color: #fff; }
+.split-datetime-widget { display: flex; gap: 0.5rem; align-items: center; }
+.split-datetime-widget input.form-control { flex-grow: 1; }
+textarea.form-control { min-height: 90px; }
+.font-monospace { font-family: var(--bs-font-monospace) !important; }
+.form-separator { border: none; height: 1px; background-color: #e9ecef; margin: 0; }
+.btn-dark-custom { background-color: #212529; color: #fff; border-radius: 0.25rem; padding: 0.5rem 1rem; font-weight: 500; transition: background-color .15s ease-in-out; }
+.btn-dark-custom:hover { background-color: #343a40; color: #fff; }
+.invalid-feedback.d-block { font-size: 0.85rem; margin-top: 0.3rem; width: 100%; }
+.form-row-layout:first-of-type { padding-top: 0.5rem; }
+.form-actions { padding-top: 1.5rem; }

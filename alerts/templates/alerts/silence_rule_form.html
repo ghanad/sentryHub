@@ -1,78 +1,85 @@
 {% extends "alerts/base.html" %}
-{% load core_tags %}
-{% load static %}
+{% load core_tags static %} {# Add necessary tags #}
 
 {% block title %}{{ form_title }} - SentryHub{% endblock %}
 
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'core/css/standard-form.css' %}">
+{% endblock %}
+
 {% block content %}
-<div class="row mb-4">
-    <div class="col-12">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{% url 'dashboard:dashboard' %}">Dashboard</a></li>
-                <li class="breadcrumb-item"><a href="{% url 'alerts:silence-rule-list' %}">Silence Rules</a></li>
-                <li class="breadcrumb-item active" aria-current="page">{{ form_title }}</li>
-            </ol>
-        </nav>
-    </div>
-</div>
-
 <div class="row justify-content-center">
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">{{ form_title }}</h5>
-            </div>
-            <div class="card-body">
-                {% include 'core/partials/_messages.html' %}
+    <div class="col-lg-10 col-xl-9">
 
-                <form method="post">
-                    {% csrf_token %}
-
-                    {% for field in form %}
-                        <div class="mb-3">
-                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}{% if field.field.required %} <span class="text-danger">*</span>{% endif %}</label>
-
-                            {% if field.name == 'starts_at' or field.name == 'ends_at' %}
-                                <div class="d-flex">
-                                    {{ field }}
-                                </div>
-                            {% else %}
-                                {{ field }}
-                            {% endif %}
-
-                            {% if field.help_text %}
-                                <div class="form-text">{{ field.help_text|safe }}</div>
-                            {% endif %}
-                            {% for error in field.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ error }}
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% endfor %}
-
-                    {% for error in form.non_field_errors %}
-                        <div class="alert alert-danger" role="alert">
-                            {{ error }}
-                        </div>
-                    {% endfor %}
-
-                    <div class="d-flex justify-content-end mt-4">
-                        <a href="{% url 'alerts:silence-rule-list' %}" class="btn btn-secondary me-2">
-                            <i class="bi bi-x-lg me-1"></i> Cancel
-                        </a>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check-lg me-1"></i> Save Silence Rule
-                        </button>
-                    </div>
-                </form>
-            </div>
+        {# Page Title & Subtitle #}
+        <div class="mb-4 pt-3">
+             <h2 class="page-title">{{ form_title }}</h2>
+             <p class="page-subtitle">Define matchers and a time range to temporarily silence specific alerts.</p>
         </div>
-    </div>
-</div>
+
+        {# Form Container #}
+        <div class="form-container">
+            <h5 class="section-title">Rule Definition</h5>
+
+            {# Display Non-field errors first #}
+            {% if form.non_field_errors %}
+                 {% for error in form.non_field_errors %}
+                     <div class="alert alert-danger" role="alert">{{ error }}</div>
+                 {% endfor %}
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+
+                {% for field in form %}
+                <div class="row form-row-layout">
+                    {# Left Column #}
+                    <div class="col-md-4">
+                        <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}{% if field.field.required %} <span class="text-danger">*</span>{% endif %}</label>
+                        {% if field.help_text %}
+                            <p class="form-help-text">{{ field.help_text|safe }}</p>
+                        {% endif %}
+                    </div>
+                    {# Right Column (with offset) #}
+                    <div class="col-md-7 offset-md-1">
+                        {# Special handling for SplitDateTimeField #}
+                        {% if field.name == 'starts_at' or field.name == 'ends_at' %}
+                             <div class="split-datetime-widget">
+                                  {{ field }} {# Render the widget parts #}
+                             </div>
+                        {% else %}
+                             {{ field }} {# Render other fields normally #}
+                        {% endif %}
+
+                        {# Display field errors #}
+                        {% for error in field.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+                 {# Add separator between rows #}
+                 {% if not forloop.last %}
+                     <hr class="form-separator">
+                 {% endif %}
+                {% endfor %}
+
+                {# Action Buttons #}
+                <div class="d-flex justify-content-end form-actions">
+                     <a href="{% url 'alerts:silence-rule-list' %}" class="btn btn-secondary me-2">
+                         <i class="bi bi-x-lg me-1"></i> Cancel
+                     </a>
+                    <button type="submit" class="btn btn-dark-custom">
+                         <i class="bi bi-check-lg me-1"></i> {% if object %}Update{% else %}Create{% endif %} Rule
+                     </button>
+                </div>
+            </form>
+         </div> {# End form-container #}
+     </div>
+</div> {# End outer container #}
 {% endblock %}
 
 {% block extra_js %}
-{# Add any specific JS needed for the form, e.g., date/time picker initialization if not using native widgets #}
+{{ block.super }}
+{# Add any specific JS needed for the form, if any #}
 {% endblock %}
