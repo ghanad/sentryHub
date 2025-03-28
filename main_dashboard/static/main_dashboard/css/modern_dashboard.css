@@ -374,3 +374,149 @@
     text-align: right;
     font-family: 'IranSansX', 'Inter', sans-serif; /* Include IranSansX */
 }
+
+/* --- Dark Mode Styles --- */
+[data-bs-theme="dark"] {
+    /* Define chart-specific colors as variables */
+    --chart-grid-color: #444444;
+    --chart-label-color: #adb5bd;
+
+    /* Body background is handled in base.css */
+
+    /* Page Header */
+    .page-title {
+        color: #e0e0e0; /* User specified main text */
+    }
+    .date-display {
+        color: #adb5bd; /* User specified secondary text */
+    }
+
+    /* Stat Cards */
+    .stat-card {
+        background: #1e1e1e; /* User specified section background */
+        box-shadow: none;
+        border: 1px solid rgba(255, 255, 255, 0.08); /* Adjusted border */
+    }
+    .stat-card:hover {
+        background: #2a2a2a; /* Slightly lighter hover */
+        transform: none;
+        box-shadow: none;
+    }
+    .card-link .stat-card:hover {
+        background: #2a2a2a;
+        transform: none;
+        box-shadow: none;
+    }
+    .stat-value {
+        color: #e0e0e0; /* User specified main text */
+    }
+    .stat-label {
+        color: #adb5bd; /* User specified secondary text */
+    }
+    /* Icon backgrounds need adjustment */
+    .stat-danger {
+        background: rgba(239, 71, 111, 0.2); /* Slightly more opaque */
+        color: var(--bs-danger-text-emphasis);
+    }
+    .stat-warning {
+        background: rgba(255, 159, 28, 0.2);
+        color: var(--bs-warning-text-emphasis);
+    }
+    .stat-info {
+        background: rgba(58, 134, 255, 0.2);
+        color: var(--bs-info-text-emphasis);
+    }
+    .stat-secondary {
+        background: rgba(108, 117, 125, 0.2);
+        color: var(--bs-secondary-text-emphasis);
+    }
+    .stat-success {
+        background: rgba(46, 196, 182, 0.2);
+        color: var(--bs-success-text-emphasis);
+    }
+
+    /* Chart Cards */
+    .chart-card {
+        background: #1e1e1e; /* User specified section background */
+        box-shadow: none;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .chart-card-header {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Slightly stronger border */
+    }
+    .chart-title {
+        color: #e0e0e0; /* User specified main text */
+    }
+    .chart-title i {
+        color: var(--primary); /* Keep primary or adjust if needed */
+    }
+    /* Chart body background (if different needed, but user specified same as section) */
+    .chart-card-body {
+         background-color: #1e1e1e; /* User specified chart area background */
+    }
+    .chart-action-btn {
+        background: #2a2a2a;
+        color: #adb5bd; /* User specified secondary text */
+        border: none;
+    }
+    .chart-action-btn:hover {
+        background: #383838;
+        color: #e0e0e0; /* User specified main text */
+    }
+
+    /* Alert Table */
+    .alert-table th {
+        background-color: #2a2a2a; /* Header slightly lighter than rows */
+        color: #adb5bd; /* User specified secondary text */
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .alert-table td {
+        color: #adb5bd; /* User specified secondary text */
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .alert-table tbody tr {
+        background-color: #1e1e1e; /* User specified section background */
+    }
+    .alert-table tbody tr:hover {
+        background-color: #2a2a2a; /* Slightly lighter hover */
+    }
+    .alert-table td a {
+        color: var(--primary); /* Keep primary link color */
+    }
+    .alert-host {
+        color: #adb5bd; /* User specified secondary text */
+    }
+    .alert-time {
+        color: #adb5bd; /* User specified secondary text */
+    }
+
+    /* Status Badges */
+    .badge-critical {
+        background: rgba(239, 71, 111, 0.2);
+        color: var(--bs-danger-text-emphasis);
+    }
+    .badge-warning {
+        background: rgba(255, 159, 28, 0.2);
+        color: var(--bs-warning-text-emphasis);
+    }
+    .badge-info {
+        background: rgba(58, 134, 255, 0.2);
+        color: var(--bs-info-text-emphasis);
+    }
+    .badge-success {
+        background: rgba(46, 196, 182, 0.2);
+        color: var(--bs-success-text-emphasis);
+    }
+
+    /* Action Buttons */
+    .action-btn {
+        background: #2a2a2a;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #adb5bd; /* User specified secondary text */
+    }
+    .action-btn:hover {
+        background: #383838;
+        color: #e0e0e0; /* User specified main text */
+        border-color: rgba(255, 255, 255, 0.15);
+    }
+}

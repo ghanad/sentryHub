@@ -90,20 +90,24 @@
         </ul>
 
         <div class="sidebar-footer mt-auto"> {# Added mt-auto to push footer down #}
-           {# Theme toggle placeholder - functionality needs JS #}
-           {#
-            <div class="d-flex align-items-center justify-content-between mb-3 px-3"> {# Added padding #}
-                <span>Theme</span>
-                <div class="theme-toggle" id="themeToggle" role="button" aria-label="Toggle theme"> {# Added role/label #}
-                    <div class="theme-toggle-indicator"></div>
-                    <div class="theme-icons">
-                        <i class='bx bx-moon'></i>
-                        <i class='bx bx-sun'></i>
-                    </div>
-                </div>
+            {# Expanded Theme Toggle Button #}
+            <div class="d-flex align-items-center justify-content-between mb-3 px-3 theme-toggle-wrapper expanded-toggle">
+                <span class="small theme-toggle-label">Theme</span>
+                <button class="custom-theme-toggle" id="themeToggleExpanded" type="button" aria-label="Toggle theme">
+                    <span class="toggle-thumb"></span>
+                    <span class="icon-sun"><i class='bx bx-sun'></i></span>
+                    <span class="icon-moon"><i class='bx bx-moon'></i></span>
+                </button>
             </div>
-           #}
-            <span class="small px-3">Version 1.0.0</span> {# Placeholder version, added padding #}
+             {# Collapsed Theme Toggle Button (Initially Hidden) #}
+            <div class="text-center mb-3 collapsed-toggle d-none"> {# Centered wrapper, hidden by default #}
+                 <button class="custom-theme-toggle" id="themeToggleCollapsed" type="button" aria-label="Toggle theme">
+                    <span class="toggle-thumb"></span>
+                    <span class="icon-sun"><i class='bx bx-sun'></i></span>
+                    <span class="icon-moon"><i class='bx bx-moon'></i></span>
+                </button>
+            </div>
+            <span class="small px-3 version-text">Version 1.0.0</span> {# Placeholder version, added padding and class #}
         </div>
     </aside>
 

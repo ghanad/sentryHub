@@ -61,10 +61,41 @@ body {
     flex-shrink: 0; /* Prevent header shrinking */
 }
 
+/* Hide text elements AND specific toggles/version in collapsed sidebar */
 .sidebar-collapsed .sidebar-header span,
 .sidebar-collapsed .nav-text,
-.sidebar-collapsed .sidebar-footer span {
-    display: none;
+.sidebar-collapsed .theme-toggle-label, /* Hide expanded label */
+.sidebar-collapsed .expanded-toggle,    /* Hide expanded toggle wrapper */
+.sidebar-collapsed .version-text {      /* Hide version text */
+    display: none !important;
+}
+
+/* Show the collapsed toggle button when sidebar is collapsed */
+.sidebar-collapsed .collapsed-toggle {
+    display: block !important; /* Override the default d-none */
+}
+
+/* Center content within the footer when collapsed */
+.sidebar-collapsed .sidebar-footer {
+    display: flex; /* Use flexbox */
+    flex-direction: column; /* Stack items vertically */
+    align-items: center; /* Center items horizontally */
+    padding-left: 0; /* Remove padding if needed */
+    padding-right: 0;
+}
+
+/* Show the collapsed toggle button wrapper */
+.sidebar-collapsed .collapsed-toggle {
+    display: block !important; /* Override d-none */
+    /* text-align: center; /* Not needed, parent flex centers it */
+    margin-bottom: 0.75rem !important; /* Keep space below */
+    width: auto; /* Allow shrink-to-fit */
+}
+
+/* Ensure the collapsed toggle button itself doesn't interfere */
+.sidebar-collapsed .collapsed-toggle .custom-theme-toggle {
+    /* display: inline-flex; /* Already default */
+    margin: 0; /* Reset margins */
 }
 
 .sidebar-logo {
@@ -194,39 +225,65 @@ body {
     margin-right: 1rem;
 }
 
-/* Theme toggle */
-.theme-toggle {
+/* Custom Theme Toggle Button */
+.custom-theme-toggle {
     position: relative;
-    width: 40px;
-    height: 24px;
-    background-color: rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    cursor: pointer;
-    display: flex;
+    display: inline-flex; /* Changed to inline-flex */
     align-items: center;
-    padding: 0 4px;
+    width: 50px; /* Increased width */
+    height: 26px; /* Increased height */
+    background-color: rgba(255, 255, 255, 0.15); /* Slightly more opaque */
+    border-radius: 13px; /* Half of height */
+    border: none;
+    cursor: pointer;
+    padding: 3px; /* Padding around icons/thumb */
+    transition: background-color 0.3s ease;
+    overflow: hidden; /* Hide overflow */
 }
 
-.theme-toggle-indicator {
+.custom-theme-toggle .toggle-thumb {
     position: absolute;
-    width: 16px;
-    height: 16px;
+    width: 20px; /* Size of the thumb */
+    height: 20px;
     background-color: white;
     border-radius: 50%;
-    transform: translateX(0);
-    transition: var(--transition);
+    top: 3px; /* Align with padding */
+    left: 3px; /* Initial position (moon active) */
+    transition: left 0.3s ease;
+    z-index: 1; /* Above icons */
 }
 
-.theme-light .theme-toggle-indicator { /* Assuming .theme-light class is added to body */
-    transform: translateX(16px);
+.custom-theme-toggle.active .toggle-thumb {
+    left: calc(100% - 20px - 3px); /* Move thumb to the right (sun active) */
 }
 
-.theme-icons {
-    display: flex;
-    width: 100%;
-    justify-content: space-between;
-    font-size: 0.75rem;
-    color: white;
+.custom-theme-toggle .icon-sun,
+.custom-theme-toggle .icon-moon {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px; /* Icon size */
+    color: rgba(255, 255, 255, 0.7);
+    z-index: 0; /* Below thumb */
+    transition: color 0.3s ease;
+}
+
+.custom-theme-toggle .icon-sun {
+    right: 6px; /* Position sun icon */
+    color: #ffcc33; /* Sun color */
+}
+
+.custom-theme-toggle .icon-moon {
+    left: 6px; /* Position moon icon */
+    color: #a0a0ff; /* Moon color */
+}
+
+/* Optional: Slightly dim the inactive icon */
+.custom-theme-toggle.active .icon-moon {
+    color: rgba(160, 160, 255, 0.5);
+}
+.custom-theme-toggle:not(.active) .icon-sun {
+     color: rgba(255, 204, 51, 0.5);
 }
 
 
@@ -249,4 +306,22 @@ body {
          margin-left: 0;
          width: 100%;
     }
+}
+
+/* --- Dark Mode Base Styles --- */
+[data-bs-theme="dark"] body {
+    background-color: #121212; /* User specified dark background */
+    color: #e0e0e0; /* User specified main text color */
+}
+
+[data-bs-theme="dark"] .main-content {
+    /* Background might not need changing if body is dark, but good to be explicit */
+    /* background-color: var(--bs-dark); */ /* Uncomment if needed */
+}
+
+/* Adjust mobile header for dark mode */
+[data-bs-theme="dark"] .mobile-toggle {
+    background: var(--bs-tertiary-bg);
+    color: var(--bs-secondary);
+    box-shadow: none;
 }

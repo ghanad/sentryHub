@@ -242,7 +242,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const infoColor = '#3a86ff';     // var(--info)
     const successColor = '#2ec4b6';  // var(--success)
     const primaryColor = '#4361ee';  // var(--primary)
-    const lightColor = '#f8f9fa';    // var(--gray-100) for borders etc.
+    // Determine theme for chart colors
+    const isDarkMode = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+    const chartGridColor = isDarkMode ? '#444444' : '#e9ecef'; // User specified dark grid, default light grid
+    const chartLabelColor = isDarkMode ? '#adb5bd' : '#6c757d'; // User specified dark label, default light label
+    const chartBorderColor = isDarkMode ? '#2a2a2a' : '#f8f9fa'; // Adjusted dark border, default light border
+
     const colorPalette = [ // For instance chart or others
         '#4361ee', '#4895ef', '#3f37c9', '#56cfe1', '#7400b8',
         '#f77f00', '#fcbf49', '#eae2b7' // Add more as needed
@@ -255,6 +260,7 @@ document.addEventListener('DOMContentLoaded', function() {
             legend: {
                 position: 'bottom',
                 labels: {
+                    color: chartLabelColor, // Use dynamic label color
                     font: { family: 'Inter', size: 12 },
                     padding: 15,
                     boxWidth: 12,
@@ -262,7 +268,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             },
             tooltip: {
-                backgroundColor: 'rgba(30, 42, 56, 0.9)', // var(--dark) with opacity
+                backgroundColor: isDarkMode ? 'rgba(42, 42, 42, 0.9)' : 'rgba(30, 42, 56, 0.9)', // Adjusted dark tooltip
+                titleColor: isDarkMode ? '#e0e0e0' : '#ffffff',
+                bodyColor: isDarkMode ? '#e0e0e0' : '#ffffff',
                 titleFont: { family: 'Inter', size: 13, weight: '600' },
                 bodyFont: { family: 'Inter', size: 12 },
                 padding: 10,
@@ -284,7 +292,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     label: 'Active Alerts',
                     data: severityData.data,
                     backgroundColor: [ dangerColor, warningColor, infoColor ], // Order matches labels: Critical, Warning, Info
-                    borderColor: lightColor, // Use light border color by default
+                    borderColor: chartBorderColor, // Use dynamic border color
                     borderWidth: 2,
                     hoverOffset: 8
                 }]
@@ -306,7 +314,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     label: 'Active Alerts',
                     data: instanceData.data,
                     backgroundColor: colorPalette.slice(0, instanceData.data.length),
-                    borderColor: lightColor, // Use light border color by default
+                    borderColor: chartBorderColor, // Use dynamic border color
                     borderWidth: 2,
                     hoverOffset: 8
                 }]
@@ -341,13 +349,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     x: {
                         stacked: true,
                         grid: { display: false },
-                        ticks: { font: { family: 'Inter' } } // Default light theme ticks
+                        ticks: {
+                            color: chartLabelColor, // Use dynamic label color
+                            font: { family: 'Inter' }
+                        }
                     },
                     y: {
                         stacked: true,
                         beginAtZero: true,
-                        grid: { color: '#e9ecef', borderDash: [3, 3] }, // Default light theme grid
-                        ticks: { font: { family: 'Inter' }, precision: 0 } // Default light theme ticks
+                        grid: {
+                            color: chartGridColor, // Use dynamic grid color
+                            borderDash: [3, 3]
+                        },
+                        ticks: {
+                            color: chartLabelColor, // Use dynamic label color
+                            font: { family: 'Inter' },
+                            precision: 0
+                        }
                     }
                 },
                 interaction: { mode: 'index', intersect: false }, // Ensure hover works across stacks

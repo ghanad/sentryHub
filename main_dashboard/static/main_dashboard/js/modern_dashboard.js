@@ -4,8 +4,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const sidebarToggle = document.getElementById('sidebarToggle');
     const mobileToggle = document.getElementById('mobileToggle');
     const mainContent = document.getElementById('mainContent');
-    // const themeToggle = document.getElementById('themeToggle'); // Keep commented
-    // const htmlElement = document.documentElement; // Keep commented
+    // Get references to both theme toggle buttons
+    const themeToggleExpanded = document.getElementById('themeToggleExpanded');
+    const themeToggleCollapsed = document.getElementById('themeToggleCollapsed');
+    const htmlElement = document.documentElement;
 
     // --- Sidebar Toggle ---
     function toggleSidebarClass() {
@@ -40,8 +42,56 @@ document.addEventListener('DOMContentLoaded', function() {
          sidebar.classList.remove('sidebar-visible');
     }
 
-    // --- Theme Toggle (Removed) ---
-    // Logic related to theme toggle, setTheme, toggleTheme, and event listener removed.
+    // --- Theme Toggle ---
+    const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
+
+    function setTheme(theme) {
+        // Update the data-bs-theme attribute and local storage
+        if (theme === 'dark') {
+            htmlElement.setAttribute('data-bs-theme', 'dark');
+            localStorage.setItem('theme', 'dark');
+            // Update visual state for BOTH toggles (dark mode = moon = not active)
+            if (themeToggleExpanded) themeToggleExpanded.classList.remove('active');
+            if (themeToggleCollapsed) themeToggleCollapsed.classList.remove('active');
+        } else {
+            htmlElement.setAttribute('data-bs-theme', 'light');
+            localStorage.setItem('theme', 'light');
+            // Update visual state for BOTH toggles (light mode = sun = active)
+            if (themeToggleExpanded) themeToggleExpanded.classList.add('active');
+            if (themeToggleCollapsed) themeToggleCollapsed.classList.add('active');
+        }
+    }
+
+    function toggleTheme() {
+        const currentTheme = localStorage.getItem('theme') || (prefersDarkScheme.matches ? 'dark' : 'light');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        setTheme(newTheme);
+    }
+
+    // Apply the saved theme or the system preference on initial load
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+        setTheme(savedTheme);
+    } else {
+        setTheme(prefersDarkScheme.matches ? 'dark' : 'light');
+    }
+
+    // Add event listeners for BOTH toggle buttons
+    if (themeToggleExpanded) {
+        themeToggleExpanded.addEventListener('click', toggleTheme);
+    }
+    if (themeToggleCollapsed) {
+        themeToggleCollapsed.addEventListener('click', toggleTheme);
+    }
+
+    // Listen for changes in system preference
+    prefersDarkScheme.addEventListener('change', (e) => {
+        // Only change if no theme is explicitly saved by the user
+        if (!localStorage.getItem('theme')) {
+            setTheme(e.matches ? 'dark' : 'light');
+        }
+    });
+
 
     // --- Date/Time Update ---
     const dateElement = document.getElementById('currentDate');
