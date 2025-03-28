@@ -12,8 +12,8 @@ from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.forms import AuthenticationForm
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
-from django.views import View # Import basic View
-from django.http import HttpResponse # Import HttpResponse
+from django.views import View
+from django.http import HttpResponse, Http404 # Import Http404
 
 from .models import AlertGroup, AlertInstance, AlertComment, SilenceRule # Added SilenceRule
 from .forms import AlertAcknowledgementForm, AlertCommentForm, SilenceRuleForm # Added SilenceRuleForm
@@ -85,13 +85,63 @@ class AlertListView(LoginRequiredMixin, ListView):
         context['silenced_filter'] = self.request.GET.get('silenced', '') # Add silenced filter to context
         context['search'] = self.request.GET.get('search', '')
 
-        # Calculate statistics counts for the filtered results
-        alerts = context['alerts']
-        context['firing_count'] = sum(1 for alert in alerts if alert.current_status == 'firing')
-        context['critical_count'] = sum(1 for alert in alerts if alert.severity == 'critical')
-        context['acknowledged_count'] = sum(1 for alert in alerts if alert.acknowledged)
-        
+        # Calculate statistics counts for the filtered results (before pagination)
+        # Note: These counts reflect the total matching alerts, not just the current page.
+        # If counts per page are needed, they should be calculated based on context['alerts'] or context['object_list']
+        queryset = self.get_queryset() # Re-fetch the filtered queryset
+        context['total_firing_count'] = queryset.filter(current_status='firing').count()
+        context['total_critical_count'] = queryset.filter(severity='critical').count()
+        context['total_acknowledged_count'] = queryset.filter(acknowledged=True).count()
+
+        # Counts for the current page (if pagination is active)
+        alerts_on_page = context.get('alerts') # Use the context object name
+        if alerts_on_page:
+             context['firing_count'] = sum(1 for alert in alerts_on_page if alert.current_status == 'firing')
+             context['critical_count'] = sum(1 for alert in alerts_on_page if alert.severity == 'critical')
+             context['acknowledged_count'] = sum(1 for alert in alerts_on_page if alert.acknowledged)
+        else:
+             context['firing_count'] = 0
+             context['critical_count'] = 0
+             context['acknowledged_count'] = 0
+
+
         return context
+
+    def paginate_queryset(self, queryset, page_size):
+        """Override to handle invalid page numbers gracefully."""
+        paginator = self.get_paginator(
+            queryset,
+            page_size,
+            orphans=self.get_paginate_orphans(),
+            allow_empty_first_page=self.get_allow_empty(),
+        )
+        page_kwarg = self.page_kwarg
+        page = self.kwargs.get(page_kwarg) or self.request.GET.get(page_kwarg) or 1
+        try:
+            page_number = int(page)
+        except ValueError:
+            if page == "last":
+                page_number = paginator.num_pages
+            else:
+                # Default to page 1 for non-integer values like 'abc'
+                logger.warning(f"Invalid page number '{page}' requested. Defaulting to page 1.")
+                page_number = 1 # Default for non-integer
+
+        try:
+            page = paginator.page(page_number)
+        except EmptyPage: # Catch page < 1 or page > num_pages
+            if page_number < 1:
+                logger.warning(f"Invalid page number {page_number} requested. Defaulting to page 1.")
+                page = paginator.page(1) # Default to page 1 if page < 1
+            else:
+                logger.warning(f"Invalid page number {page_number} requested. Defaulting to last page ({paginator.num_pages}).")
+                page = paginator.page(paginator.num_pages) # Default to last page if page > num_pages
+        except PageNotAnInteger: # Should be caught by ValueError, but keep for safety
+             logger.warning(f"Non-integer page number '{page}' requested. Defaulting to page 1.")
+             page = paginator.page(1)
+
+        # This return statement should be outside the try...except block
+        return (paginator, page, page.object_list, page.has_other_pages())
 
 
 class AlertDetailView(LoginRequiredMixin, DetailView):
@@ -189,10 +239,15 @@ class AlertDetailView(LoginRequiredMixin, DetailView):
                 logger.warning(f"Invalid acknowledgement form for alert: {alert.name}")
                 if not is_ajax:
                     messages.error(request, "Please provide a comment when acknowledging an alert.")
-                return self.get(request, *args, **kwargs)
-        
-        # Handle comment
-        if 'comment' in request.POST:
+                # Re-render the page with the invalid form
+                # Manually build context needed for render_to_response
+                context = {'alert': alert, 'acknowledge_form': form, 'comment_form': AlertCommentForm()}
+                # Add other necessary context items if template requires them (e.g., history, instances)
+                # For simplicity in fix, assuming template handles missing optional context
+                return self.render_to_response(context)
+
+        # Handle comment - Use 'content' which is the actual form field name
+        if 'content' in request.POST:
             form = AlertCommentForm(request.POST)
             if form.is_valid():
                 comment = form.save(commit=False)
@@ -216,8 +271,14 @@ class AlertDetailView(LoginRequiredMixin, DetailView):
                     return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
                 else:
                     messages.error(request, "Please provide a valid comment.")
-                    return redirect('alerts:alert-detail', fingerprint=alert.fingerprint)
-        
+                    # Re-render the page with the invalid form
+                    # Manually build context needed for render_to_response
+                    context = {'alert': alert, 'comment_form': form, 'acknowledge_form': AlertAcknowledgementForm()}
+                    # Add other necessary context items if template requires them
+                    return self.render_to_response(context)
+
+        # If neither acknowledge nor content was in POST, redirect (or handle as appropriate)
+        logger.warning(f"POST request received for alert {alert.fingerprint} without 'acknowledge' or 'comment' data.")
         return redirect('alerts:alert-detail', fingerprint=alert.fingerprint)
 
 

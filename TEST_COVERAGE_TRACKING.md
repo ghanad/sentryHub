@@ -37,8 +37,8 @@ This document tracks the testing progress for different parts of the SentryHub a
 |                   | `acknowledge_alert` (`alerts_processor.py`)|   🟢   | AlertGroup update, History creation                          |
 |                   | `alert_logger.py`                         |   ⚫️   | File writing (might need integration test or mock `open`) |
 | **Views**         |                                           |        |                                                              |
-|                   | `AlertListView` (`views.py`)              |   ⚪️   | GET (status 200, template), filters, context, pagination    |
-|                   | `AlertDetailView` (`views.py`)            |   ⚪️   | GET (status 200, template), context (tabs, forms), POST (ack, comment - valid/invalid), AJAX response |
+|                   | `AlertListView` (`views.py`)              |   🟢   | GET (status 200, template), filters, context, pagination    |
+|                   | `AlertDetailView` (`views.py`)            |   🟢   | GET (status 200, template), context (tabs, forms, pagination), POST (ack, comment - valid/invalid), AJAX response |
 |                   | `SilenceRuleListView` (`views.py`)        |   ⚪️   | GET, filters, context, pagination                           |
 |                   | `SilenceRuleCreateView` (`views.py`)      |   ⚪️   | GET (initial data from query param), POST (valid/invalid), permissions, `check_alert_silence` call |
 |                   | `SilenceRuleUpdateView` (`views.py`)      |   ⚪️   | GET, POST (valid/invalid), permissions, `check_alert_silence` call |
