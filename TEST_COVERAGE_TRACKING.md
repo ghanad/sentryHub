@@ -24,6 +24,7 @@ This document tracks the testing progress for different parts of the SentryHub a
 |                   | `AlertAcknowledgementHistory` (`models.py`) |   🟢   | Creation, relations, `__str__()`, ordering, FK behavior      |
 
 | **Forms**         |                                           |        |                                                              |
+| ------------------ | ----------------------------------------- | :----: | ------------------------------------------------------------ |
 |                   | `SilenceRuleForm` (`forms.py`)            |   🟢   | Validation (JSON, dates, required), clean methods, saving     |
 |                   | `AlertAcknowledgementForm` (`forms.py`)   |   🟢   | Validation (required comment)                                |
 |                   | `AlertCommentForm` (`forms.py`)           |   🟢   | Validation (required), saving (commit=False), widget attrs   |
