@@ -7,7 +7,7 @@ from django.utils import timezone
 # Import models
 from .models import SilenceRule, AlertGroup, AlertInstance, AlertComment, AlertAcknowledgementHistory
 # Import forms
-from .forms import SilenceRuleForm # Added SilenceRuleForm
+from .forms import SilenceRuleForm, AlertAcknowledgementForm # Added AlertAcknowledgementForm
 # Assuming AlertDocumentation is in docs app, adjust if different
 # from docs.models import AlertDocumentation
 
@@ -778,3 +778,30 @@ class SilenceRuleFormTests(TestCase):
         # Check if it's a datetime object and close to now
         self.assertIsInstance(initial_starts_at, datetime.datetime)
         self.assertAlmostEqual(initial_starts_at, timezone.now(), delta=datetime.timedelta(seconds=5))
+
+
+# --- New Tests for AlertAcknowledgementForm ---
+
+class AlertAcknowledgementFormTests(TestCase):
+
+    def test_ack_form_valid_comment(self):
+        """Test AlertAcknowledgementForm with a valid, non-empty comment."""
+        data = {'comment': 'Acknowledged, investigating the issue.'}
+        form = AlertAcknowledgementForm(data=data)
+        self.assertTrue(form.is_valid(), msg=f"Form should be valid with a comment. Errors: {form.errors.as_json()}")
+        self.assertEqual(form.cleaned_data['comment'], data['comment'])
+
+    def test_ack_form_missing_comment(self):
+        """Test AlertAcknowledgementForm with a missing (empty) comment."""
+        data = {'comment': ''}
+        form = AlertAcknowledgementForm(data=data)
+        self.assertFalse(form.is_valid(), msg="Form should be invalid without a comment.")
+        self.assertIn('comment', form.errors)
+        self.assertIn('This field is required.', form.errors['comment'])
+
+    def test_ack_form_no_data(self):
+        """Test AlertAcknowledgementForm with no data provided."""
+        form = AlertAcknowledgementForm(data={})
+        self.assertFalse(form.is_valid(), msg="Form should be invalid with no data.")
+        self.assertIn('comment', form.errors)
+        self.assertIn('This field is required.', form.errors['comment'])
