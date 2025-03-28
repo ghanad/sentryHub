@@ -4,10 +4,11 @@ import time # Added for ordering fixes
 from django.test import TestCase
 from django.contrib.auth.models import User
 from django.utils import timezone
+from django import forms # Added for widget test
 # Import models
 from .models import SilenceRule, AlertGroup, AlertInstance, AlertComment, AlertAcknowledgementHistory
 # Import forms
-from .forms import SilenceRuleForm, AlertAcknowledgementForm # Added AlertAcknowledgementForm
+from .forms import SilenceRuleForm, AlertAcknowledgementForm, AlertCommentForm # Added AlertCommentForm
 # Assuming AlertDocumentation is in docs app, adjust if different
 # from docs.models import AlertDocumentation
 
@@ -805,3 +806,80 @@ class AlertAcknowledgementFormTests(TestCase):
         self.assertFalse(form.is_valid(), msg="Form should be invalid with no data.")
         self.assertIn('comment', form.errors)
         self.assertIn('This field is required.', form.errors['comment'])
+
+
+# --- New Tests for AlertCommentForm ---
+
+class AlertCommentFormTests(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        # Create a user and alert group if needed for save tests, though not strictly for validation
+        cls.test_user = User.objects.create_user(username='commentformuser', password='password')
+        cls.alert_group = AlertGroup.objects.create(
+            fingerprint="group_for_comment_form_test",
+            name="Comment Form Test Group",
+            labels={"app": "comment_form_test"}
+        )
+
+    def test_comment_form_valid_data(self):
+        """Test AlertCommentForm with valid, non-empty content."""
+        data = {'content': 'This is a valid comment.'}
+        form = AlertCommentForm(data=data)
+        self.assertTrue(form.is_valid(), msg=f"Form should be valid. Errors: {form.errors.as_json()}")
+        self.assertEqual(form.cleaned_data['content'], data['content'])
+
+    def test_comment_form_empty_data(self):
+        """Test AlertCommentForm with empty content (should be invalid by default)."""
+        # Django's ModelForm respects the underlying model field's blank=True/False.
+        # AlertComment.content is a TextField, which defaults to blank=False, required=True.
+        data = {'content': ''}
+        form = AlertCommentForm(data=data)
+        # Default TextField is required
+        self.assertFalse(form.is_valid(), msg="Form should be invalid if content is empty by default.")
+        self.assertIn('content', form.errors)
+        self.assertIn('This field is required.', form.errors['content'])
+
+    def test_comment_form_no_data(self):
+        """Test AlertCommentForm with no data provided."""
+        form = AlertCommentForm(data={})
+        self.assertFalse(form.is_valid(), msg="Form should be invalid with no data.")
+        self.assertIn('content', form.errors)
+        self.assertIn('This field is required.', form.errors['content'])
+
+    def test_comment_form_save_commit_false(self):
+        """Test saving the form with commit=False."""
+        data = {'content': 'Saving this comment later.'}
+        form = AlertCommentForm(data=data)
+        self.assertTrue(form.is_valid())
+
+        # Create an instance without saving to the database
+        comment_instance = form.save(commit=False)
+
+        self.assertIsInstance(comment_instance, AlertComment)
+        self.assertEqual(comment_instance.content, data['content'])
+        # Check that required foreign keys are not set yet
+        self.assertIsNone(getattr(comment_instance, 'user_id', None)) # Accessing user_id directly avoids RelatedObjectDoesNotExist
+        self.assertIsNone(getattr(comment_instance, 'alert_group_id', None))
+        # Ensure it's not saved yet
+        self.assertIsNone(comment_instance.pk)
+
+        # Now assign required fields and save fully
+        comment_instance.user = self.test_user
+        comment_instance.alert_group = self.alert_group
+        comment_instance.save()
+
+        # Verify it's saved
+        self.assertIsNotNone(comment_instance.pk)
+        saved_comment = AlertComment.objects.get(pk=comment_instance.pk)
+        self.assertEqual(saved_comment.content, data['content'])
+        self.assertEqual(saved_comment.user, self.test_user)
+        self.assertEqual(saved_comment.alert_group, self.alert_group)
+
+    def test_comment_form_widget_attributes(self):
+        """Test the widget attributes defined in Meta."""
+        form = AlertCommentForm()
+        widget = form.fields['content'].widget
+        self.assertIsInstance(widget, forms.Textarea)
+        self.assertEqual(widget.attrs.get('rows'), 3)
+        self.assertEqual(widget.attrs.get('class'), 'form-control')

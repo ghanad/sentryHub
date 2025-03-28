@@ -25,7 +25,7 @@ This document tracks the testing progress for different parts of the SentryHub a
 | **Forms**         |                                           |        |                                                              |
 |                   | `SilenceRuleForm` (`forms.py`)            |   🟢   | Validation (JSON, dates, required), clean methods, saving     |
 |                   | `AlertAcknowledgementForm` (`forms.py`)   |   🟢   | Validation (required comment)                                |
-|                   | `AlertCommentForm` (`forms.py`)           |   ⚪️   | Validation, saving                                           |
+|                   | `AlertCommentForm` (`forms.py`)           |   🟢   | Validation (required), saving (commit=False), widget attrs   |
 | **Services**      |                                           |        |                                                              |
 |                   | `check_alert_silence` (`silence_matcher.py`)|   ⚪️   | Matching logic (match/no match), DB updates (`is_silenced`) |
 |                   | `process_alert` (`alerts_processor.py`)   |   ⚪️   | Firing/Resolved logic, instance creation/update, ack reset    |
