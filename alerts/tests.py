@@ -3,9 +3,10 @@ from django.test import TestCase
 from django.contrib.auth.models import User
 from django.utils import timezone
 # Import AlertGroup, AlertInstance, AlertComment and potentially AlertDocumentation if needed for FK tests
-from .models import SilenceRule, AlertGroup, AlertInstance, AlertComment
+from .models import SilenceRule, AlertGroup, AlertInstance, AlertComment, AlertAcknowledgementHistory # Added AlertAcknowledgementHistory
 # Assuming AlertDocumentation is in docs app, adjust if different
 # from docs.models import AlertDocumentation
+
 
 class SilenceRuleModelTests(TestCase):
 
@@ -168,12 +169,14 @@ class AlertGroupModelTests(TestCase):
             labels={"env": "prod", "severity": "high"},
             last_occurrence=timezone.now() - datetime.timedelta(hours=2)
         )
+        import time; time.sleep(0.01) # Ensure distinct timestamps/operations
         cls.group2 = AlertGroup.objects.create(
             fingerprint="fp2",
             name="Alert 2",
             labels={"env": "staging"},
             last_occurrence=timezone.now() - datetime.timedelta(hours=1) # More recent
         )
+        import time; time.sleep(0.01) # Ensure distinct timestamps/operations
         cls.group3 = AlertGroup.objects.create(
             fingerprint="fp3",
             name="Alert 3",
@@ -431,7 +434,7 @@ class AlertCommentModelTests(TestCase):
             # For simplicity, rely on creation order for now, assuming tests run fast enough
         )
         # Add a slight delay to ensure different created_at timestamps if needed
-        # import time; time.sleep(0.01) 
+        import time; time.sleep(0.01) # Ensure distinct timestamps for ordering test
         cls.comment2 = AlertComment.objects.create(
             alert_group=cls.alert_group,
             user=cls.comment_user,
@@ -498,7 +501,7 @@ class AlertCommentModelTests(TestCase):
         comment_to_delete = AlertComment.objects.create(
             alert_group=self.alert_group,
             user=user_to_delete,
-            content="This comment's user will be deleted."
+            content="This comment should be deleted with the user."
         )
         comment_id = comment_to_delete.id
 
@@ -510,3 +513,145 @@ class AlertCommentModelTests(TestCase):
 
         # Ensure comment is also deleted (due to on_delete=models.CASCADE)
         self.assertFalse(AlertComment.objects.filter(id=comment_id).exists())
+
+
+# --- New Tests for AlertAcknowledgementHistory ---
+
+class AlertAcknowledgementHistoryModelTests(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        # Create a user for acknowledgements
+        cls.ack_user = User.objects.create_user(username='history_ack_user', password='password')
+        # Create a related AlertGroup
+        cls.alert_group = AlertGroup.objects.create(
+            fingerprint="group_for_ack_history_test",
+            name="Ack History Test Group",
+            labels={"app": "ack_history_test"}
+        )
+        # Create a related AlertInstance
+        cls.alert_instance = AlertInstance.objects.create(
+            alert_group=cls.alert_group,
+            status='firing',
+            started_at=timezone.now() - datetime.timedelta(hours=1),
+            annotations={"summary": "Instance for Ack History"}
+        )
+        # Create some history entries for ordering tests
+        # Create older entry first
+        cls.history1 = AlertAcknowledgementHistory.objects.create(
+            alert_group=cls.alert_group,
+            alert_instance=cls.alert_instance,
+            acknowledged_by=cls.ack_user,
+            comment="First ack"
+        )
+        # Add a slight delay if needed to ensure distinct acknowledged_at
+        import time; time.sleep(0.01) # Ensure distinct timestamps for ordering test
+        cls.history2 = AlertAcknowledgementHistory.objects.create(
+            alert_group=cls.alert_group,
+            alert_instance=None, # Test case without instance
+            acknowledged_by=cls.ack_user,
+            comment="Second ack, no specific instance"
+        )
+
+    def test_ack_history_creation_full(self):
+        """Test creating an AlertAcknowledgementHistory with all fields."""
+        ack_comment = "Acknowledged with full details."
+        history = AlertAcknowledgementHistory.objects.create(
+            alert_group=self.alert_group,
+            alert_instance=self.alert_instance,
+            acknowledged_by=self.ack_user,
+            comment=ack_comment
+        )
+
+        self.assertIsInstance(history, AlertAcknowledgementHistory)
+        self.assertEqual(history.alert_group, self.alert_group)
+        self.assertEqual(history.alert_instance, self.alert_instance)
+        self.assertEqual(history.acknowledged_by, self.ack_user)
+        self.assertEqual(history.comment, ack_comment)
+        self.assertIsNotNone(history.acknowledged_at)
+
+    def test_ack_history_creation_minimal(self):
+        """Test creating an AlertAcknowledgementHistory with optional fields null."""
+        history = AlertAcknowledgementHistory.objects.create(
+            alert_group=self.alert_group,
+            acknowledged_by=self.ack_user,
+            # alert_instance is null
+            # comment is null
+        )
+
+        self.assertIsInstance(history, AlertAcknowledgementHistory)
+        self.assertEqual(history.alert_group, self.alert_group)
+        self.assertEqual(history.acknowledged_by, self.ack_user)
+        self.assertIsNone(history.alert_instance)
+        self.assertIsNone(history.comment) # Should default to None/Null
+        self.assertIsNotNone(history.acknowledged_at)
+
+    def test_ack_history_str_with_instance(self):
+        """Test the __str__ method when alert_instance is present."""
+        # Use history1 created in setUpTestData
+        expected_str = f"Acknowledgement by {self.ack_user.username} on {self.alert_group.name} (Instance ID: {self.alert_instance.id})"
+        self.assertEqual(str(self.history1), expected_str)
+
+    def test_ack_history_str_without_instance(self):
+        """Test the __str__ method when alert_instance is None."""
+        # Use history2 created in setUpTestData
+        expected_str = f"Acknowledgement by {self.ack_user.username} on {self.alert_group.name}"
+        self.assertEqual(str(self.history2), expected_str)
+
+    def test_ack_history_ordering(self):
+        """Test that AlertAcknowledgementHistory is ordered by acknowledged_at descending."""
+        histories = AlertAcknowledgementHistory.objects.filter(alert_group=self.alert_group)
+        # setUpTestData created history1 then history2 (most recent)
+        self.assertEqual(histories[0].pk, self.history2.pk)
+        self.assertEqual(histories[1].pk, self.history1.pk)
+        self.assertTrue(histories[0].acknowledged_at > histories[1].acknowledged_at)
+
+    def test_ack_history_relation_on_group_delete(self):
+        """Test that AlertAcknowledgementHistory is deleted when AlertGroup is deleted (CASCADE)."""
+        group_to_delete = AlertGroup.objects.create(fingerprint="temp_ack_group", name="Temp Ack Group", labels={})
+        history_to_delete = AlertAcknowledgementHistory.objects.create(
+            alert_group=group_to_delete,
+            acknowledged_by=self.ack_user
+        )
+        history_id = history_to_delete.id
+
+        self.assertTrue(AlertAcknowledgementHistory.objects.filter(id=history_id).exists())
+        group_to_delete.delete()
+        self.assertFalse(AlertAcknowledgementHistory.objects.filter(id=history_id).exists())
+
+    def test_ack_history_relation_on_instance_delete(self):
+        """Test that alert_instance becomes NULL when AlertInstance is deleted (SET_NULL)."""
+        instance_to_delete = AlertInstance.objects.create(
+            alert_group=self.alert_group, status='firing', started_at=timezone.now(), annotations={}
+        )
+        history_linked = AlertAcknowledgementHistory.objects.create(
+            alert_group=self.alert_group,
+            alert_instance=instance_to_delete,
+            acknowledged_by=self.ack_user
+        )
+        history_id = history_linked.id
+
+        self.assertEqual(AlertAcknowledgementHistory.objects.get(id=history_id).alert_instance, instance_to_delete)
+        instance_to_delete.delete()
+        # Refresh from DB
+        history_linked.refresh_from_db()
+        self.assertIsNone(history_linked.alert_instance)
+        # Ensure the history record itself still exists
+        self.assertTrue(AlertAcknowledgementHistory.objects.filter(id=history_id).exists())
+
+    def test_ack_history_relation_on_user_delete(self):
+        """Test that acknowledged_by becomes NULL when User is deleted (SET_NULL)."""
+        user_to_delete = User.objects.create_user(username='temp_ack_user', password='password')
+        history_linked = AlertAcknowledgementHistory.objects.create(
+            alert_group=self.alert_group,
+            acknowledged_by=user_to_delete
+        )
+        history_id = history_linked.id
+
+        self.assertEqual(AlertAcknowledgementHistory.objects.get(id=history_id).acknowledged_by, user_to_delete)
+        user_to_delete.delete()
+        # Refresh from DB
+        history_linked.refresh_from_db()
+        self.assertIsNone(history_linked.acknowledged_by)
+        # Ensure the history record itself still exists
+        self.assertTrue(AlertAcknowledgementHistory.objects.filter(id=history_id).exists())
