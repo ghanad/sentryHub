@@ -307,6 +307,7 @@ class SilenceRuleListView(LoginRequiredMixin, ListView):
     template_name = 'alerts/silence_rule_list.html'
     context_object_name = 'silence_rules'
     paginate_by = 20
+    # allow_empty_first_page = True # Removed - didn't solve the 404
 
     def get_queryset(self):
         queryset = SilenceRule.objects.select_related('created_by').all()
@@ -338,6 +339,46 @@ class SilenceRuleListView(LoginRequiredMixin, ListView):
         context['search'] = self.request.GET.get('search', '')
         context['now'] = timezone.now() # Pass current time for template logic
         return context
+
+    def paginate_queryset(self, queryset, page_size):
+        """Override to handle invalid page numbers gracefully and add logging."""
+        paginator = self.get_paginator(
+            queryset,
+            page_size,
+            orphans=self.get_paginate_orphans(),
+            allow_empty_first_page=self.get_allow_empty(), # Use class attribute
+        )
+        page_kwarg = self.page_kwarg
+        page = self.kwargs.get(page_kwarg) or self.request.GET.get(page_kwarg) or 1
+        logger.debug(f"SilenceRuleListView: Requested page '{page}'")
+        try:
+            page_number = int(page)
+        except ValueError:
+            if page == "last":
+                page_number = paginator.num_pages
+            else:
+                logger.warning(f"SilenceRuleListView: Invalid page number '{page}' requested. Defaulting to page 1.")
+                page_number = 1
+
+        try:
+            page_obj = paginator.page(page_number)
+            logger.debug(f"SilenceRuleListView: Returning page {page_obj.number} with {len(page_obj.object_list)} items.")
+        except EmptyPage:
+            # Django's default behavior for ListView with allow_empty_first_page=False
+            # is to raise Http404 if the page number is invalid (> num_pages or < 1).
+            # Let's mimic that default behavior more closely.
+            if page_number < 1:
+                 logger.warning(f"SilenceRuleListView: Invalid page number {page_number} requested. Defaulting to page 1.")
+                 page_obj = paginator.page(1)
+            else:
+                 # Default to last page if page > num_pages, like AlertListView
+                 logger.warning(f"SilenceRuleListView: Invalid page number {page_number} requested (max is {paginator.num_pages}). Defaulting to last page.")
+                 page_obj = paginator.page(paginator.num_pages)
+        except PageNotAnInteger: # Should be caught by ValueError, but keep for safety
+             logger.warning(f"SilenceRuleListView: Non-integer page number '{page}' requested. Defaulting to page 1.")
+             page_obj = paginator.page(1)
+
+        return (paginator, page_obj, page_obj.object_list, page_obj.has_other_pages())
 
 
 class SilenceRuleCreateView(LoginRequiredMixin, CreateView):
@@ -418,10 +459,9 @@ class SilenceRuleCreateView(LoginRequiredMixin, CreateView):
         context = super().get_context_data(**kwargs)
         context['form_title'] = "Create New Silence Rule"
         # Ensure matchers are displayed as pretty JSON if initial data was provided
-        # The form widget now receives the dict from get_initial, but we want the textarea
-        # to show the pretty-printed JSON string representation of that dict.
-        if 'matchers' in self.get_initial(): # Check if initial data was successfully set
-             initial_matchers_dict = self.get_initial()['matchers']
+        # Use self.initial which holds the result of the first get_initial call
+        if 'matchers' in self.initial: # Check if initial data was successfully set
+             initial_matchers_dict = self.initial['matchers']
              if isinstance(initial_matchers_dict, dict):
                  import json
                  # Set the *value* for the widget rendering, not the field's initial

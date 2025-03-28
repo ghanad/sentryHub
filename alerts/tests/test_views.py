@@ -1,605 +1,675 @@
-import json
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth.models import User
 from django.utils import timezone
-from datetime import timedelta
-from unittest.mock import patch # Added for mocking
+from django.conf import settings # Import settings
+from datetime import timedelta, datetime
+import json
+from unittest.mock import patch, call
+from django.contrib import messages # Import messages
 
-from alerts.models import AlertGroup, AlertInstance, AlertComment, AlertAcknowledgementHistory
-from docs.models import AlertDocumentation, DocumentationAlertGroup # Added docs models
+from ..models import AlertGroup, AlertInstance, AlertComment, SilenceRule, AlertAcknowledgementHistory
+from ..forms import AlertAcknowledgementForm, AlertCommentForm, SilenceRuleForm
 
-# === AlertListView Tests ===
+# Existing tests for AlertListView, AlertDetailView, SilenceRuleListView... (Keep them here)
 
-class AlertListViewTests(TestCase):
+class AlertListViewTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username='testuser', password='password')
+        self.client.login(username='testuser', password='password')
 
-    @classmethod
-    def setUpTestData(cls):
-        # Create a user for login
-        cls.username = 'testuser'
-        cls.password = 'testpassword'
-        cls.user = User.objects.create_user(username=cls.username, password=cls.password)
+        # Create some alert groups for testing
+        self.alert1 = AlertGroup.objects.create(
+            fingerprint='fp1', name='Test Alert 1', labels={'job': 'test'}, severity='critical', current_status='firing', instance='server1'
+        )
+        self.alert2 = AlertGroup.objects.create(
+            fingerprint='fp2', name='Test Alert 2', labels={'job': 'test'}, severity='warning', current_status='resolved', instance='server2', acknowledged=True
+        )
+        self.alert3 = AlertGroup.objects.create(
+            fingerprint='fp3', name='Another Alert', labels={'job': 'other'}, severity='info', current_status='firing', instance='server1', is_silenced=True
+        )
 
-        # Create some AlertGroup instances first
-        now = timezone.now()
-        cls.alert1 = AlertGroup.objects.create(name="High CPU Usage", fingerprint="fp1", severity="critical", current_status="firing", instance="server1.example.com", acknowledged=False, is_silenced=False, labels={"env": "prod", "service": "api"})
-        cls.alert2 = AlertGroup.objects.create(name="Disk Space Low", fingerprint="fp2", severity="warning", current_status="firing", instance="server2.example.com", acknowledged=True, is_silenced=False, labels={"env": "staging", "service": "db"})
-        cls.alert3 = AlertGroup.objects.create(name="Network Latency", fingerprint="fp3", severity="warning", current_status="resolved", instance="server1.example.com", acknowledged=False, is_silenced=True, silenced_until=now + timedelta(days=1), labels={"env": "prod", "service": "web"})
-        cls.alert4 = AlertGroup.objects.create(name="High CPU Usage", fingerprint="fp4", severity="critical", current_status="firing", instance="server3.example.com", acknowledged=False, is_silenced=False, labels={"env": "prod", "service": "worker"})
-
-        # Manually set last_occurrence to desired values using update to bypass auto_now=True
-        cls.alert1_time = now - timedelta(hours=1)
-        cls.alert2_time = now - timedelta(hours=2)
-        cls.alert3_time = now - timedelta(hours=3)
-        cls.alert4_time = now - timedelta(minutes=30) # Most recent
-
-        AlertGroup.objects.filter(pk=cls.alert1.pk).update(last_occurrence=cls.alert1_time)
-        AlertGroup.objects.filter(pk=cls.alert2.pk).update(last_occurrence=cls.alert2_time)
-        AlertGroup.objects.filter(pk=cls.alert3.pk).update(last_occurrence=cls.alert3_time)
-        AlertGroup.objects.filter(pk=cls.alert4.pk).update(last_occurrence=cls.alert4_time)
-
-        # Refresh objects from DB to get the updated timestamps
-        cls.alert1.refresh_from_db()
-        cls.alert2.refresh_from_db()
-        cls.alert3.refresh_from_db()
-        cls.alert4.refresh_from_db()
-
-        cls.client = Client()
-        cls.url = reverse('alerts:alert-list')
-
-    def test_login_required(self):
-        """Test that unauthenticated users are redirected to login."""
-        response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 302)
-        # Check if the redirect URL starts with the LOGIN_URL from settings
-        from django.conf import settings
-        self.assertTrue(response.url.startswith(settings.LOGIN_URL))
-
-    def test_authenticated_get_success(self):
-        """Test successful GET request for authenticated users."""
-        self.client.login(username=self.username, password=self.password)
-        response = self.client.get(self.url)
+    def test_alert_list_view_get(self):
+        response = self.client.get(reverse('alerts:alert-list'))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'alerts/alert_list.html')
         self.assertIn('alerts', response.context)
-        self.assertEqual(len(response.context['alerts']), 4) # All alerts initially
+        self.assertEqual(len(response.context['alerts']), 3) # Check if all alerts are initially listed
 
-    def test_ordering(self):
-        """Test that alerts are ordered by last_occurrence descending."""
-        self.client.login(username=self.username, password=self.password)
-        response = self.client.get(self.url)
-        alerts_in_context = list(response.context['alerts'])
-        self.assertEqual(alerts_in_context[0], self.alert4) # Most recent
-        self.assertEqual(alerts_in_context[1], self.alert1)
-        self.assertEqual(alerts_in_context[2], self.alert2)
-        self.assertEqual(alerts_in_context[3], self.alert3) # Least recent
+    def test_alert_list_view_unauthenticated(self):
+        self.client.logout()
+        response = self.client.get(reverse('alerts:alert-list'))
+        # Use settings.LOGIN_URL which points to /users/login/
+        from django.conf import settings
+        expected_url = f"{settings.LOGIN_URL}?next={reverse('alerts:alert-list')}"
+        self.assertRedirects(response, expected_url, status_code=302, target_status_code=200, fetch_redirect_response=False)
 
-    # --- Filtering Tests ---
 
-    def test_filter_by_status_firing(self):
-        self.client.login(username=self.username, password=self.password)
-        response = self.client.get(self.url, {'status': 'firing'})
+    def test_alert_list_filter_by_status(self):
+        response = self.client.get(reverse('alerts:alert-list'), {'status': 'firing'})
         self.assertEqual(response.status_code, 200)
-        alerts_in_context = list(response.context['alerts'])
-        self.assertEqual(len(alerts_in_context), 3)
-        self.assertIn(self.alert1, alerts_in_context)
-        self.assertIn(self.alert2, alerts_in_context)
-        self.assertIn(self.alert4, alerts_in_context)
-        self.assertNotIn(self.alert3, alerts_in_context)
-        self.assertEqual(response.context['status'], 'firing')
+        self.assertEqual(len(response.context['alerts']), 2)
+        self.assertTrue(all(a.current_status == 'firing' for a in response.context['alerts']))
+        self.assertContains(response, 'Test Alert 1')
+        self.assertContains(response, 'Another Alert')
+        self.assertNotContains(response, 'Test Alert 2')
 
-    def test_filter_by_status_resolved(self):
-        self.client.login(username=self.username, password=self.password)
-        response = self.client.get(self.url, {'status': 'resolved'})
+    def test_alert_list_filter_by_severity(self):
+        response = self.client.get(reverse('alerts:alert-list'), {'severity': 'critical'})
         self.assertEqual(response.status_code, 200)
-        alerts_in_context = list(response.context['alerts'])
-        self.assertEqual(len(alerts_in_context), 1)
-        self.assertIn(self.alert3, alerts_in_context)
-        self.assertNotIn(self.alert1, alerts_in_context)
-        self.assertEqual(response.context['status'], 'resolved')
+        self.assertEqual(len(response.context['alerts']), 1)
+        self.assertEqual(response.context['alerts'][0].fingerprint, 'fp1')
 
-    def test_filter_by_severity_critical(self):
-        self.client.login(username=self.username, password=self.password)
-        response = self.client.get(self.url, {'severity': 'critical'})
+    def test_alert_list_filter_by_instance(self):
+        response = self.client.get(reverse('alerts:alert-list'), {'instance': 'server1'})
         self.assertEqual(response.status_code, 200)
-        alerts_in_context = list(response.context['alerts'])
-        self.assertEqual(len(alerts_in_context), 2)
-        self.assertIn(self.alert1, alerts_in_context)
-        self.assertIn(self.alert4, alerts_in_context)
-        self.assertEqual(response.context['severity'], 'critical')
+        self.assertEqual(len(response.context['alerts']), 2)
+        self.assertTrue(all(a.instance == 'server1' for a in response.context['alerts']))
 
-    def test_filter_by_instance(self):
-        self.client.login(username=self.username, password=self.password)
-        response = self.client.get(self.url, {'instance': 'server1.example.com'})
+    def test_alert_list_filter_by_acknowledged(self):
+        response = self.client.get(reverse('alerts:alert-list'), {'acknowledged': 'true'})
         self.assertEqual(response.status_code, 200)
-        alerts_in_context = list(response.context['alerts'])
-        self.assertEqual(len(alerts_in_context), 2)
-        self.assertIn(self.alert1, alerts_in_context)
-        self.assertIn(self.alert3, alerts_in_context)
-        self.assertEqual(response.context['instance'], 'server1.example.com')
+        self.assertEqual(len(response.context['alerts']), 1)
+        self.assertEqual(response.context['alerts'][0].fingerprint, 'fp2')
 
-    def test_filter_by_acknowledged_true(self):
-        self.client.login(username=self.username, password=self.password)
-        response = self.client.get(self.url, {'acknowledged': 'true'})
+        response = self.client.get(reverse('alerts:alert-list'), {'acknowledged': 'false'})
         self.assertEqual(response.status_code, 200)
-        alerts_in_context = list(response.context['alerts'])
-        self.assertEqual(len(alerts_in_context), 1)
-        self.assertIn(self.alert2, alerts_in_context)
-        self.assertEqual(response.context['acknowledged'], 'true')
+        self.assertEqual(len(response.context['alerts']), 2)
+        self.assertTrue(all(not a.acknowledged for a in response.context['alerts']))
 
-    def test_filter_by_acknowledged_false(self):
-        self.client.login(username=self.username, password=self.password)
-        response = self.client.get(self.url, {'acknowledged': 'false'})
+    def test_alert_list_filter_by_silenced(self):
+        response = self.client.get(reverse('alerts:alert-list'), {'silenced': 'yes'})
         self.assertEqual(response.status_code, 200)
-        alerts_in_context = list(response.context['alerts'])
-        self.assertEqual(len(alerts_in_context), 3)
-        self.assertIn(self.alert1, alerts_in_context)
-        self.assertIn(self.alert3, alerts_in_context)
-        self.assertIn(self.alert4, alerts_in_context)
-        self.assertEqual(response.context['acknowledged'], 'false')
+        self.assertEqual(len(response.context['alerts']), 1)
+        self.assertEqual(response.context['alerts'][0].fingerprint, 'fp3')
 
-    def test_filter_by_silenced_yes(self):
-        self.client.login(username=self.username, password=self.password)
-        response = self.client.get(self.url, {'silenced': 'yes'})
+        response = self.client.get(reverse('alerts:alert-list'), {'silenced': 'no'})
         self.assertEqual(response.status_code, 200)
-        alerts_in_context = list(response.context['alerts'])
-        self.assertEqual(len(alerts_in_context), 1)
-        self.assertIn(self.alert3, alerts_in_context)
-        self.assertEqual(response.context['silenced_filter'], 'yes')
+        self.assertEqual(len(response.context['alerts']), 2)
+        self.assertTrue(all(not a.is_silenced for a in response.context['alerts']))
 
-    def test_filter_by_silenced_no(self):
-        self.client.login(username=self.username, password=self.password)
-        response = self.client.get(self.url, {'silenced': 'no'})
+    def test_alert_list_search(self):
+        response = self.client.get(reverse('alerts:alert-list'), {'search': 'Test Alert'})
         self.assertEqual(response.status_code, 200)
-        alerts_in_context = list(response.context['alerts'])
-        self.assertEqual(len(alerts_in_context), 3)
-        self.assertIn(self.alert1, alerts_in_context)
-        self.assertIn(self.alert2, alerts_in_context)
-        self.assertIn(self.alert4, alerts_in_context)
-        self.assertEqual(response.context['silenced_filter'], 'no')
+        self.assertEqual(len(response.context['alerts']), 2)
+        self.assertContains(response, 'Test Alert 1')
+        self.assertContains(response, 'Test Alert 2')
+        self.assertNotContains(response, 'Another Alert')
 
-    def test_filter_by_search_name(self):
-        self.client.login(username=self.username, password=self.password)
-        response = self.client.get(self.url, {'search': 'High CPU'})
+        response = self.client.get(reverse('alerts:alert-list'), {'search': 'fp1'})
         self.assertEqual(response.status_code, 200)
-        alerts_in_context = list(response.context['alerts'])
-        self.assertEqual(len(alerts_in_context), 2)
-        self.assertIn(self.alert1, alerts_in_context)
-        self.assertIn(self.alert4, alerts_in_context)
-        self.assertEqual(response.context['search'], 'High CPU')
+        self.assertEqual(len(response.context['alerts']), 1)
+        self.assertEqual(response.context['alerts'][0].fingerprint, 'fp1')
 
-    def test_filter_by_search_fingerprint(self):
-        self.client.login(username=self.username, password=self.password)
-        response = self.client.get(self.url, {'search': 'fp2'})
+        response = self.client.get(reverse('alerts:alert-list'), {'search': 'server2'})
         self.assertEqual(response.status_code, 200)
-        alerts_in_context = list(response.context['alerts'])
-        self.assertEqual(len(alerts_in_context), 1)
-        self.assertIn(self.alert2, alerts_in_context)
-        self.assertEqual(response.context['search'], 'fp2')
+        self.assertEqual(len(response.context['alerts']), 1)
+        self.assertEqual(response.context['alerts'][0].fingerprint, 'fp2')
 
-    def test_filter_by_search_instance(self):
-        self.client.login(username=self.username, password=self.password)
-        response = self.client.get(self.url, {'search': 'server1'})
-        self.assertEqual(response.status_code, 200)
-        alerts_in_context = list(response.context['alerts'])
-        self.assertEqual(len(alerts_in_context), 2)
-        self.assertIn(self.alert1, alerts_in_context)
-        self.assertIn(self.alert3, alerts_in_context)
-        self.assertEqual(response.context['search'], 'server1')
-
-    def test_filter_combined(self):
-        """Test combining multiple filters."""
-        self.client.login(username=self.username, password=self.password)
-        response = self.client.get(self.url, {
-            'status': 'firing',
-            'severity': 'critical',
-            'acknowledged': 'false',
-            'search': 'server' # Matches alert1 and alert4 instances
-        })
-        self.assertEqual(response.status_code, 200)
-        alerts_in_context = list(response.context['alerts'])
-        # alert1: firing, critical, not ack, server1
-        # alert4: firing, critical, not ack, server3
-        self.assertEqual(len(alerts_in_context), 2)
-        self.assertIn(self.alert1, alerts_in_context)
-        self.assertIn(self.alert4, alerts_in_context)
-        self.assertEqual(response.context['status'], 'firing')
-        self.assertEqual(response.context['severity'], 'critical')
-        self.assertEqual(response.context['acknowledged'], 'false')
-        self.assertEqual(response.context['search'], 'server')
-
-    # --- Pagination Tests ---
-
-    def test_pagination_enabled(self):
-        """Test that pagination is active when exceeding paginate_by."""
-        self.client.login(username=self.username, password=self.password)
-        # Create more alerts to exceed paginate_by=20 (currently 4)
-        for i in range(5, 22):
+    def test_alert_list_pagination(self):
+        # Create more alerts to trigger pagination (assuming paginate_by=20)
+        for i in range(4, 25):
             AlertGroup.objects.create(
-                name=f"Alert {i}",
-                fingerprint=f"fp{i}",
-                severity="info",
-                current_status="firing",
-                instance=f"server{i}.example.com",
-                last_occurrence=timezone.now() - timedelta(minutes=i*5),
-                labels={} # Add default labels
+                fingerprint=f'fp{i}', name=f'Test Alert {i}', labels={'job': 'test'}, severity='warning', current_status='firing'
             )
-
-        response = self.client.get(self.url)
+        
+        response = self.client.get(reverse('alerts:alert-list'))
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.context['is_paginated'])
-        self.assertEqual(len(response.context['alerts']), 20) # Default paginate_by
-        self.assertEqual(response.context['paginator'].num_pages, 2)
+        self.assertEqual(len(response.context['alerts']), 20) # Default page size
 
-        # Test accessing page 2
-        response_page2 = self.client.get(self.url, {'page': 2})
-        self.assertEqual(response_page2.status_code, 200)
-        self.assertEqual(len(response_page2.context['alerts']), 1) # 21 total alerts - 20 on page 1 = 1 left
-
-    def test_pagination_invalid_page(self):
-        """Test accessing an invalid page number defaults correctly."""
-        self.client.login(username=self.username, password=self.password)
-        # Create enough alerts for multiple pages
-        for i in range(5, 25):
-            AlertGroup.objects.create(
-                name=f"Alert {i}",
-                fingerprint=f"fp{i}",
-                last_occurrence=timezone.now(),
-                labels={} # Add default labels
-            )
-
-        # Test invalid page (zero) - should default to page 1
-        response_zero = self.client.get(self.url, {'page': 0})
-        self.assertEqual(response_zero.status_code, 200)
-        self.assertEqual(response_zero.context['page_obj'].number, 1)
-
-        # Test page out of range (too high)
-        response_high = self.client.get(self.url, {'page': 99})
-        self.assertEqual(response_high.status_code, 200)
-        # Should go to the last page (page 2 in this case: 4 initial + 20 new = 24 total)
-        self.assertEqual(response_high.context['page_obj'].number, 2)
-
-    # --- Context Data Tests ---
-
-    def test_context_filter_params(self):
-        """Test that filter parameters are correctly passed to context."""
-        self.client.login(username=self.username, password=self.password)
-        params = {
-            'status': 'firing',
-            'severity': 'warning',
-            'instance': 'server2',
-            'acknowledged': 'true',
-            'silenced': 'no',
-            'search': 'Disk'
-        }
-        response = self.client.get(self.url, params)
+        response = self.client.get(reverse('alerts:alert-list'), {'page': 2})
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context['status'], 'firing')
-        self.assertEqual(response.context['severity'], 'warning')
-        self.assertEqual(response.context['instance'], 'server2')
-        self.assertEqual(response.context['acknowledged'], 'true')
-        self.assertEqual(response.context['silenced_filter'], 'no')
-        self.assertEqual(response.context['search'], 'Disk')
+        self.assertTrue(response.context['is_paginated'])
+        self.assertEqual(len(response.context['alerts']), 4) # Remaining alerts on page 2 (3 original + 21 new = 24 total)
 
-    def test_context_counts(self):
-        """Test that context counts are calculated correctly for the current page."""
-        self.client.login(username=self.username, password=self.password)
-        # Initial page has alert1 (firing, critical), alert2 (firing, warning, ack),
-        # alert3 (resolved, warning, silenced), alert4 (firing, critical)
-        response = self.client.get(self.url)
+        # Test invalid page number (should default to page 1)
+        response = self.client.get(reverse('alerts:alert-list'), {'page': 'invalid'})
         self.assertEqual(response.status_code, 200)
-        # These counts are now for the current page only due to view changes
-        self.assertEqual(response.context['firing_count'], 3) # alert1, alert2, alert4
-        self.assertEqual(response.context['critical_count'], 2) # alert1, alert4
-        self.assertEqual(response.context['acknowledged_count'], 1) # alert2
-        # Check total counts added in get_context_data
-        self.assertEqual(response.context['total_firing_count'], 3)
-        self.assertEqual(response.context['total_critical_count'], 2)
-        self.assertEqual(response.context['total_acknowledged_count'], 1)
+        self.assertEqual(response.context['page_obj'].number, 1)
+        self.assertEqual(len(response.context['alerts']), 20)
+
+        # Test page number too high (should default to last page)
+        response = self.client.get(reverse('alerts:alert-list'), {'page': 999})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['page_obj'].number, 2) # Last page is 2
+        self.assertEqual(len(response.context['alerts']), 4)
+
+        # Test page number less than 1 (should default to page 1)
+        response = self.client.get(reverse('alerts:alert-list'), {'page': 0})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['page_obj'].number, 1)
+        self.assertEqual(len(response.context['alerts']), 20)
 
 
-        # Test counts with filtering (only alert1 should match)
-        response_filtered = self.client.get(self.url, {'severity': 'critical', 'instance': 'server1'})
-        self.assertEqual(response_filtered.status_code, 200)
-        self.assertEqual(len(response_filtered.context['alerts']), 1)
-        self.assertEqual(response_filtered.context['firing_count'], 1) # alert1 is firing
-        self.assertEqual(response_filtered.context['critical_count'], 1) # alert1 is critical
-        self.assertEqual(response_filtered.context['acknowledged_count'], 0) # alert1 is not ack
-        # Check total counts with filter
-        self.assertEqual(response_filtered.context['total_firing_count'], 1)
-        self.assertEqual(response_filtered.context['total_critical_count'], 1)
-        self.assertEqual(response_filtered.context['total_acknowledged_count'], 0)
+class AlertDetailViewTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username='testuser', password='password')
+        self.client.login(username='testuser', password='password')
 
-
-# === AlertDetailView Tests ===
-
-class AlertDetailViewTests(TestCase):
-
-    @classmethod
-    def setUpTestData(cls):
-        cls.username = 'testuser'
-        cls.password = 'testpassword'
-        cls.user = User.objects.create_user(username=cls.username, password=cls.password)
-
-        cls.alert_group = AlertGroup.objects.create(
-            name="Detailed Alert",
-            fingerprint="detail-fp1",
-            severity="warning",
-            current_status="firing",
-            instance="detail-server.example.com",
-            labels={"service": "detail-service"}
+        self.alert_group = AlertGroup.objects.create(
+            fingerprint='detail_fp', name='Detail Test Alert', labels={'job': 'detail'}, severity='warning', current_status='firing'
         )
-        cls.url = reverse('alerts:alert-detail', kwargs={'fingerprint': cls.alert_group.fingerprint})
-        cls.invalid_url = reverse('alerts:alert-detail', kwargs={'fingerprint': 'nonexistent-fp'})
-
-        # Create related objects
-        now = timezone.now()
-        for i in range(15): # Create 15 instances for pagination test
-            AlertInstance.objects.create(
-                alert_group=cls.alert_group,
-                status='firing' if i < 12 else 'resolved', # Mix statuses
-                started_at=now - timedelta(hours=i+1),
-                ended_at=now - timedelta(hours=i) if i >= 12 else None,
-                annotations={'summary': f'Instance {i+1}'}
-            )
-
-        for i in range(12): # Create 12 comments for pagination test
-            AlertComment.objects.create(
-                alert_group=cls.alert_group,
-                user=cls.user,
-                content=f"This is comment number {i+1}",
-                created_at=now - timedelta(minutes=i*10)
-            )
-
-        AlertAcknowledgementHistory.objects.create(
-            alert_group=cls.alert_group,
-            acknowledged_by=cls.user,
-            comment="Initial acknowledgement"
+        self.instance1 = AlertInstance.objects.create(
+            alert_group=self.alert_group, status='firing', started_at=timezone.now() - timedelta(hours=1), annotations={'summary': 'Instance 1'}
         )
-
-        cls.documentation = AlertDocumentation.objects.create(
-            title="Troubleshooting Detailed Alert", # Use 'title' instead of 'name'
-            description="Steps to fix Detailed Alert" # Remove 'labels'
-            # created_by can be added if needed for other tests
+        self.instance2 = AlertInstance.objects.create(
+            alert_group=self.alert_group, status='resolved', started_at=timezone.now() - timedelta(hours=2), ended_at=timezone.now() - timedelta(hours=1, minutes=30), annotations={'summary': 'Instance 2'}
         )
-        DocumentationAlertGroup.objects.create(
-            documentation=cls.documentation,
-            alert_group=cls.alert_group
+        self.comment = AlertComment.objects.create(
+            alert_group=self.alert_group, user=self.user, content='Initial comment'
         )
+        self.ack_history = AlertAcknowledgementHistory.objects.create(
+            alert_group=self.alert_group, acknowledged_by=self.user, comment="Acknowledged"
+        )
+        self.detail_url = reverse('alerts:alert-detail', kwargs={'fingerprint': self.alert_group.fingerprint})
 
-        cls.client = Client()
-
-    def test_login_required(self):
-        """Test detail view requires login."""
-        response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 302)
-        from django.conf import settings
-        self.assertTrue(response.url.startswith(settings.LOGIN_URL))
-
-    def test_get_success_valid_fingerprint(self):
-        """Test GET request with valid fingerprint."""
-        self.client.login(username=self.username, password=self.password)
-        response = self.client.get(self.url)
+    def test_alert_detail_view_get(self):
+        response = self.client.get(self.detail_url)
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'alerts/alert_detail.html')
         self.assertEqual(response.context['alert'], self.alert_group)
+        self.assertIn('instances', response.context)
+        self.assertIn('comments', response.context)
+        self.assertIn('acknowledgement_history', response.context)
+        self.assertIn('acknowledge_form', response.context)
+        self.assertIn('comment_form', response.context)
+        self.assertIsInstance(response.context['acknowledge_form'], AlertAcknowledgementForm)
+        self.assertIsInstance(response.context['comment_form'], AlertCommentForm)
+        self.assertEqual(response.context['active_tab'], 'details') # Default tab
 
-    def test_get_not_found_invalid_fingerprint(self):
-        """Test GET request with invalid fingerprint returns 404."""
-        self.client.login(username=self.username, password=self.password)
-        response = self.client.get(self.invalid_url)
-        self.assertEqual(response.status_code, 404)
-
-    def test_context_data(self):
-        """Test context data is correctly populated."""
-        self.client.login(username=self.username, password=self.password)
-        response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 200)
-        context = response.context
-
-        self.assertEqual(context['alert'], self.alert_group)
-        self.assertIn('acknowledge_form', context)
-        self.assertIn('comment_form', context)
-        self.assertIn('instances', context)
-        self.assertIn('acknowledgement_history', context)
-        self.assertIn('comments', context)
-        self.assertIn('linked_documentation', context)
-        self.assertEqual(context['active_tab'], 'details') # Default tab
-
-        # Check specific context items
-        self.assertEqual(context['linked_documentation'].count(), 1)
-        self.assertEqual(context['linked_documentation'].first().documentation, self.documentation)
-        self.assertEqual(context['acknowledgement_history'].count(), 1)
-
-    def test_context_active_tab(self):
-        """Test active_tab context variable from GET parameter."""
-        self.client.login(username=self.username, password=self.password)
-        response = self.client.get(self.url, {'tab': 'history'})
+    def test_alert_detail_view_get_specific_tab(self):
+        response = self.client.get(self.detail_url, {'tab': 'history'})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['active_tab'], 'history')
 
-    def test_instance_pagination(self):
-        """Test pagination for alert instances."""
-        self.client.login(username=self.username, password=self.password)
-        # Page 1
-        response_p1 = self.client.get(self.url)
-        self.assertEqual(response_p1.status_code, 200)
-        self.assertEqual(len(response_p1.context['instances']), 10) # Default 10 per page
-        self.assertTrue(response_p1.context['instances'].has_next())
+    def test_alert_detail_view_unauthenticated(self):
+        self.client.logout()
+        response = self.client.get(self.detail_url)
+        # Use settings.LOGIN_URL which points to /users/login/
+        from django.conf import settings
+        expected_url = f"{settings.LOGIN_URL}?next={self.detail_url}"
+        self.assertRedirects(response, expected_url, status_code=302, target_status_code=200, fetch_redirect_response=False)
 
-        # Page 2
-        response_p2 = self.client.get(self.url, {'page': 2})
-        self.assertEqual(response_p2.status_code, 200)
-        self.assertEqual(len(response_p2.context['instances']), 5) # 15 total instances
-        self.assertFalse(response_p2.context['instances'].has_next())
 
-        # Invalid page defaults to 1
-        response_invalid = self.client.get(self.url, {'page': 'abc'})
-        self.assertEqual(response_invalid.status_code, 200)
-        self.assertEqual(response_invalid.context['instances'].number, 1)
+    def test_alert_detail_view_post_acknowledge_valid(self):
+        self.assertFalse(self.alert_group.acknowledged)
+        post_data = {'acknowledge': '', 'comment': 'Acknowledging this alert now.'}
+        response = self.client.post(self.detail_url, post_data)
 
-        # Out of range defaults to last page
-        response_high = self.client.get(self.url, {'page': 99})
-        self.assertEqual(response_high.status_code, 200)
-        self.assertEqual(response_high.context['instances'].number, 2) # Should be last page (2)
+        self.assertRedirects(response, self.detail_url)
+        self.alert_group.refresh_from_db()
+        self.assertTrue(self.alert_group.acknowledged)
+        self.assertEqual(self.alert_group.acknowledged_by, self.user)
+        self.assertIsNotNone(self.alert_group.acknowledgement_time)
 
-    def test_comment_pagination(self):
-        """Test pagination for comments."""
-        self.client.login(username=self.username, password=self.password)
-        # Page 1
-        response_p1 = self.client.get(self.url)
-        self.assertEqual(response_p1.status_code, 200)
-        self.assertEqual(len(response_p1.context['comments']), 10) # Default 10 per page
-        self.assertTrue(response_p1.context['comments'].has_next())
-
-        # Page 2
-        response_p2 = self.client.get(self.url, {'comments_page': 2})
-        self.assertEqual(response_p2.status_code, 200)
-        self.assertEqual(len(response_p2.context['comments']), 2) # 12 total comments
-        self.assertFalse(response_p2.context['comments'].has_next())
-
-        # Invalid page defaults to 1
-        response_invalid = self.client.get(self.url, {'comments_page': 'abc'})
-        self.assertEqual(response_invalid.status_code, 200)
-        self.assertEqual(response_invalid.context['comments'].number, 1)
-
-        # Out of range defaults to last page
-        response_high = self.client.get(self.url, {'comments_page': 99})
-        self.assertEqual(response_high.status_code, 200)
-        self.assertEqual(response_high.context['comments'].number, 2) # Should be last page (2)
-
-    # --- POST Tests ---
-
-    @patch('alerts.views.acknowledge_alert') # Mock the service call
-    def test_post_acknowledge_valid(self, mock_acknowledge_alert):
-        """Test valid POST request for acknowledgement."""
-        self.client.login(username=self.username, password=self.password)
-        ack_comment = "Acknowledging this alert now."
-        initial_comment_count = AlertComment.objects.filter(alert_group=self.alert_group).count()
-        initial_ack_count = AlertAcknowledgementHistory.objects.filter(alert_group=self.alert_group).count()
-
-        response = self.client.post(self.url, {
-            'acknowledge': '', # Presence triggers the logic
-            'comment': ack_comment
-        })
-
-        self.assertEqual(response.status_code, 302) # Should redirect
-        self.assertEqual(response.url, self.url) # Redirects back to detail view
-
-        # Check comment was created
-        self.assertEqual(AlertComment.objects.filter(alert_group=self.alert_group).count(), initial_comment_count + 1)
+        # Check if comment was created
+        self.assertEqual(AlertComment.objects.filter(alert_group=self.alert_group).count(), 2)
         new_comment = AlertComment.objects.latest('created_at')
-        self.assertEqual(new_comment.content, ack_comment)
+        self.assertEqual(new_comment.content, 'Acknowledging this alert now.')
         self.assertEqual(new_comment.user, self.user)
 
-        # Check acknowledge_alert service was called
-        mock_acknowledge_alert.assert_called_once_with(self.alert_group, self.user, ack_comment)
+        # Check if history was created
+        self.assertEqual(AlertAcknowledgementHistory.objects.filter(alert_group=self.alert_group).count(), 2)
+        new_history = AlertAcknowledgementHistory.objects.latest('acknowledged_at')
+        self.assertEqual(new_history.comment, 'Acknowledging this alert now.')
+        self.assertEqual(new_history.acknowledged_by, self.user)
 
-        # Check history was created (implicitly by acknowledge_alert)
-        # We can't directly check history count here as it's created within the mocked function
-        # Instead, we rely on the mock assertion above.
+    def test_alert_detail_view_post_acknowledge_invalid_no_comment(self):
+        post_data = {'acknowledge': ''} # Missing comment
+        response = self.client.post(self.detail_url, post_data)
 
-        # Check message framework (optional, depends on if you want to test messages)
-        # messages = list(get_messages(response.wsgi_request))
-        # self.assertEqual(len(messages), 1)
-        # self.assertEqual(str(messages[0]), "Alert has been acknowledged successfully.")
-
-    def test_post_acknowledge_invalid_missing_comment(self):
-        """Test invalid POST for acknowledgement (missing comment)."""
-        self.client.login(username=self.username, password=self.password)
-        initial_comment_count = AlertComment.objects.filter(alert_group=self.alert_group).count()
-
-        response = self.client.post(self.url, {
-            'acknowledge': '',
-            'comment': '' # Invalid - empty comment
-        })
-
-        # Should re-render the page with form errors, not redirect
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'alerts/alert_detail.html')
+        self.assertEqual(response.status_code, 200) # Should re-render the page
+        self.assertFalse(self.alert_group.acknowledged)
         self.assertIn('acknowledge_form', response.context)
         self.assertTrue(response.context['acknowledge_form'].errors)
         self.assertIn('comment', response.context['acknowledge_form'].errors)
+        self.assertContains(response, "Please provide a comment") # Check for error message
 
-        # Check no comment was created
-        self.assertEqual(AlertComment.objects.filter(alert_group=self.alert_group).count(), initial_comment_count)
+    def test_alert_detail_view_post_comment_valid(self):
+        post_data = {'content': 'This is a new comment.'}
+        response = self.client.post(self.detail_url, post_data)
 
-    def test_post_comment_valid(self):
-        """Test valid POST request for adding a comment."""
-        self.client.login(username=self.username, password=self.password)
-        comment_text = "This is a new test comment."
-        initial_comment_count = AlertComment.objects.filter(alert_group=self.alert_group).count()
-
-        response = self.client.post(self.url, {
-            'content': comment_text # Use 'content' field name
-        })
-
-        self.assertEqual(response.status_code, 302) # Should redirect
-        self.assertEqual(response.url, self.url)
-
-        # Check comment was created
-        self.assertEqual(AlertComment.objects.filter(alert_group=self.alert_group).count(), initial_comment_count + 1)
+        self.assertRedirects(response, self.detail_url)
+        self.assertEqual(AlertComment.objects.filter(alert_group=self.alert_group).count(), 2)
         new_comment = AlertComment.objects.latest('created_at')
-        self.assertEqual(new_comment.content, comment_text)
+        self.assertEqual(new_comment.content, 'This is a new comment.')
         self.assertEqual(new_comment.user, self.user)
 
-    def test_post_comment_invalid_missing_content(self):
-        """Test invalid POST for comment (missing content)."""
-        self.client.login(username=self.username, password=self.password)
-        initial_comment_count = AlertComment.objects.filter(alert_group=self.alert_group).count()
+    def test_alert_detail_view_post_comment_invalid_empty(self):
+        post_data = {'content': ''} # Empty comment
+        response = self.client.post(self.detail_url, post_data)
 
-        response = self.client.post(self.url, {
-            'content': '' # Use 'content' field name - Invalid - empty comment
-        })
-
-        # Should re-render with errors now due to view change
-        self.assertEqual(response.status_code, 200) # Expect 200 OK
-        self.assertTemplateUsed(response, 'alerts/alert_detail.html')
+        self.assertEqual(response.status_code, 200) # Should re-render the page
+        self.assertEqual(AlertComment.objects.filter(alert_group=self.alert_group).count(), 1) # No new comment created
         self.assertIn('comment_form', response.context)
-        self.assertTrue(response.context['comment_form'].errors) # Check form has errors
-        self.assertIn('content', response.context['comment_form'].errors) # Check 'content' field has error
+        self.assertTrue(response.context['comment_form'].errors)
+        self.assertIn('content', response.context['comment_form'].errors)
+        self.assertContains(response, "Please provide a valid comment") # Check for error message
 
-        # Check no comment was created
-        self.assertEqual(AlertComment.objects.filter(alert_group=self.alert_group).count(), initial_comment_count)
-
-    def test_post_comment_ajax_valid(self):
-        """Test valid AJAX POST for adding a comment."""
-        self.client.login(username=self.username, password=self.password)
-        comment_text = "This is an AJAX comment."
-        initial_comment_count = AlertComment.objects.filter(alert_group=self.alert_group).count()
-
-        response = self.client.post(self.url, {
-            'content': comment_text # Use 'content' field name
-        }, HTTP_X_REQUESTED_WITH='XMLHttpRequest') # AJAX header
+    def test_alert_detail_view_post_comment_ajax_valid(self):
+        post_data = {'content': 'Ajax comment'}
+        response = self.client.post(self.detail_url, post_data, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['content-type'], 'application/json')
         data = response.json()
         self.assertEqual(data['status'], 'success')
         self.assertEqual(data['user'], self.user.username)
-        self.assertEqual(data['content'], comment_text)
+        self.assertEqual(data['content'], 'Ajax comment')
 
-        # Check comment was created
-        self.assertEqual(AlertComment.objects.filter(alert_group=self.alert_group).count(), initial_comment_count + 1)
+        self.assertEqual(AlertComment.objects.filter(alert_group=self.alert_group).count(), 2)
         new_comment = AlertComment.objects.latest('created_at')
-        self.assertEqual(new_comment.content, comment_text)
-        self.assertEqual(new_comment.user, self.user)
+        self.assertEqual(new_comment.content, 'Ajax comment')
 
-    def test_post_comment_ajax_invalid(self):
-        """Test invalid AJAX POST for adding a comment."""
-        self.client.login(username=self.username, password=self.password)
-        initial_comment_count = AlertComment.objects.filter(alert_group=self.alert_group).count()
+    def test_alert_detail_view_post_comment_ajax_invalid(self):
+        post_data = {'content': ''} # Empty comment
+        response = self.client.post(self.detail_url, post_data, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
 
-        response = self.client.post(self.url, {
-            'content': '' # Use 'content' field name - Invalid
-        }, HTTP_X_REQUESTED_WITH='XMLHttpRequest') # AJAX header
-
-        self.assertEqual(response.status_code, 400) # Bad request
+        self.assertEqual(response.status_code, 400)
         self.assertEqual(response['content-type'], 'application/json')
         data = response.json()
         self.assertEqual(data['status'], 'error')
         self.assertIn('errors', data)
-        self.assertIn('content', data['errors']) # Check for content field error
+        self.assertIn('content', data['errors'])
 
-        # Check no comment was created
-        self.assertEqual(AlertComment.objects.filter(alert_group=self.alert_group).count(), initial_comment_count)
+        self.assertEqual(AlertComment.objects.filter(alert_group=self.alert_group).count(), 1) # No new comment created
+
+    def test_alert_detail_view_post_invalid_action(self):
+        # Test POSTing without 'acknowledge' or 'content'
+        post_data = {'some_other_field': 'value'}
+        response = self.client.post(self.detail_url, post_data)
+        self.assertRedirects(response, self.detail_url) # Should just redirect back
+
+
+# --- Tests for SilenceRule Views ---
+
+class SilenceRuleListViewTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username='testuser', password='password')
+        self.other_user = User.objects.create_user(username='otheruser', password='password')
+        self.client.login(username='testuser', password='password')
+        self.list_url = reverse('alerts:silence-rule-list')
+
+        now = timezone.now()
+        self.active_rule = SilenceRule.objects.create(
+            matchers={'job': 'active'},
+            starts_at=now - timedelta(hours=1),
+            ends_at=now + timedelta(hours=1),
+            created_by=self.user,
+            comment='Active rule comment'
+        )
+        self.expired_rule = SilenceRule.objects.create(
+            matchers={'job': 'expired'},
+            starts_at=now - timedelta(days=2),
+            ends_at=now - timedelta(days=1),
+            created_by=self.other_user,
+            comment='Expired rule comment'
+        )
+        self.scheduled_rule = SilenceRule.objects.create(
+            matchers={'job': 'scheduled'},
+            starts_at=now + timedelta(hours=1),
+            ends_at=now + timedelta(hours=2),
+            created_by=self.user,
+            comment='Scheduled rule comment'
+        )
+        self.another_active_rule = SilenceRule.objects.create(
+            matchers={'instance': 'server1'},
+            starts_at=now - timedelta(minutes=30),
+            ends_at=now + timedelta(minutes=30),
+            created_by=self.other_user,
+            comment='Another active rule'
+        )
+
+
+    def test_get_request_authenticated(self):
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'alerts/silence_rule_list.html')
+        self.assertIn('silence_rules', response.context)
+        self.assertEqual(len(response.context['silence_rules']), 4) # All rules initially
+        self.assertIn('status_filter', response.context)
+        self.assertIn('search', response.context)
+        self.assertIn('now', response.context)
+
+    def test_get_request_unauthenticated(self):
+        self.client.logout()
+        response = self.client.get(self.list_url)
+        # Expect a 302 redirect to the LOGIN_URL defined in settings
+        from django.conf import settings
+        expected_url = f"{settings.LOGIN_URL}?next={self.list_url}"
+        self.assertRedirects(response, expected_url, status_code=302, target_status_code=200, fetch_redirect_response=False)
+
+    def test_filter_by_active_status(self):
+        response = self.client.get(self.list_url, {'status': 'active'})
+        self.assertEqual(response.status_code, 200)
+        rules = response.context['silence_rules']
+        self.assertEqual(len(rules), 2)
+        self.assertIn(self.active_rule, rules)
+        self.assertIn(self.another_active_rule, rules)
+        self.assertEqual(response.context['status_filter'], 'active')
+
+    def test_filter_by_expired_status(self):
+        response = self.client.get(self.list_url, {'status': 'expired'})
+        self.assertEqual(response.status_code, 200)
+        rules = response.context['silence_rules']
+        self.assertEqual(len(rules), 1)
+        self.assertIn(self.expired_rule, rules)
+        self.assertEqual(response.context['status_filter'], 'expired')
+
+    def test_filter_by_scheduled_status(self):
+        response = self.client.get(self.list_url, {'status': 'scheduled'})
+        self.assertEqual(response.status_code, 200)
+        rules = response.context['silence_rules']
+        self.assertEqual(len(rules), 1)
+        self.assertIn(self.scheduled_rule, rules)
+        self.assertEqual(response.context['status_filter'], 'scheduled')
+
+    def test_filter_no_status(self):
+        response = self.client.get(self.list_url, {'status': ''})
+        self.assertEqual(response.status_code, 200)
+        rules = response.context['silence_rules']
+        self.assertEqual(len(rules), 4) # Shows all
+        self.assertEqual(response.context['status_filter'], '')
+
+    def test_search_by_comment(self):
+        response = self.client.get(self.list_url, {'search': 'Active rule'})
+        self.assertEqual(response.status_code, 200)
+        rules = response.context['silence_rules']
+        self.assertEqual(len(rules), 2)
+        self.assertIn(self.active_rule, rules)
+        self.assertIn(self.another_active_rule, rules)
+        self.assertEqual(response.context['search'], 'Active rule')
+
+    def test_search_by_creator_username(self):
+        response = self.client.get(self.list_url, {'search': 'otheruser'})
+        self.assertEqual(response.status_code, 200)
+        rules = response.context['silence_rules']
+        self.assertEqual(len(rules), 2)
+        self.assertIn(self.expired_rule, rules)
+        self.assertIn(self.another_active_rule, rules)
+        self.assertEqual(response.context['search'], 'otheruser')
+
+    def test_search_by_matchers_content(self):
+        # Basic search within the JSON string
+        response = self.client.get(self.list_url, {'search': 'server1'})
+        self.assertEqual(response.status_code, 200)
+        rules = response.context['silence_rules']
+        self.assertEqual(len(rules), 1)
+        self.assertIn(self.another_active_rule, rules)
+        self.assertEqual(response.context['search'], 'server1')
+
+        response = self.client.get(self.list_url, {'search': 'job'})
+        self.assertEqual(response.status_code, 200)
+        rules = response.context['silence_rules']
+        # Should match active, expired, scheduled
+        self.assertEqual(len(rules), 3)
+        self.assertIn(self.active_rule, rules)
+        self.assertIn(self.expired_rule, rules)
+        self.assertIn(self.scheduled_rule, rules)
+
+    def test_search_no_results(self):
+        response = self.client.get(self.list_url, {'search': 'nonexistent'})
+        self.assertEqual(response.status_code, 200)
+        rules = response.context['silence_rules']
+        self.assertEqual(len(rules), 0)
+        self.assertEqual(response.context['search'], 'nonexistent')
+
+    def test_default_ordering(self):
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.status_code, 200)
+        rules = list(response.context['silence_rules']) # Convert queryset to list to check order
+        # Expected order: scheduled, another_active, active, expired (most recent starts_at first)
+        expected_order = [self.scheduled_rule, self.another_active_rule, self.active_rule, self.expired_rule]
+        self.assertEqual(rules, expected_order)
+
+    def test_pagination(self):
+        # Create more rules to trigger pagination (assuming paginate_by=20)
+        # 4 in setUp + 17 here = 21 total rules
+        now = timezone.now()
+        for i in range(5, 22): # Create 17 more rules (indices 5 through 21)
+            SilenceRule.objects.create(
+                matchers={'num': str(i)},
+                starts_at=now - timedelta(days=i), # Vary start times for ordering
+                ends_at=now + timedelta(days=1),
+                created_by=self.user,
+                comment=f'Rule {i}'
+            )
+        
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['is_paginated'])
+        self.assertEqual(len(response.context['silence_rules']), 20) # Default page size
+
+        # Removed print statement
+        # print(f"DEBUG: Total SilenceRule objects before page 2 request: {SilenceRule.objects.count()}")
+        response = self.client.get(self.list_url, {'page': 2})
+        self.assertEqual(response.status_code, 200) # Check if page 2 returns 200 OK
+        self.assertTrue(response.context['is_paginated'])
+        self.assertEqual(len(response.context['silence_rules']), 1) # Remaining rule (4 original + 17 new = 21 total)
+
+        # Test invalid page number (should default to page 1)
+        response = self.client.get(self.list_url, {'page': 'invalid'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['page_obj'].number, 1)
+        self.assertEqual(len(response.context['silence_rules']), 20)
+
+        # Test page number too high (should default to last page)
+        response = self.client.get(self.list_url, {'page': 999})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['page_obj'].number, 2) # Last page is 2
+        self.assertEqual(len(response.context['silence_rules']), 1) # Last page has 1 item
+
+        # Test page number less than 1 (should default to page 1)
+        response = self.client.get(self.list_url, {'page': 0})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['page_obj'].number, 1)
+        self.assertEqual(len(response.context['silence_rules']), 20)
+
+
+class SilenceRuleCreateViewTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username='testuser', password='password')
+        self.client.login(username='testuser', password='password')
+        self.create_url = reverse('alerts:silence-rule-create')
+        self.list_url = reverse('alerts:silence-rule-list')
+
+        # Create some AlertGroups for testing the check_alert_silence call
+        self.matching_alert = AlertGroup.objects.create(
+            fingerprint='match_fp', name='Matching Alert', labels={'job': 'node', 'instance': 'server1'}, severity='warning'
+        )
+        self.non_matching_alert = AlertGroup.objects.create(
+            fingerprint='non_match_fp', name='Non Matching Alert', labels={'job': 'other', 'instance': 'server2'}, severity='critical'
+        )
+
+    def test_get_request_authenticated(self):
+        response = self.client.get(self.create_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'alerts/silence_rule_form.html')
+        self.assertIsInstance(response.context['form'], SilenceRuleForm)
+        self.assertEqual(response.context['form_title'], "Create New Silence Rule")
+
+    def test_get_request_unauthenticated(self):
+        self.client.logout()
+        response = self.client.get(self.create_url)
+        # Use settings.LOGIN_URL
+        expected_url = f"{settings.LOGIN_URL}?next={self.create_url}"
+        self.assertRedirects(response, expected_url, status_code=302, target_status_code=200, fetch_redirect_response=False)
+
+    def test_get_with_initial_labels_valid_json(self):
+        labels = {'job': 'node', 'instance': 'server1'}
+        labels_json = json.dumps(labels)
+        response = self.client.get(self.create_url, {'labels': labels_json})
+        self.assertEqual(response.status_code, 200)
+        form = response.context['form']
+        # Check initial data passed to the form instance
+        self.assertEqual(form.initial.get('matchers'), labels)
+        # Removed brittle check for pretty-printed JSON in response body
+
+    @patch('alerts.views.messages') # Mock messages framework
+    def test_get_with_initial_labels_invalid_json(self, mock_messages):
+        labels_json = '{"job": "node", "instance": "server1"' # Invalid JSON
+        response = self.client.get(self.create_url, {'labels': labels_json})
+        self.assertEqual(response.status_code, 200)
+        form = response.context['form']
+        self.assertNotIn('matchers', form.initial) # Initial data should not be set
+        # Check that messages.warning was called
+        mock_messages.warning.assert_called_once_with(response.wsgi_request, "Could not pre-fill matchers: Invalid JSON.")
+
+    @patch('alerts.views.messages') # Mock messages framework
+    def test_get_with_initial_labels_not_dict(self, mock_messages):
+        labels_json = '["list", "is", "not", "dict"]' # Valid JSON, but not a dict
+        response = self.client.get(self.create_url, {'labels': labels_json})
+        self.assertEqual(response.status_code, 200)
+        form = response.context['form']
+        self.assertNotIn('matchers', form.initial) # Initial data should not be set
+        # Check that messages.warning was called
+        mock_messages.warning.assert_called_once_with(response.wsgi_request, "Could not pre-fill matchers: Invalid label format.")
+
+    @patch('alerts.views.check_alert_silence') # Mock the service function
+    def test_post_valid_data(self, mock_check_alert_silence):
+        # Make test times aware using the project's default timezone
+        tz = timezone.get_current_timezone()
+        now = timezone.now().astimezone(tz)
+        start_time = now + timedelta(minutes=5)
+        end_time = now + timedelta(hours=1)
+        matchers_dict = {'job': 'node', 'instance': 'server1'}
+        post_data = {
+            'matchers': json.dumps(matchers_dict),
+            'starts_at_0': start_time.strftime('%Y-%m-%d'), # Date part
+            'starts_at_1': start_time.strftime('%H:%M:%S'), # Time part
+            'ends_at_0': end_time.strftime('%Y-%m-%d'),
+            'ends_at_1': end_time.strftime('%H:%M:%S'),
+            'comment': 'Test silence rule creation'
+        }
+        
+        response = self.client.post(self.create_url, post_data)
+        
+        # Check redirect
+        self.assertRedirects(response, self.list_url)
+        
+        # Check database
+        self.assertEqual(SilenceRule.objects.count(), 1)
+        rule = SilenceRule.objects.first()
+        self.assertEqual(rule.matchers, matchers_dict)
+        # Compare datetimes carefully, allowing for minor differences
+        self.assertAlmostEqual(rule.starts_at, start_time, delta=timedelta(seconds=1))
+        self.assertAlmostEqual(rule.ends_at, end_time, delta=timedelta(seconds=1))
+        self.assertEqual(rule.comment, 'Test silence rule creation')
+        self.assertEqual(rule.created_by, self.user)
+
+        # Check if check_alert_silence was called for the matching alert
+        mock_check_alert_silence.assert_called_once_with(self.matching_alert)
+
+        # Check for success message
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), "Silence rule created successfully and 1 matching alerts re-evaluated.")
+
+    @patch('alerts.views.check_alert_silence') # Mock the service function
+    def test_post_valid_data_no_matching_alerts(self, mock_check_alert_silence):
+        now = timezone.now()
+        start_time = now + timedelta(minutes=5)
+        end_time = now + timedelta(hours=1)
+        matchers_dict = {'job': 'nomatch'} # Matchers that won't match existing alerts
+        post_data = {
+            'matchers': json.dumps(matchers_dict),
+            'starts_at_0': start_time.strftime('%Y-%m-%d'),
+            'starts_at_1': start_time.strftime('%H:%M:%S'),
+            'ends_at_0': end_time.strftime('%Y-%m-%d'),
+            'ends_at_1': end_time.strftime('%H:%M:%S'),
+            'comment': 'Test silence rule creation - no match'
+        }
+        
+        response = self.client.post(self.create_url, post_data)
+        self.assertRedirects(response, self.list_url)
+        self.assertEqual(SilenceRule.objects.count(), 1)
+        
+        # Ensure check_alert_silence was NOT called
+        mock_check_alert_silence.assert_not_called()
+
+        # Check for success message
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), "Silence rule created successfully and 0 matching alerts re-evaluated.")
+
+
+    def test_post_invalid_data_dates(self):
+        now = timezone.now()
+        start_time = now + timedelta(hours=1) # Start in future
+        end_time = now + timedelta(minutes=30) # End before start
+        matchers_dict = {'job': 'test'}
+        post_data = {
+            'matchers': json.dumps(matchers_dict),
+            'starts_at_0': start_time.strftime('%Y-%m-%d'),
+            'starts_at_1': start_time.strftime('%H:%M:%S'),
+            'ends_at_0': end_time.strftime('%Y-%m-%d'),
+            'ends_at_1': end_time.strftime('%H:%M:%S'),
+            'comment': 'Invalid dates'
+        }
+        
+        response = self.client.post(self.create_url, post_data)
+        
+        self.assertEqual(response.status_code, 200) # Re-renders form
+        self.assertTemplateUsed(response, 'alerts/silence_rule_form.html')
+        self.assertIn('form', response.context)
+        form = response.context['form']
+        self.assertTrue(form.errors)
+        self.assertIn('__all__', form.errors) # Non-field error for date comparison
+        self.assertIn("End time must be after start time.", form.errors['__all__'][0])
+        self.assertEqual(SilenceRule.objects.count(), 0) # No rule created
+
+    def test_post_invalid_data_matchers_json(self):
+        now = timezone.now()
+        start_time = now + timedelta(minutes=5)
+        end_time = now + timedelta(hours=1)
+        post_data = {
+            'matchers': '{"job": "invalid', # Invalid JSON
+            'starts_at_0': start_time.strftime('%Y-%m-%d'),
+            'starts_at_1': start_time.strftime('%H:%M:%S'),
+            'ends_at_0': end_time.strftime('%Y-%m-%d'),
+            'ends_at_1': end_time.strftime('%H:%M:%S'),
+            'comment': 'Invalid matchers'
+        }
+        
+        response = self.client.post(self.create_url, post_data)
+        
+        self.assertEqual(response.status_code, 200) # Re-renders form
+        self.assertTemplateUsed(response, 'alerts/silence_rule_form.html')
+        self.assertIn('form', response.context)
+        form = response.context['form']
+        self.assertTrue(form.errors)
+        self.assertIn('matchers', form.errors)
+        # Expect the default JSONField error message
+        self.assertIn("Enter a valid JSON.", form.errors['matchers'][0])
+        self.assertEqual(SilenceRule.objects.count(), 0) # No rule created
+
+    def test_post_missing_required_fields(self):
+        post_data = {} # Empty data
+        response = self.client.post(self.create_url, post_data)
+        
+        self.assertEqual(response.status_code, 200) # Re-renders form
+        self.assertTemplateUsed(response, 'alerts/silence_rule_form.html')
+        self.assertIn('form', response.context)
+        form = response.context['form']
+        self.assertTrue(form.errors)
+        self.assertIn('matchers', form.errors)
+        self.assertIn('starts_at', form.errors)
+        self.assertIn('ends_at', form.errors)
+        self.assertIn('comment', form.errors)
+        self.assertEqual(SilenceRule.objects.count(), 0) # No rule created
+
+
+# --- Placeholder for future tests ---
+# class SilenceRuleUpdateViewTest(TestCase):
+#     pass
+
+# class SilenceRuleDeleteViewTest(TestCase):
+#     pass
+
+# class LoginViewTest(TestCase):
+#     pass

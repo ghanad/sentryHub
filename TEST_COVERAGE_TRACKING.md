@@ -39,8 +39,8 @@ This document tracks the testing progress for different parts of the SentryHub a
 | **Views**         |                                           |        |                                                              |
 |                   | `AlertListView` (`views.py`)              |   🟢   | GET (status 200, template), filters, context, pagination    |
 |                   | `AlertDetailView` (`views.py`)            |   🟢   | GET (status 200, template), context (tabs, forms, pagination), POST (ack, comment - valid/invalid), AJAX response |
-|                   | `SilenceRuleListView` (`views.py`)        |   ⚪️   | GET, filters, context, pagination                           |
-|                   | `SilenceRuleCreateView` (`views.py`)      |   ⚪️   | GET (initial data from query param), POST (valid/invalid), permissions, `check_alert_silence` call |
+|                   | `SilenceRuleListView` (`views.py`)        |   🟢   | GET (auth, status 200, template), filters (status, search), context, pagination (valid/invalid pages) |
+|                   | `SilenceRuleCreateView` (`views.py`)      |   🟢   | GET (auth, initial data from query param - valid/invalid JSON/dict), POST (valid/invalid form, `check_alert_silence` call mock) |
 |                   | `SilenceRuleUpdateView` (`views.py`)      |   ⚪️   | GET, POST (valid/invalid), permissions, `check_alert_silence` call |
 |                   | `SilenceRuleDeleteView` (`views.py`)      |   ⚪️   | GET (confirmation page), POST (deletion), permissions, `check_alert_silence` call |
 |                   | `login_view` (`views.py`)                 |   ⚪️   | GET (show form), POST (valid/invalid login)                  |
