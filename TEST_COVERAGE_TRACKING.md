@@ -32,9 +32,9 @@ This document tracks the testing progress for different parts of the SentryHub a
 |                   | `check_alert_silence` (`silence_matcher.py`)|   🟢   | Matching logic (exact, subset, no match), DB updates (`is_silenced`, `silenced_until`), multiple rules, expiry |
 |                   | `process_alert` (`alerts_processor.py`)   |   🟢   | Firing/Resolved logic, instance creation/update (incl. inferred), ack reset, silence check, duplicate handling, count increment |
 |                   | `extract_alert_data` (`alerts_processor.py`)|   🟢   | Data extraction (all fields, missing optional, zero endsAt), date parsing |
-|                   | `get_or_create_alert_group` (`alerts_processor.py`)| ⚪️ | Create/Update logic                                      |
+|                   | `get_or_create_alert_group` (`alerts_processor.py`)| 🟢 | Create/Update logic - tests cover creation, updates, status transitions, instance changes |
 |                   | ... (other helpers in `alerts_processor.py`) | ⚪️   | Specific logic for firing/resolved                           |
-|                   | `acknowledge_alert` (`alerts_processor.py`)|   ⚪️   | AlertGroup update, History creation                          |
+|                   | `acknowledge_alert` (`alerts_processor.py`)|   🟢   | AlertGroup update, History creation                          |
 |                   | `alert_logger.py`                         |   ⚫️   | File writing (might need integration test or mock `open`) |
 | **Views**         |                                           |        |                                                              |
 |                   | `AlertListView` (`views.py`)              |   ⚪️   | GET (status 200, template), filters, context, pagination    |

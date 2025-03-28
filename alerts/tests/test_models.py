@@ -6,6 +6,9 @@ from django.utils import timezone
 
 # Import models from the parent 'alerts' app
 from ..models import SilenceRule, AlertGroup, AlertInstance, AlertComment, AlertAcknowledgementHistory
+# Import service functions to test
+from ..services.alerts_processor import get_or_create_alert_group
+
 # Assuming AlertDocumentation is in docs app, adjust if different
 # from docs.models import AlertDocumentation
 
@@ -649,3 +652,154 @@ class AlertAcknowledgementHistoryModelTests(TestCase):
         self.assertIsNone(history_linked.acknowledged_by)
         # Ensure the history record itself still exists
         self.assertTrue(AlertAcknowledgementHistory.objects.filter(id=history_id).exists())
+
+
+class AlertProcessorServiceTests(TestCase):
+    """Tests for service functions in alerts_processor.py"""
+    
+    @classmethod
+    def setUpTestData(cls):
+        # Create a test user
+        cls.test_user = User.objects.create_user(username='testuser', password='password')
+        
+        # Create test data for AlertGroup
+        cls.existing_group = AlertGroup.objects.create(
+            fingerprint="existing_fp",
+            name="Existing Alert",
+            labels={"alertname": "ExistingAlert", "instance": "server1"},
+            current_status="firing",
+            total_firing_count=3
+        )
+    
+    def test_get_or_create_alert_group_new_creation(self):
+        """Test creating a new AlertGroup"""
+        fingerprint = "new_fp"
+        status = "firing"
+        labels = {
+            "alertname": "NewAlert",
+            "severity": "critical",
+            "instance": "server2"
+        }
+        
+        # Call the function
+        alert_group = get_or_create_alert_group(fingerprint, status, labels)
+        
+        # Verify new group was created
+        self.assertEqual(alert_group.fingerprint, fingerprint)
+        self.assertEqual(alert_group.name, "NewAlert")
+        self.assertEqual(alert_group.labels, labels)
+        self.assertEqual(alert_group.severity, "critical")
+        self.assertEqual(alert_group.current_status, "firing")
+        self.assertEqual(alert_group.instance, "server2")
+        self.assertEqual(alert_group.total_firing_count, 1)  # Default for new
+        
+        # Verify it was actually saved to DB
+        db_group = AlertGroup.objects.get(fingerprint=fingerprint)
+        self.assertEqual(db_group.pk, alert_group.pk)
+    
+    def test_get_or_create_alert_group_existing_update_status(self):
+        """Test updating an existing AlertGroup's status"""
+        new_status = "resolved"
+        
+        # Call the function
+        alert_group = get_or_create_alert_group(
+            self.existing_group.fingerprint, 
+            new_status, 
+            self.existing_group.labels
+        )
+        
+        # Verify it's the same group
+        self.assertEqual(alert_group.pk, self.existing_group.pk)
+        
+        # Verify status was updated
+        self.assertEqual(alert_group.current_status, new_status)
+        
+        # Verify last_occurrence was updated
+        self.assertGreater(alert_group.last_occurrence, self.existing_group.last_occurrence)
+        
+        # Verify firing count wasn't incremented (only happens on firing transitions)
+        self.assertEqual(alert_group.total_firing_count, self.existing_group.total_firing_count)
+    
+    def test_get_or_create_alert_group_firing_transition(self):
+        """Test updating an existing AlertGroup with firing transition"""
+        # Set existing group to resolved first
+        self.existing_group.current_status = "resolved"
+        self.existing_group.save()
+        
+        new_status = "firing"
+        
+        # Call the function
+        alert_group = get_or_create_alert_group(
+            self.existing_group.fingerprint, 
+            new_status, 
+            self.existing_group.labels
+        )
+        
+        # Verify it's the same group
+        self.assertEqual(alert_group.pk, self.existing_group.pk)
+        
+        # Verify status was updated
+        self.assertEqual(alert_group.current_status, new_status)
+        
+        # Verify firing count was incremented (from 3 to 4)
+        self.assertEqual(alert_group.total_firing_count, self.existing_group.total_firing_count + 1)
+    
+    def test_get_or_create_alert_group_instance_update(self):
+        """Test updating an existing AlertGroup's instance"""
+        new_labels = {
+            "alertname": "ExistingAlert",
+            "instance": "new_server",
+            "severity": "warning"
+        }
+        
+        # Call the function
+        alert_group = get_or_create_alert_group(
+            self.existing_group.fingerprint, 
+            self.existing_group.current_status, 
+            new_labels
+        )
+        
+        # Verify it's the same group
+        self.assertEqual(alert_group.pk, self.existing_group.pk)
+        
+        # Verify instance was updated
+        self.assertEqual(alert_group.instance, "new_server")
+        
+        # Verify labels remain unchanged (function doesn't update labels for existing groups)
+        self.assertEqual(alert_group.labels, self.existing_group.labels)
+    
+    def test_get_or_create_alert_group_no_instance(self):
+        """Test with labels that don't include an instance"""
+        fingerprint = "no_instance_fp"
+        status = "firing"
+        labels = {
+            "alertname": "NoInstanceAlert",
+            "severity": "warning"
+        }
+        
+        # Call the function
+        alert_group = get_or_create_alert_group(fingerprint, status, labels)
+        
+        # Verify new group was created
+        self.assertEqual(alert_group.fingerprint, fingerprint)
+        self.assertEqual(alert_group.name, "NoInstanceAlert")
+        self.assertEqual(alert_group.labels, labels)
+        self.assertIsNone(alert_group.instance)
+    
+    def test_get_or_create_alert_group_no_alertname(self):
+        """Test with labels that don't include an alertname"""
+        fingerprint = "no_name_fp"
+        status = "firing"
+        labels = {
+            "severity": "critical",
+            "instance": "server3"
+        }
+        
+        # Call the function
+        alert_group = get_or_create_alert_group(fingerprint, status, labels)
+        
+        # Verify new group was created with default name
+        self.assertEqual(alert_group.fingerprint, fingerprint)
+        self.assertEqual(alert_group.name, "Unknown Alert")
+        self.assertEqual(alert_group.labels, labels)
+        self.assertEqual(alert_group.instance, "server3")
