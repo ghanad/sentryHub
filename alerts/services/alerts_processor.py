@@ -97,6 +97,9 @@ def get_or_create_alert_group(fingerprint, status, labels):
     )
     
     if not created:
+        # Store previous status before updating
+        previous_status = alert_group.current_status
+        
         # Update existing AlertGroup
         alert_group.current_status = status
         alert_group.last_occurrence = timezone.now()
@@ -104,9 +107,19 @@ def get_or_create_alert_group(fingerprint, status, labels):
         if instance and alert_group.instance != instance:
             alert_group.instance = instance
             
-        if status == 'firing' and alert_group.current_status != 'firing':
+        # Check if this update represents a transition to firing
+        is_new_firing_transition = (status == 'firing' and previous_status != 'firing')
+        
+        fields_to_update = ['current_status', 'last_occurrence']
+        if instance and alert_group.instance != instance:
+             fields_to_update.append('instance')
+
+        if is_new_firing_transition:
             alert_group.total_firing_count += 1
-        alert_group.save()
+            fields_to_update.append('total_firing_count')
+            logger.info(f"Incremented total_firing_count for existing alert group: {alert_group.name} (ID: {alert_group.id}) to {alert_group.total_firing_count} on firing transition.")
+
+        alert_group.save(update_fields=fields_to_update)
     
     return alert_group
 
@@ -130,17 +143,38 @@ def process_firing_alert(alert_group, labels, fingerprint, starts_at, annotation
     # Check if there's an active firing instance
     active_instance = get_active_firing_instance(alert_group)
     
-    # Reset acknowledgement if this is a new firing after a previous resolution
-    # This only happens if there are no active firing instances or if this is a new firing with a different start time
-    if (not active_instance) or (active_instance and active_instance.started_at != starts_at):
-        if alert_group.acknowledged:
-            # Reset acknowledgement state
+    # Determine if this represents a new firing sequence (before potentially closing the old one)
+    is_new_firing_sequence = (not active_instance) or (active_instance and active_instance.started_at != starts_at)
+    
+    # Fields to update on the alert_group
+    group_update_fields = []
+    needs_group_save = False
+    
+    # Increment count if it's a new sequence *and* the group was already firing (i.e., active_instance existed)
+    # This covers the case where a new firing starts before the old one was explicitly resolved.
+    # The transition from resolved->firing is handled in get_or_create_alert_group.
+    if is_new_firing_sequence and active_instance:
+        alert_group.total_firing_count += 1
+        group_update_fields.append('total_firing_count')
+        needs_group_save = True
+        logger.info(f"Incremented total_firing_count for already firing group: {alert_group.name} (ID: {alert_group.id}) to {alert_group.total_firing_count}")
+
+    # Reset acknowledgement if it's a new sequence AND the group was previously acknowledged
+    if is_new_firing_sequence and alert_group.acknowledged:
             alert_group.acknowledged = False
             alert_group.acknowledged_by = None
             alert_group.acknowledgement_time = None
-            # Log this action
-            logger.info(f"Reset acknowledgement for alert group: {alert_group.name} (ID: {alert_group.id}) due to new firing")
-            alert_group.save()
+            # Ensure fields are added to the update list
+            for field in ['acknowledged', 'acknowledged_by', 'acknowledgement_time']:
+                 if field not in group_update_fields:
+                     group_update_fields.append(field)
+            needs_group_save = True
+            logger.info(f"Reset acknowledgement for alert group: {alert_group.name} (ID: {alert_group.id}) due to new firing sequence")
+
+    # Save the group if any fields need updating
+    if needs_group_save:
+         alert_group.save(update_fields=group_update_fields)
+
     
     if active_instance and active_instance.started_at != starts_at:
         # If the start times differ, close the old instance but mark it as inferred resolution

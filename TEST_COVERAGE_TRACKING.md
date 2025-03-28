@@ -22,14 +22,15 @@ This document tracks the testing progress for different parts of the SentryHub a
 |                   | `AlertInstance` (`models.py`)             |   🟢   | Creation, relations, `__str__()`                             |
 |                   | `AlertComment` (`models.py`)              |   🟢   | Creation, relations, `__str__()`                             |
 |                   | `AlertAcknowledgementHistory` (`models.py`) |   🟢   | Creation, relations, `__str__()`, ordering, FK behavior      |
+
 | **Forms**         |                                           |        |                                                              |
 |                   | `SilenceRuleForm` (`forms.py`)            |   🟢   | Validation (JSON, dates, required), clean methods, saving     |
 |                   | `AlertAcknowledgementForm` (`forms.py`)   |   🟢   | Validation (required comment)                                |
 |                   | `AlertCommentForm` (`forms.py`)           |   🟢   | Validation (required), saving (commit=False), widget attrs   |
 | **Services**      |                                           |        |                                                              |
-|                   | `check_alert_silence` (`silence_matcher.py`)|   ⚪️   | Matching logic (match/no match), DB updates (`is_silenced`) |
-|                   | `process_alert` (`alerts_processor.py`)   |   ⚪️   | Firing/Resolved logic, instance creation/update, ack reset    |
-|                   | `extract_alert_data` (`alerts_processor.py`)| ⚪️   | Data extraction logic, date parsing                          |
+|                   | `check_alert_silence` (`silence_matcher.py`)|   🟢   | Matching logic (exact, subset, no match), DB updates (`is_silenced`, `silenced_until`), multiple rules, expiry |
+|                   | `process_alert` (`alerts_processor.py`)   |   🟢   | Firing/Resolved logic, instance creation/update (incl. inferred), ack reset, silence check, duplicate handling, count increment |
+|                   | `extract_alert_data` (`alerts_processor.py`)|   🟢   | Data extraction (all fields, missing optional, zero endsAt), date parsing |
 |                   | `get_or_create_alert_group` (`alerts_processor.py`)| ⚪️ | Create/Update logic                                      |
 |                   | ... (other helpers in `alerts_processor.py`) | ⚪️   | Specific logic for firing/resolved                           |
 |                   | `acknowledge_alert` (`alerts_processor.py`)|   ⚪️   | AlertGroup update, History creation                          |
