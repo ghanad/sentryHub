@@ -28,7 +28,7 @@ class AlertListView(LoginRequiredMixin, ListView):
     model = AlertGroup
     template_name = 'alerts/alert_list.html'
     context_object_name = 'alerts'
-    paginate_by = 20
+    paginate_by = 10 # Changed from 20 to 10
     
     def get_queryset(self):
         queryset = AlertGroup.objects.all()
