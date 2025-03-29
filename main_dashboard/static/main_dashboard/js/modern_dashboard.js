@@ -33,9 +33,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- Apply Initial Sidebar State ---
     // Check localStorage for desktop state
-    if (window.innerWidth >= 992 && localStorage.getItem('sidebarCollapsed') === 'true') {
-        sidebar.classList.add('sidebar-collapsed');
-        mainContent.classList.add('main-collapsed');
+    if (window.innerWidth >= 992) {
+        if (localStorage.getItem('sidebarCollapsed') === 'true') {
+            sidebar.classList.add('sidebar-collapsed');
+            mainContent.classList.add('main-collapsed');
+        }
+        // Remove the temporary initial state class
+        htmlElement.classList.remove('sidebar-is-initially-collapsed');
     }
     // Ensure sidebar is hidden on mobile initially if using sidebar-visible class
      if (window.innerWidth < 992) {

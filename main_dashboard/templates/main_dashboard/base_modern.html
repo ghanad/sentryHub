@@ -11,7 +11,7 @@
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
     <!-- BoxIcons -->
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     <!-- IranSansX (assuming core/fonts.css includes it) -->
@@ -23,6 +23,24 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
+    <script>
+        // Apply sidebar state immediately to prevent flicker
+        (function() {
+            try {
+                const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+                if (isCollapsed) {
+                    // Add classes directly, assuming sidebar and mainContent IDs exist
+                    // Note: This runs before full DOM parsing, so direct element finding might fail
+                    // if IDs are not directly available. A common practice is to add a class
+                    // to the <body> or <html> element instead. Let's try that.
+                    document.documentElement.classList.add('sidebar-is-initially-collapsed');
+                }
+            } catch (e) {
+                console.error("Error reading sidebar state from localStorage", e);
+            }
+        })();
+    </script>
+
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
