@@ -46,7 +46,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         })
 
         # --- 3. Data for Instance Donut Chart (Top 5) ---
-        instance_distribution = active_alerts_qs.exclude(instance__isnull=True).exclude(instance__exact='').values('instance').annotate(count=Count('id')).order_by('-count')[:5] # Get top 5
+        instance_distribution = active_alerts_qs.exclude(instance__isnull=True).exclude(instance__exact='').values('instance').annotate(count=Count('id')).order_by('-count')[:10] # Get top 10
         inst_labels = [item['instance'] for item in instance_distribution]
         inst_data = [item['count'] for item in instance_distribution]
 
