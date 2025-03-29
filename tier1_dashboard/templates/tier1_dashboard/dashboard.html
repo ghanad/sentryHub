@@ -1,34 +1,34 @@
 {# Path: tier1_dashboard/templates/tier1_dashboard/dashboard.html #}
-{% extends "alerts/base.html" %}
+{% extends "main_dashboard/base_modern.html" %}
 {% load static %}
 {% load date_format_tags %}
 
 {% block title %}Tier 1 Dashboard - SentryHub{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'tier1_dashboard/css/tier1_dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'main_dashboard/css/modern_dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'tier1_dashboard/css/tier1_dashboard.css' %}">
 {% endblock %}
 
-{% block content %}
-<div class="row mb-3 align-items-center">
-    <div class="col">
-        <h1 class="mb-0">Active Alerts</h1>
-        {% comment %} <small class="text-muted">Showing active, unacknowledged alerts. Auto-refreshes every 30 seconds.</small> {% endcomment %}
-    </div>
-    <div class="col-auto text-end">
-        <span id="connection-status" class="badge bg-light text-dark p-2 me-2 fs-6"> {# Added fs-6 #}
+{% block main_content %}
+<header class="page-header">
+    <h1 class="page-title">Active Alerts</h1>
+    <div class="header-actions">
+        <span id="connection-status" class="text-muted small">
             <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...
         </span>
-        <span class="text-muted fs-6">Last updated: <span id="last-updated-time">Never</span></span> {# Removed small, added span with fs-6 #}
+        <span class="text-muted small">Last updated: <span id="last-updated-time">Never</span></span>
     </div>
-</div>
+</header>
 
-<!-- Alerts Table -->
-<div class="card">
-    <div class="card-body p-0">
+<div class="chart-card">
+    <div class="chart-card-header">
+        <h5 class="chart-title"><i class='bx bx-list-ul'></i> Alerts Requiring Attention</h5>
+    </div>
+    <div class="chart-card-body p-0">
         <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
+            <table class="table alert-table">
+                <thead>
                     <tr>
                         <th scope="col" style="width: 10%;">Severity</th>
                         <th scope="col">Alert Name</th>
@@ -38,24 +38,21 @@
                     </tr>
                 </thead>
                 <tbody id="alert-table-body">
-                    {# Initial table rows loaded via include #}
                     {% include 'tier1_dashboard/partials/_alert_table_rows.html' with alerts=alerts %}
                 </tbody>
             </table>
         </div>
         <div id="no-alerts-message" class="text-center p-5 {% if alerts %}d-none{% endif %}">
-            <i class="bi bi-check-circle-fill text-success display-4"></i>
-            <p class="mt-3 text-muted fs-5">No active, unacknowledged alerts. Great job!</p>
+            <i class='bx bx-check-shield fs-1 text-success mb-3 d-block'></i>
+            <p class="mt-3 text-muted fs-5">No active alerts requiring attention.</p>
         </div>
     </div>
 </div>
 
-{# Include Acknowledge Modal structure - Reuse or adapt from alerts app if possible #}
-{# Example: Copy relevant parts from alerts/templates/alerts/partials/alert_header.html #}
 <div class="modal fade" id="acknowledgeModal" tabindex="-1" aria-labelledby="acknowledgeModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-             <form id="acknowledgeForm" method="post"> {# We'll handle submission via JS #}
+             <form id="acknowledgeForm" method="post">
                 <div class="modal-header">
                     <h5 class="modal-title" id="acknowledgeModalLabel">Acknowledge Alert</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -78,9 +75,8 @@
         </div>
     </div>
 </div>
-
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'tier1_dashboard/js/tier1_dashboard.js' %}"></script>
+    <script src="{% static 'tier1_dashboard/js/tier1_dashboard.js' %}"></script>
 {% endblock %}

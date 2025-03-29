@@ -5,11 +5,11 @@
 <tr class="severity-{{ alert.severity }}">
     <td>
         {% if alert.severity == 'critical' %}
-        <span class="badge bg-danger fs-6">Critical</span>
+        <span class="status-badge badge-critical"><i class='bx bxs-circle'></i> Critical</span>
         {% elif alert.severity == 'warning' %}
-        <span class="badge bg-warning text-dark fs-6">Warning</span>
+        <span class="status-badge badge-warning"><i class='bx bxs-circle'></i> Warning</span>
         {% else %}
-        <span class="badge bg-info text-dark fs-6">Info</span>
+        <span class="status-badge badge-info"><i class='bx bxs-circle'></i> Info</span>
         {% endif %}
     </td>
     <td>
@@ -33,14 +33,14 @@
     </td>
     <td>
         <a href="{% url 'alerts:alert-detail' alert.fingerprint %}" class="btn btn-sm btn-outline-primary" title="View Details">
-            <i class="bi bi-eye"></i> View
+            <i class='bx bx-show'></i> View
         </a>
         <button type="button" class="btn btn-sm btn-outline-success ack-button"
                 data-bs-toggle="modal" data-bs-target="#acknowledgeModal"
                 data-alert-fingerprint="{{ alert.fingerprint }}"
                 data-alert-name="{{ alert.name }}"
                 title="Acknowledge">
-            <i class="bi bi-check-circle"></i> Ack
+            <i class='bx bx-check-circle'></i> Ack
         </button>
     </td>
 </tr>

@@ -1,5 +1,6 @@
 /* Path: tier1_dashboard/static/tier1_dashboard/css/tier1_dashboard.css */
 
+/* Connection status styles */
 #connection-status.connected .bi-check-circle-fill {
     color: var(--bs-success);
 }
@@ -15,19 +16,45 @@
     vertical-align: -0.2em;
 }
 
-/* Highlight critical/warning rows slightly */
-.table tbody tr.severity-critical {
-    /* background-color: rgba(220, 53, 69, 0.05); */
+/* Row highlighting */
+.alert-table tbody tr.severity-critical {
     border-left: 3px solid var(--bs-danger);
 }
-.table tbody tr.severity-warning {
-    /* background-color: rgba(255, 193, 7, 0.05); */
-     border-left: 3px solid var(--bs-warning);
-}
-.table tbody tr.severity-info {
-     border-left: 3px solid var(--bs-info);
+
+.alert-table tbody tr.severity-warning {
+    border-left: 3px solid var(--bs-warning);
 }
 
-.table th, .table td {
-    vertical-align: middle;
+.alert-table tbody tr.severity-info {
+    border-left: 3px solid var(--bs-info);
+}
+
+/* Status badges */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.status-badge i {
+    font-size: 0.75rem;
+}
+
+.badge-critical {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: var(--bs-danger);
+}
+
+.badge-warning {
+    background-color: rgba(255, 193, 7, 0.1);
+    color: var(--bs-warning);
+}
+
+.badge-info {
+    background-color: rgba(13, 110, 253, 0.1);
+    color: var(--bs-info);
 }
