@@ -1,60 +1,72 @@
 /* Path: tier1_dashboard/static/tier1_dashboard/css/tier1_dashboard.css */
 
-/* Connection status styles */
-#connection-status.connected .bi-check-circle-fill {
-    color: var(--bs-success);
+/* Base style for the status badge container */
+.status-badge-tier1 {
+    font-size: 0.85rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-width: 80px;
+    text-align: center;
+    border: 1px solid transparent;
 }
 
-#connection-status.error .bi-exclamation-triangle-fill {
-    color: var(--bs-danger);
-}
-
-#connection-status .spinner-border {
-    width: 1em;
-    height: 1em;
+/* Spinner styling within the badge */
+.status-badge-tier1 .spinner-border {
+    width: 0.8em;
+    height: 0.8em;
     border-width: .15em;
-    vertical-align: -0.2em;
+    vertical-align: -0.1em;
+}
+
+/* Connected State */
+.status-badge-tier1.connected {
+    background-color: rgba(var(--bs-success-rgb), 0.1);
+    color: var(--bs-success);
+    border-color: rgba(var(--bs-success-rgb), 0.2);
+}
+[data-bs-theme="dark"] .status-badge-tier1.connected {
+    background-color: rgba(var(--bs-success-rgb), 0.15);
+    color: var(--bs-success-text-emphasis);
+    border-color: rgba(var(--bs-success-rgb), 0.3);
+}
+/* Style for the BoxIcon within connected state */
+.status-badge-tier1.connected i.bx {
+    font-size: 1.1em;
+    line-height: 1;
+}
+
+/* Error State */
+.status-badge-tier1.error {
+    background-color: rgba(var(--bs-danger-rgb), 0.1);
+    color: var(--bs-danger);
+    border-color: rgba(var(--bs-danger-rgb), 0.2);
+}
+[data-bs-theme="dark"] .status-badge-tier1.error {
+    background-color: rgba(var(--bs-danger-rgb), 0.2);
+    color: var(--bs-danger-text-emphasis);
+    border-color: rgba(var(--bs-danger-rgb), 0.4);
+}
+/* Style for the BoxIcon within error state */
+.status-badge-tier1.error i.bx {
+    font-size: 1.1em;
+    line-height: 1;
 }
 
 /* Row highlighting */
-.alert-table tbody tr.severity-critical {
+.table tbody tr.severity-critical {
     border-left: 3px solid var(--bs-danger);
 }
 
-.alert-table tbody tr.severity-warning {
+.table tbody tr.severity-warning {
     border-left: 3px solid var(--bs-warning);
 }
 
-.alert-table tbody tr.severity-info {
+.table tbody tr.severity-info {
     border-left: 3px solid var(--bs-info);
 }
 
-/* Status badges */
-.status-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.25rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-}
-
-.status-badge i {
-    font-size: 0.75rem;
-}
-
-.badge-critical {
-    background-color: rgba(220, 53, 69, 0.1);
-    color: var(--bs-danger);
-}
-
-.badge-warning {
-    background-color: rgba(255, 193, 7, 0.1);
-    color: var(--bs-warning);
-}
-
-.badge-info {
-    background-color: rgba(13, 110, 253, 0.1);
-    color: var(--bs-info);
+.table th, .table td {
+    vertical-align: middle;
 }

@@ -18,7 +18,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const API_URL = '/tier1/api/alerts/'; // Replaced Django URL tag
 
     function refreshAlerts() {
-        statusIndicator.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Updating...';
+        statusIndicator.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...';
+        statusIndicator.classList.remove('connected', 'error');
 
         fetch(API_URL)
             .then(response => {
@@ -37,9 +38,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 // 2. Update Status Indicator
-                statusIndicator.innerHTML = '<i class="bx bx-check-circle text-success"></i> Live';
-                statusIndicator.classList.remove('error', 'bg-danger', 'text-white');
-                statusIndicator.classList.add('connected', 'bg-light', 'text-dark');
+                statusIndicator.innerHTML = "<i class='bx bx-wifi'></i> Live";
+                statusIndicator.classList.remove('error');
+                statusIndicator.classList.add('connected');
                 lastSuccessfulUpdate = new Date(data.timestamp);
                 lastUpdatedElement.textContent = lastSuccessfulUpdate.toLocaleTimeString();
 
@@ -55,9 +56,9 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(error => {
                 console.error('Error fetching alerts:', error);
                 // 1. Update Status Indicator to Error state
-                statusIndicator.innerHTML = '<i class="bx bx-error-circle text-white"></i> Connection Error';
-                statusIndicator.classList.remove('connected', 'bg-light', 'text-dark');
-                statusIndicator.classList.add('error', 'bg-danger', 'text-white');
+                statusIndicator.innerHTML = "<i class='bx bx-wifi-off'></i> Error";
+                statusIndicator.classList.remove('connected');
+                statusIndicator.classList.add('error');
                 // Keep last successful update time visible
                 if (lastSuccessfulUpdate) {
                     lastUpdatedElement.textContent = lastSuccessfulUpdate.toLocaleTimeString() + " (failed)";
