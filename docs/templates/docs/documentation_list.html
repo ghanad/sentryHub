@@ -137,11 +137,6 @@
                             <td colspan="4" class="text-center p-5">
                                 <i class='bx bx-info-circle fs-1 text-muted mb-3 d-block'></i>
                                 <p class="text-muted mb-0">No documentation found.</p>
-                                {% if perms.docs.add_alertdocumentation %}
-                                <a href="{% url 'docs:documentation-create' %}" class="btn btn-sm btn-primary mt-3">
-                                    <i class='bx bx-plus-circle me-1'></i> Create First Documentation
-                                </a>
-                                {% endif %}
                             </td>
                         </tr>
                         {% endfor %}
