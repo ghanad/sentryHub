@@ -45,8 +45,8 @@ body {
     z-index: 1000;
     transition: var(--transition);
     overflow-y: auto;
-    display: flex; /* Added for footer positioning */
-    flex-direction: column; /* Added for footer positioning */
+    display: flex;
+    flex-direction: column;
 }
 
 .sidebar-collapsed {
@@ -58,44 +58,31 @@ body {
     margin-bottom: 2rem;
     display: flex;
     align-items: center;
-    flex-shrink: 0; /* Prevent header shrinking */
+    flex-shrink: 0;
 }
 
 /* Hide text elements AND specific toggles/version in collapsed sidebar */
 .sidebar-collapsed .sidebar-header span,
 .sidebar-collapsed .nav-text,
-.sidebar-collapsed .theme-toggle-label, /* Hide expanded label */
-.sidebar-collapsed .expanded-toggle,    /* Hide expanded toggle wrapper */
-.sidebar-collapsed .version-text {      /* Hide version text */
+.sidebar-collapsed .theme-toggle-label,
+.sidebar-collapsed .expanded-toggle,
+.sidebar-collapsed .version-text,
+.sidebar-collapsed .sidebar-arrow {
     display: none !important;
 }
 
 /* Show the collapsed toggle button when sidebar is collapsed */
 .sidebar-collapsed .collapsed-toggle {
-    display: block !important; /* Override the default d-none */
+    display: block !important;
 }
 
 /* Center content within the footer when collapsed */
 .sidebar-collapsed .sidebar-footer {
-    display: flex; /* Use flexbox */
-    flex-direction: column; /* Stack items vertically */
-    align-items: center; /* Center items horizontally */
-    padding-left: 0; /* Remove padding if needed */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-left: 0;
     padding-right: 0;
-}
-
-/* Show the collapsed toggle button wrapper */
-.sidebar-collapsed .collapsed-toggle {
-    display: block !important; /* Override d-none */
-    /* text-align: center; /* Not needed, parent flex centers it */
-    margin-bottom: 0.75rem !important; /* Keep space below */
-    width: auto; /* Allow shrink-to-fit */
-}
-
-/* Ensure the collapsed toggle button itself doesn't interfere */
-.sidebar-collapsed .collapsed-toggle .custom-theme-toggle {
-    /* display: inline-flex; /* Already default */
-    margin: 0; /* Reset margins */
 }
 
 .sidebar-logo {
@@ -131,8 +118,8 @@ body {
     list-style: none;
     padding: 0;
     margin: 0;
-    flex-grow: 1; /* Allow nav to take available space */
-    overflow-y: auto; /* Add scroll if nav is too long */
+    flex-grow: 1;
+    overflow-y: auto;
 }
 
 .nav-item {
@@ -153,6 +140,11 @@ body {
 .sidebar-collapsed .nav-link {
     justify-content: center;
     padding: 0.75rem;
+    gap: 0;
+}
+
+.sidebar-collapsed .nav-icon {
+    margin: 0;
 }
 
 .nav-link:hover, .nav-link.active {
@@ -163,25 +155,49 @@ body {
 .nav-link.active {
     background: var(--primary);
     box-shadow: 0 0.5rem 1rem rgba(67, 97, 238, 0.3);
+    color: white;
+}
+
+/* Override style for PARENT active dropdown triggers */
+.sidebar-nav > .nav-item > a.nav-link.active {
+    background: rgba(255, 255, 255, 0.08);
+    color: white;
+    box-shadow: none;
+}
+
+/* Ensure hover on active parent is still visible */
+.sidebar-nav > .nav-item > a.nav-link.active:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* Reset parent active background when collapsed to look uniform */
+.sidebar-collapsed .sidebar-nav > .nav-item > a.nav-link.active {
+    background: transparent;
+    box-shadow: none;
+}
+
+/* Optional: subtle hover for collapsed active parent */
+.sidebar-collapsed .sidebar-nav > .nav-item > a.nav-link.active:hover {
+    background: rgba(255, 255, 255, 0.1);
 }
 
 .nav-icon {
     font-size: 1.25rem;
-    flex-shrink: 0; /* Prevent icon shrinking */
+    flex-shrink: 0;
 }
 
 .nav-text {
     font-weight: 500;
-    white-space: nowrap; /* Prevent text wrapping */
+    white-space: nowrap;
 }
 
 .sidebar-footer {
     margin-top: 2rem;
     color: rgba(255, 255, 255, 0.5);
     font-size: 0.875rem;
-    flex-shrink: 0; /* Prevent footer shrinking */
-    padding-top: 1rem; /* Add some space above footer */
-    border-top: 1px solid rgba(255, 255, 255, 0.1); /* Optional separator */
+    flex-shrink: 0;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Main content */
@@ -189,25 +205,25 @@ body {
     margin-left: 260px;
     padding: 2rem;
     transition: var(--transition);
-    width: calc(100% - 260px); /* Ensure main content takes remaining width */
+    width: calc(极客时间 100% - 260px);
 }
 
 .main-collapsed {
     margin-left: 70px;
-    width: calc(100% - 70px); /* Adjust width when collapsed */
+    width: calc(100% - 70px);
 }
 
- /* Mobile header specific */
- .mobile-header {
-     display: flex !important; /* Shown by default, hidden via class below */
-     align-items: center;
-     margin-bottom: 1.5rem;
- }
- @media (min-width: 992px) {
-     .mobile-header {
-         display: none !important; /* Hide on lg and up */
-     }
- }
+/* Mobile header specific */
+.mobile-header {
+    display: flex !important;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+@media (min-width: 992px) {
+    .mobile-header {
+        display: none !important;
+    }
+}
 
 .mobile-toggle {
     background: white;
@@ -222,39 +238,39 @@ body {
     cursor: pointer;
     color: var(--gray-700);
     box-shadow: var(--box-shadow-sm);
-    margin-right: 1rem;
+    margin-right: 极客时间1rem;
 }
 
 /* Custom Theme Toggle Button */
 .custom-theme-toggle {
     position: relative;
-    display: inline-flex; /* Changed to inline-flex */
+    display: inline-flex;
     align-items: center;
-    width: 50px; /* Increased width */
-    height: 26px; /* Increased height */
-    background-color: rgba(255, 255, 255, 0.15); /* Slightly more opaque */
-    border-radius: 13px; /* Half of height */
+    width: 50px;
+    height: 26px;
+    background-color: rgba(255, 255, 255, 0.15);
+    border-radius: 13px;
     border: none;
     cursor: pointer;
-    padding: 3px; /* Padding around icons/thumb */
+    padding: 3px;
     transition: background-color 0.3s ease;
-    overflow: hidden; /* Hide overflow */
+    overflow: hidden;
 }
 
 .custom-theme-toggle .toggle-thumb {
     position: absolute;
-    width: 20px; /* Size of the thumb */
+    width: 20px;
     height: 20px;
     background-color: white;
     border-radius: 50%;
-    top: 3px; /* Align with padding */
-    left: 3px; /* Initial position (moon active) */
+    top: 3px;
+    left: 3px;
     transition: left 0.3s ease;
-    z-index: 1; /* Above icons */
+    z-index: 1;
 }
 
 .custom-theme-toggle.active .toggle-thumb {
-    left: calc(100% - 20px - 3px); /* Move thumb to the right (sun active) */
+    left: calc(100% - 20px - 3px);
 }
 
 .custom-theme-toggle .icon-sun,
@@ -262,30 +278,28 @@ body {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    font-size: 14px; /* Icon size */
+    font-size: 14px;
     color: rgba(255, 255, 255, 0.7);
-    z-index: 0; /* Below thumb */
+    z-index: 0;
     transition: color 0.3s ease;
 }
 
 .custom-theme-toggle .icon-sun {
-    right: 6px; /* Position sun icon */
-    color: #ffcc33; /* Sun color */
+    right: 6px;
+    color: #ffcc33;
 }
 
 .custom-theme-toggle .icon-moon {
-    left: 6px; /* Position moon icon */
-    color: #a0a0ff; /* Moon color */
+    left: 6px;
+    color: #a0a0ff;
 }
 
-/* Optional: Slightly dim the inactive icon */
 .custom-theme-toggle.active .icon-moon {
     color: rgba(160, 160, 255, 0.5);
 }
 .custom-theme-toggle:not(.active) .icon-sun {
      color: rgba(255, 204, 51, 0.5);
 }
-
 
 /* Responsive sidebar behavior */
 @media (max-width: 991.98px) {
@@ -302,7 +316,7 @@ body {
         margin-left: 0;
         width: 100%;
     }
-    .main-collapsed { /* No effect on main content margin on small screens */
+    .main-collapsed {
          margin-left: 0;
          width: 100%;
     }
@@ -310,18 +324,63 @@ body {
 
 /* --- Dark Mode Base Styles --- */
 [data-bs-theme="dark"] body {
-    background-color: #121212; /* User specified dark background */
-    color: #e0e0e0; /* User specified main text color */
+    background-color: #121212;
+    color: #e0e0e0;
 }
 
 [data-bs-theme="dark"] .main-content {
-    /* Background might not need changing if body is dark, but good to be explicit */
-    /* background-color: var(--bs-dark); */ /* Uncomment if needed */
+    /* background-color: var(--bs-dark); */
 }
 
-/* Adjust mobile header for dark mode */
 [data-bs-theme="dark"] .mobile-toggle {
     background: var(--bs-tertiary-bg);
     color: var(--bs-secondary);
     box-shadow: none;
+}
+
+/* Sidebar Submenu Styling */
+.nav-submenu {
+    list-style: none;
+    padding-left: 1.5rem;
+    margin-top: 0.25rem;
+    margin-bottom: 0.5rem;
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 0 0 var(--border-radius) var(--border-radius);
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+}
+
+/* Hide submenu content when sidebar is collapsed */
+.sidebar-collapsed .nav-submenu {
+    display: none;
+}
+
+.nav-submenu .nav-link {
+    padding: 0.5rem 1rem;
+    font-size: 0.9em;
+    color: rgba(255, 255, 255, 0.6);
+    gap: 0.6rem;
+}
+
+.nav-submenu .nav-icon-sub {
+    font-size: 0.8em;
+    opacity: 0.7;
+    margin-left: 0.4rem;
+}
+
+.nav-submenu .nav-link:hover,
+.nav-submenu .nav-link.active {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+}
+
+.sidebar-arrow {
+    font-size: 1rem;
+    transition: transform 0.2s ease-in-out;
+    color: rgba(255, 255, 255, 0.5);
+    margin-left: auto;
+}
+
+a.nav-link[aria-expanded="true"] .sidebar-arrow {
+    transform: rotate(180deg);
 }

@@ -37,18 +37,38 @@
 
         <ul class="sidebar-nav">
             {# Determine active state based on request path or resolved URL name #}
-            {% url 'dashboard:dashboard' as dashboard_url %}
             {% url 'alerts:alert-list' as alerts_url %}
             {% url 'alerts:silence-rule-list' as silences_url %}
             {% url 'docs:documentation-list' as docs_url %}
-            {# Add other URLs as needed #}
 
+            <!-- Dashboards Dropdown -->
             <li class="nav-item">
-                <a href="{{ dashboard_url }}" class="nav-link {% if request.resolver_match.namespace == 'dashboard' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                <a class="nav-link collapsed {% if request.resolver_match.namespace == 'dashboard' or request.resolver_match.namespace == 'tier1_dashboard' %}active{% endif %}"
+                   href="#dashboardsSubmenu" data-bs-toggle="collapse" role="button"
+                   aria-expanded="{% if request.resolver_match.namespace == 'dashboard' or request.resolver_match.namespace == 'tier1_dashboard' %}true{% else %}false{% endif %}"
+                   aria-controls="dashboardsSubmenu">
                     <i class='bx bxs-dashboard nav-icon'></i>
-                    <span class="nav-text">Dashboard</span>
+                    <span class="nav-text">Dashboards</span>
+                    <i class='bx bx-chevron-down ms-auto sidebar-arrow'></i>
                 </a>
+                <ul class="nav-submenu collapse {% if request.resolver_match.namespace == 'dashboard' or request.resolver_match.namespace == 'tier1_dashboard' %}show{% endif %}"
+                    id="dashboardsSubmenu" data-bs-parent=".sidebar-nav">
+                    <li class="nav-item">
+                        <a href="{% url 'dashboard:dashboard' %}" class="nav-link {% if request.resolver_match.namespace == 'dashboard' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                            <i class='bx bx-radio-circle nav-icon-sub'></i>
+                            <span class="nav-text">Main Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% url 'tier1_dashboard:dashboard' %}" class="nav-link {% if request.resolver_match.namespace == 'tier1_dashboard' %}active{% endif %}">
+                            <i class='bx bx-radio-circle nav-icon-sub'></i>
+                            <span class="nav-text">Tier 1 Dashboard</span>
+                        </a>
+                    </li>
+                </ul>
             </li>
+            <!-- End Dashboards Dropdown -->
+
             <li class="nav-item">
                  <a href="{{ alerts_url }}" class="nav-link {% if request.resolver_match.namespace == 'alerts' and request.resolver_match.url_name == 'alert-list' %}active{% endif %}">
                     <i class='bx bxs-bell nav-icon'></i>
@@ -57,13 +77,13 @@
             </li>
              <li class="nav-item">
                  <a href="{{ silences_url }}" class="nav-link {% if request.resolver_match.namespace == 'alerts' and request.resolver_match.url_name == 'silence-rule-list' %}active{% endif %}">
-                    <i class='bx bxs-volume-mute nav-icon'></i> {# Changed icon #}
+                    <i class='bx bxs-volume-mute nav-icon'></i>
                     <span class="nav-text">Silence Rules</span>
                 </a>
             </li>
             <li class="nav-item">
                  <a href="{{ docs_url }}" class="nav-link {% if request.resolver_match.namespace == 'docs' and request.resolver_match.url_name == 'documentation-list' %}active{% endif %}">
-                    <i class='bx bxs-book-content nav-icon'></i> {# Changed icon #}
+                    <i class='bx bxs-book-content nav-icon'></i>
                     <span class="nav-text">Documentation</span>
                 </a>
             </li>
@@ -77,7 +97,7 @@
             {% endif %}
              <li class="nav-item">
                  <a href="{% url 'users:profile' %}" class="nav-link {% if request.resolver_match.namespace == 'users' and request.resolver_match.url_name == 'profile' %}active{% endif %}">
-                    <i class='bx bxs-user-circle nav-icon'></i> {# Changed icon #}
+                    <i class='bx bxs-user-circle nav-icon'></i>
                     <span class="nav-text">Profile</span>
                 </a>
             </li>
@@ -89,7 +109,7 @@
             </li>
         </ul>
 
-        <div class="sidebar-footer mt-auto"> {# Added mt-auto to push footer down #}
+        <div class="sidebar-footer mt-auto">
             {# Expanded Theme Toggle Button #}
             <div class="d-flex align-items-center justify-content-between mb-3 px-3 theme-toggle-wrapper expanded-toggle">
                 <span class="small theme-toggle-label">Theme</span>
@@ -100,25 +120,25 @@
                 </button>
             </div>
              {# Collapsed Theme Toggle Button (Initially Hidden) #}
-            <div class="text-center mb-3 collapsed-toggle d-none"> {# Centered wrapper, hidden by default #}
+            <div class="text-center mb-3 collapsed-toggle d-none">
                  <button class="custom-theme-toggle" id="themeToggleCollapsed" type="button" aria-label="Toggle theme">
                     <span class="toggle-thumb"></span>
                     <span class="icon-sun"><i class='bx bx-sun'></i></span>
                     <span class="icon-moon"><i class='bx bx-moon'></i></span>
                 </button>
             </div>
-            <span class="small px-3 version-text">Version 1.0.0</span> {# Placeholder version, added padding and class #}
+            <span class="small px-3 version-text">Version 1.0.0</span>
         </div>
     </aside>
 
     <!-- Main content Area -->
     <main class="main-content" id="mainContent">
         <!-- Mobile header -->
-        <div class="mobile-header d-lg-none"> {# Hide on large screens and up #}
+        <div class="mobile-header d-lg-none">
             <button class="mobile-toggle" id="mobileToggle">
                 <i class='bx bx-menu'></i>
             </button>
-            <h5 class="mb-0 ms-2">SentryHub</h5> {# Added margin #}
+            <h5 class="mb-0 ms-2">SentryHub</h5>
         </div>
 
         {% block main_content %}
