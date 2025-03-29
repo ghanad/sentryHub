@@ -1,0 +1,30 @@
+.card.border-danger .card-header {
+    /* Header already styled via bg-danger text-white */
+}
+
+.card-body .blockquote {
+    font-size: 1.1rem; /* Make title slightly larger */
+    border-left-width: 5px !important; /* Thicker border */
+}
+
+[data-bs-theme="dark"] .card-body .blockquote {
+     background-color: rgba(255, 255, 255, 0.05) !important;
+     border-color: var(--bs-secondary) !important;
+}
+
+
+.delete-warning-text {
+    font-size: 0.95rem;
+}
+
+.delete-warning-text i {
+    vertical-align: middle; /* Align icon better */
+}
+
+/* Adjust spacing if needed */
+.card-body .mt-4 {
+    margin-top: 2rem !important;
+}
+.card-body .pt-3 {
+    padding-top: 1.5rem !important;
+}

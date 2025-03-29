@@ -1,0 +1,126 @@
+/* --- General Form Styling --- */
+.form-field-group {
+    /* Add specific spacing or styles if needed beyond mb-4 */
+}
+
+.form-label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: var(--bs-body-color);
+}
+
+/* Style for standard input fields (like Title) */
+.form-control {
+    /* Ensure it picks up modern styles - check if base CSS covers this */
+    border-radius: var(--border-radius, 0.375rem);
+    border: 1px solid var(--bs-border-color);
+    background-color: var(--bs-tertiary-bg, white);
+    color: var(--bs-body-color);
+    padding: 0.5rem 0.85rem; /* Adjust padding */
+}
+.form-control:focus {
+     border-color: var(--primary);
+     box-shadow: 0 0 0 0.25rem rgba(var(--primary-rgb), 0.25);
+}
+/* Add .is-invalid styles if not inherited */
+.form-control.is-invalid {
+    border-color: var(--danger);
+}
+.form-control.is-invalid:focus {
+    box-shadow: 0 0 0 0.25rem rgba(var(--danger-rgb), 0.25);
+}
+
+
+/* --- TinyMCE Specific Styling --- */
+/* Target the container TinyMCE creates */
+.tox-tinymce {
+    border-radius: var(--border-radius, 0.375rem) !important;
+    border: 1px solid var(--bs-border-color) !important;
+}
+
+/* Adjust toolbar background */
+.tox .tox-toolbar,
+.tox .tox-toolbar__overflow,
+.tox .tox-toolbar__primary {
+    background-color: var(--bs-light, #f8f9fa) !important; /* Use light background */
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+/* Adjust editor area background */
+.tox .tox-edit-area__iframe {
+    background-color: var(--bs-tertiary-bg, white) !important;
+}
+
+/* Adjust status bar */
+.tox .tox-statusbar {
+    background-color: var(--bs-light, #f8f9fa) !important;
+    border-top: 1px solid var(--bs-border-color) !important;
+    color: var(--bs-body-color);
+    font-size: 0.8rem;
+}
+.tox .tox-statusbar a,
+.tox .tox-statusbar__path-item,
+.tox .tox-statusbar__wordcount {
+     color: var(--gray-600);
+}
+
+/* --- Dark Mode Overrides for TinyMCE --- */
+[data-bs-theme="dark"] .tox-tinymce {
+    border-color: var(--bs-border-color) !important;
+}
+
+[data-bs-theme="dark"] .tox .tox-toolbar,
+[data-bs-theme="dark"] .tox .tox-toolbar__overflow,
+[data-bs-theme="dark"] .tox .tox-toolbar__primary {
+    background-color: rgba(255, 255, 255, 0.05) !important; /* Darker toolbar */
+    border-bottom-color: var(--bs-border-color) !important;
+}
+
+/* Ensure toolbar buttons are visible */
+[data-bs-theme="dark"] .tox .tox-tbtn,
+[data-bs-theme="dark"] .tox .tox-tbtn svg {
+    color: var(--gray-300) !important;
+    fill: var(--gray-300) !important;
+}
+[data-bs-theme="dark"] .tox .tox-tbtn:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+[data-bs-theme="dark"] .tox .tox-tbtn--enabled,
+[data-bs-theme="dark"] .tox .tox-tbtn--active {
+     background-color: rgba(var(--primary-rgb), 0.3) !important;
+     color: var(--primary-light) !important;
+}
+[data-bs-theme="dark"] .tox .tox-tbtn--enabled svg,
+[data-bs-theme="dark"] .tox .tox-tbtn--active svg {
+    fill: var(--primary-light) !important;
+}
+
+
+[data-bs-theme="dark"] .tox .tox-edit-area__iframe {
+    background-color: var(--bs-tertiary-bg) !important; /* Match card background */
+}
+
+[data-bs-theme="dark"] .tox .tox-statusbar {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    border-top-color: var(--bs-border-color) !important;
+    color: var(--gray-400);
+}
+[data-bs-theme="dark"] .tox .tox-statusbar a,
+[data-bs-theme="dark"] .tox .tox-statusbar__path-item,
+[data-bs-theme="dark"] .tox .tox-statusbar__wordcount {
+     color: var(--gray-500);
+}
+
+
+/* --- Error and Help Text --- */
+.invalid-feedback {
+    font-size: 0.8rem;
+}
+
+.form-text {
+    font-size: 0.8rem;
+    color: var(--gray-600);
+}
+[data-bs-theme="dark"] .form-text {
+    color: var(--gray-400);
+}
