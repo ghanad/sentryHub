@@ -1,138 +1,161 @@
-{# docs/templates/docs/documentation_list.html #}
-{% extends "alerts/base.html" %}
-{% load date_format_tags %}
+{% extends "main_dashboard/base_modern.html" %}
+{% load static core_tags date_format_tags %}
 
-{% block title %}Alert Documentation - SentryHub{% endblock %}
+{% block title %}Documentation - SentryHub{% endblock %}
 
-{% block content %}
-<div class="row mb-4">
-    <div class="col-12">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{% url 'dashboard:dashboard' %}">Dashboard</a></li>
-                <li class="breadcrumb-item active">Documentation</li>
-            </ol>
-        </nav>
-    </div>
-</div>
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'main_dashboard/css/modern_dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'docs/css/documentation_list.css' %}">
+{% endblock %}
 
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Alert Documentation</h5>
-                    {% if perms.docs.add_alertdocumentation %}
-                    <a href="{% url 'docs:documentation-create' %}" class="btn btn-primary">
-                        <i class="bi bi-plus-circle"></i> Create New Document
-                    </a>
-                    {% endif %}
-                </div>
-            </div>
-            <div class="card-body">
-                <!-- Search Form -->
-                <form method="get" class="row g-3 mb-4">
-                    <div class="col-md-8">
-                        <label for="search" class="form-label">Search</label>
-                        {{ form.search }}
-                    </div>
-                    <div class="col-md-4 d-flex align-items-end">
-                        <button type="submit" class="btn btn-primary me-2">
-                            <i class="bi bi-search"></i> Search
-                        </button>
-                        <a href="{% url 'docs:documentation-list' %}" class="btn btn-outline-secondary">
-                            <i class="bi bi-x-circle"></i> Clear
-                        </a>
-                    </div>
-                </form>
 
-                <!-- Documentation List -->
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Alert Name</th>
-                                <th>Created By</th>
-                                <th>Last Updated</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for doc in documentations %}
-                            <tr>
-                                <td>{{ doc.title }}</td>
-                                <td>{{ doc.created_by.username|default:"System" }}</td>
-                                <td>
-                                    {% if user.profile.date_format_preference == 'jalali' %}
-                                        {{ doc.updated_at|force_jalali:"%Y-%m-%d %H:%M" }}
-                                    {% else %}
-                                        {{ doc.updated_at|force_gregorian:"%Y-%m-%d %H:%M" }}
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <a href="{% url 'docs:documentation-detail' doc.pk %}" class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-eye"></i> View
-                                    </a>
-                                    {% if perms.docs.change_alertdocumentation %}
-                                    <a href="{% url 'docs:documentation-update' doc.pk %}" class="btn btn-sm btn-outline-secondary">
-                                        <i class="bi bi-pencil"></i> Edit
-                                    </a>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="4" class="text-center">No documentation found</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+{% block main_content %}
+    <!-- Page header -->
+    <header class="page-header">
+        <h1 class="page-title">Documentation</h1>
+        <div class="d-flex align-items-center gap-2">
+             {# Link to create new documentation #}
+             {% if perms.docs.add_alertdocumentation %}
+             <a href="{% url 'docs:documentation-create' %}" class="btn btn-primary d-flex align-items-center gap-2">
+                 <i class='bx bx-plus-circle'></i> Create Documentation
+             </a>
+             {% endif %}
+        </div>
+    </header>
 
-                <!-- Pagination -->
-                {% if is_paginated %}
-                <nav aria-label="Page navigation">
-                    <ul class="pagination justify-content-center">
-                        {% if page_obj.has_previous %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="First">
-                                <span aria-hidden="true">&laquo;&laquo;</span>
-                            </a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Previous">
-                                <span aria-hidden="true">&laquo;</span>
-                            </a>
-                        </li>
-                        {% endif %}
-
-                        {% for num in page_obj.paginator.page_range %}
-                            {% if page_obj.number == num %}
-                            <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
-                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
-                            </li>
-                            {% endif %}
-                        {% endfor %}
-
-                        {% if page_obj.has_next %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Next">
-                                <span aria-hidden="true">&raquo;</span>
-                            </a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Last">
-                                <span aria-hidden="true">&raquo;&raquo;</span>
-                            </a>
-                        </li>
-                        {% endif %}
-                    </ul>
-                </nav>
+    <!-- Filter Section -->
+    <div class="filter-section mb-4">
+        <form method="get" class="row g-3 align-items-end">
+            {# Assuming search_form has a 'query' field #}
+            <div class="col-md-9">
+                <label for="{{ search_form.query.id_for_label }}" class="form-label">Search Documentation</label>
+                {{ search_form.query }} {# Render the search input field #}
+                {% if search_form.query.help_text %}
+                <div class="form-text">{{ search_form.query.help_text|safe }}</div>
                 {% endif %}
             </div>
+
+            <div class="col-md-3">
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class='bx bx-search-alt me-1'></i> Search
+                    </button>
+                    <a href="{% url 'docs:documentation-list' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class='bx bx-x me-1'></i> Clear
+                    </a>
+                </div>
+            </div>
+            {# Display form errors if any #}
+            {% if search_form.non_field_errors %}
+            <div class="col-12 mt-2">
+                {% for error in search_form.non_field_errors %}
+                <div class="alert alert-danger alert-sm py-1 px-2 mb-0">{{ error }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+             {% if search_form.query.errors %}
+            <div class="col-12 mt-2">
+                {% for error in search_form.query.errors %}
+                <div class="alert alert-danger alert-sm py-1 px-2 mb-0">{{ error }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Documentation List Table Card -->
+    <div class="chart-card">
+        <div class="chart-card-header">
+            <h5 class="chart-title d-flex align-items-center gap-2">
+                <i class='bx bx-list-ul'></i>
+                Documentation List
+                {% if is_paginated %}
+                   <span class="badge bg-secondary rounded-pill fw-normal ms-2">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                {% endif %}
+            </h5>
+             <span class="text-muted small">Total: {{ page_obj.paginator.count }}</span>
+        </div>
+        <div class="chart-card-body p-0">
+            <div class="table-responsive">
+                <table class="alert-table">
+                    <thead>
+                        <tr>
+                            <th class="col-title">Title</th>
+                            <th class="col-linked-alerts">Linked Alerts</th>
+                            <th class="col-updated">Last Updated</th>
+                            <th class="col-actions">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for doc in documentations %} {# Use the context variable name from your view #}
+                        <tr>
+                            <td class="col-title">
+                                {# Link to detail page #}
+                                <a href="{% url 'docs:documentation-detail' doc.pk %}" class="alert-name-link">{{ doc.title }}</a>
+                            </td>
+                            <td class="col-linked-alerts text-center">
+                                {# Display count of linked alerts - Assuming view adds this count #}
+                                {# You might need to add an annotation in your ListView: #}
+                                {# .annotate(linked_alerts_count=Count('alertgroup')) #}
+                                {% with count=doc.linked_alerts_count|default:0 %}
+                                    {% if count > 0 %}
+                                        <span class="badge rounded-pill bg-primary linked-alerts-badge" data-bs-toggle="tooltip" title="{{ count }} linked alert group{{ count|pluralize }}">
+                                            {{ count }}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge rounded-pill bg-secondary linked-alerts-badge">0</span>
+                                    {% endif %}
+                                {% endwith %}
+                            </td>
+                            <td class="col-updated">
+                                {# Last updated time #}
+                                <span data-bs-toggle="tooltip" title="{{ doc.updated_at|format_datetime:user }}">
+                                    {{ doc.updated_at|time_ago }}
+                                </span>
+                            </td>
+                            <td class="col-actions">
+                                {# Action Buttons #}
+                                <div class="action-menu">
+                                    <a href="{% url 'docs:documentation-detail' doc.pk %}" class="action-btn" data-bs-toggle="tooltip" title="View">
+                                        <i class='bx bx-show'></i>
+                                    </a>
+                                     {% if perms.docs.change_alertdocumentation %}
+                                    <a href="{% url 'docs:documentation-update' doc.pk %}" class="action-btn" data-bs-toggle="tooltip" title="Edit">
+                                        <i class='bx bx-pencil'></i>
+                                    </a>
+                                     {% endif %}
+                                     {% if perms.docs.delete_alertdocumentation %}
+                                    <a href="{% url 'docs:documentation-delete' doc.pk %}" class="action-btn delete-doc-btn" data-bs-toggle="tooltip" title="Delete">
+                                        <i class='bx bx-trash'></i>
+                                    </a>
+                                     {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center p-5">
+                                <i class='bx bx-info-circle fs-1 text-muted mb-3 d-block'></i>
+                                <p class="text-muted mb-0">No documentation found.</p>
+                                {% if perms.docs.add_alertdocumentation %}
+                                <a href="{% url 'docs:documentation-create' %}" class="btn btn-sm btn-primary mt-3">
+                                    <i class='bx bx-plus-circle me-1'></i> Create First Documentation
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <!-- Pagination -->
+            {% include 'core/partials/_pagination.html' with page_obj=page_obj %}
         </div>
     </div>
-</div>
+
+{% endblock main_content %}
+
+
+{% block extra_js %}
+    <script src="{% static 'docs/js/documentation_list.js' %}"></script>
 {% endblock %}

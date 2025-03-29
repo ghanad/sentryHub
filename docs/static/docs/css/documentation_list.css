@@ -1,0 +1,69 @@
+/* docs/static/docs/css/documentation_list.css */
+
+/* --- Filter Section Styling (Copied from silence_rule_list.css for consistency) --- */
+.filter-section {
+    background-color: var(--bs-tertiary-bg, white); /* Match card background */
+    padding: 1.25rem 1.5rem; /* Adjust padding as needed */
+    border-radius: var(--border-radius);
+    border: 1px solid var(--bs-border-color);
+    box-shadow: var(--box-shadow-sm);
+}
+
+.filter-section .form-label {
+    font-size: 0.8rem;
+    margin-bottom: 0.2rem;
+    color: var(--gray-600);
+}
+
+.filter-section .form-control-sm {
+    font-size: 0.85rem;
+}
+
+.filter-section .btn-sm {
+    font-size: 0.85rem;
+}
+
+/* --- Table Styling Adjustments --- */
+.alert-table th,
+.alert-table td {
+    vertical-align: middle;
+    font-size: 0.875rem; /* Base font size for table */
+    padding: 0.75rem 1.25rem; /* Adjusted padding */
+}
+
+/* Allow title to wrap */
+.alert-table td.col-title {
+    white-space: normal;
+    word-wrap: break-word;
+    font-weight: 500;
+}
+
+/* Style for linked alerts count */
+.alert-table .linked-alerts-badge {
+    font-size: 0.8em;
+    font-weight: 500;
+    padding: 0.25em 0.5em;
+}
+
+/* Ensure action buttons are spaced correctly */
+.alert-table .action-menu {
+    justify-content: flex-start; /* Align actions left by default */
+    white-space: nowrap; /* Prevent action buttons themselves from wrapping */
+}
+
+
+/* ########### */
+/* docs/static/docs/css/documentation_list.css */
+
+/* ... (Other styles for filter and table) ... */
+
+/* --- Button Contrast Fix --- */
+
+
+/* Optional: Specific width constraints if needed */
+/*
+.alert-table th.col-title { width: 40%; }
+.alert-table th.col-linked-alerts { width: 15%; }
+.alert-table th.col-updated { width: 20%; }
+.alert-table th.col-actions { width: 15%; }
+*/

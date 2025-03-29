@@ -4,7 +4,7 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.urls import reverse_lazy, reverse
 from django.shortcuts import get_object_or_404, redirect
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.contrib import messages
 from django.http import JsonResponse
 
@@ -20,14 +20,16 @@ class DocumentationListView(LoginRequiredMixin, ListView):
     paginate_by = 20
     
     def get_queryset(self):
-        queryset = AlertDocumentation.objects.all()
+        queryset = AlertDocumentation.objects.all().annotate(
+            linked_alerts_count=Count('alert_groups')
+        )
         
         # Apply search filter
-        search_query = self.request.GET.get('search', '')
-        if search_query:
+        query = self.request.GET.get('query', '').strip()
+        if query:
             queryset = queryset.filter(
-                Q(title__icontains=search_query) | 
-                Q(description__icontains=search_query)
+                Q(title__icontains=query) | 
+                Q(description__icontains=query)
             )
         
         # Default ordering by title
@@ -37,11 +39,11 @@ class DocumentationListView(LoginRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         
         # Add search form to context
-        form = DocumentationSearchForm(self.request.GET)
-        context['form'] = form
+        form = DocumentationSearchForm(self.request.GET or None)
+        context['search_form'] = form
         
         # Add current filter params to context
-        context['search_query'] = self.request.GET.get('search', '')
+        context['search_query'] = self.request.GET.get('query', '')
         
         return context
 

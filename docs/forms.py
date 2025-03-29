@@ -55,10 +55,10 @@ class AlertDocumentationForm(forms.ModelForm):
 
 
 class DocumentationSearchForm(forms.Form):
-    search = forms.CharField(
-        required=False, 
+    query = forms.CharField(
+        required=False,
         widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Search documentation...'
+            'class': 'form-control form-control-sm',
+            'placeholder': 'Search title or content...'
         })
     )
