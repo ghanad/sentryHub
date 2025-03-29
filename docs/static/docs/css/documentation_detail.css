@@ -1,6 +1,36 @@
-.documentation-content {
-    direction: rtl;
-    text-align: right;
+/* docs/static/docs/css/documentation_detail.css */
+
+/* --- Main Content Card Styling --- */
+.content-card {
+    background-color: var(--bs-tertiary-bg, white);
+    padding: 1.5rem 2rem; /* Adjust padding */
+    border-radius: var(--border-radius);
+    border: 1px solid var(--bs-border-color);
+    box-shadow: var(--box-shadow-sm);
+}
+
+/* --- Metadata Styling --- */
+.metadata-info {
+    border-bottom: 1px solid var(--bs-border-color);
+    padding-bottom: 0.75rem;
+    margin-bottom: 1.5rem !important; /* Ensure spacing */
+}
+
+.metadata-info span {
+    display: inline-flex; /* Align icon and text */
+    align-items: center;
+}
+
+.metadata-info i {
+    font-size: 1.1em; /* Slightly larger icons */
+    color: var(--gray-500);
+}
+[data-bs-theme="dark"] .metadata-info i {
+    color: var(--gray-400);
+}
+
+/* --- Description Content Styling --- */
+.description-content {
     font-family: 'IranSansX', system-ui, -apple-system, 'Segoe UI', Tahoma, Arial, sans-serif;
     font-weight: 400;
     line-height: 1.8;
@@ -9,61 +39,117 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-feature-settings: "ss01", "ss02", "ss03", "ss04";
+    color: var(--bs-body-color);
 }
 
-.documentation-content p {
+/* RTL Specific Styles applied by JS via .rtl-text */
+.description-content.rtl-text {
     direction: rtl;
     text-align: right;
 }
 
-.documentation-content p:has(code),
-.documentation-content pre,
-.documentation-content code {
-    direction: ltr;
-    text-align: left;
-    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+/* Ensure specific elements within description are handled correctly, even in RTL */
+.description-content pre,
+.description-content code,
+.description-content kbd,
+.description-content samp {
+    direction: ltr !important;
+    text-align: left !important;
+    font-family: var(--bs-font-monospace) !important;
+    background-color: rgba(var(--bs-secondary-rgb, 108, 117, 125), 0.1); /* Subtle background */
+    padding: 0.1em 0.4em;
+    border-radius: 0.25rem;
+    font-size: 0.9em;
+}
+[data-bs-theme="dark"] .description-content pre,
+[data-bs-theme="dark"] .description-content code,
+[data-bs-theme="dark"] .description-content kbd,
+[data-bs-theme="dark"] .description-content samp {
+     background-color: rgba(var(--bs-secondary-rgb, 108, 117, 125), 0.2);
+     color: var(--bs-light);
 }
 
-.documentation-content img {
-    max-width: 100%;
-    height: auto;
+.description-content pre {
+    padding: 1rem;
+    overflow-x: auto;
+    display: block; /* Ensure pre takes block display */
 }
 
-.documentation-content table {
+.description-content table {
+    direction: ltr !important; /* Keep tables LTR for structure */
     width: 100%;
     margin-bottom: 1rem;
     border-collapse: collapse;
+    border: 1px solid var(--bs-border-color);
 }
-
-.documentation-content table th,
-.documentation-content table td {
+.description-content th,
+.description-content td {
     padding: 0.75rem;
-    border: 1px solid #dee2e6;
+    border: 1px solid var(--bs-border-color);
+    text-align: left; /* Default left align for table cells */
+}
+.description-content th {
+     background-color: var(--bs-light);
+}
+.description-content.rtl-text table {
+    /* No change in direction, but maybe adjust alignment if needed */
 }
 
-.documentation-content table th {
-    background-color: #f8f9fa;
-}
-
-.documentation-content pre {
-    background-color: #f8f9fa;
-    padding: 1rem;
-    border-radius: 0.25rem;
-    overflow-x: auto;
-    direction: ltr;
-    text-align: left;
-}
-
-.documentation-content blockquote {
-    border-right: 4px solid #dee2e6;
-    padding-right: 1rem;
+.description-content blockquote {
     margin: 1rem 0;
-    color: #6c757d;
+    padding: 0.5rem 1rem;
+    border-left: 4px solid var(--bs-border-color);
+    color: var(--gray-600);
+    background-color: var(--bs-light);
+}
+.description-content.rtl-text blockquote {
+    border-left: none;
+    border-right: 4px solid var(--bs-border-color);
+    padding-left: 0.5rem;
+    padding-right: 1rem;
 }
 
-.documentation-section {
-    padding: 15px;
-    margin-bottom: 15px;
-    border-radius: 5px;
-    background-color: #f8f9fa;
+.description-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--border-radius); /* Add slight radius to images */
+}
+
+/* --- Linked Alerts Card Styling --- */
+.linked-alerts-card .alert-table th,
+.linked-alerts-card .alert-table td {
+    font-size: 0.85rem; /* Slightly smaller font in linked alerts table */
+    padding: 0.65rem 1rem;
+}
+
+.linked-alerts-card .status-badge {
+    font-size: 0.75rem; /* Smaller status badges */
+    padding: 0.25rem 0.6rem;
+}
+
+.linked-alerts-card .alert-host {
+    font-size: 0.8rem;
+}
+
+.linked-alerts-card .alert-time {
+    font-size: 0.8rem;
+}
+
+.linked-alerts-card .action-btn {
+    width: 28px; /* Slightly smaller action buttons */
+    height: 28px;
+    font-size: 0.9rem;
+}
+
+.linked-alerts-card .unlink-button {
+    color: var(--danger); /* Make unlink button red */
+}
+.linked-alerts-card .unlink-button:hover {
+    background-color: rgba(var(--danger-rgb), 0.1);
+}
+[data-bs-theme="dark"] .linked-alerts-card .unlink-button {
+    color: var(--danger);
+}
+[data-bs-theme="dark"] .linked-alerts-card .unlink-button:hover {
+     background-color: rgba(var(--danger-rgb), 0.2);
 }

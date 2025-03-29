@@ -1,154 +1,154 @@
-{# docs/templates/docs/documentation_detail.html #}
-{% extends "alerts/base.html" %}
-{% load static %}
-{% load date_format_tags %}
+{% extends "main_dashboard/base_modern.html" %}
+{% load static core_tags date_format_tags %}
 
-{% block title %}{{ documentation.title }} - SentryHub{% endblock %}
+{% block title %}{{ documentation.title }} - Documentation{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'docs/css/documentation_detail.css' %}">
+    <link rel="stylesheet" href="{% static 'main_dashboard/css/modern_dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'docs/css/documentation_detail.css' %}">
 {% endblock %}
 
-{% block content %}
-<div class="row mb-4">
-    <div class="col-12">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{% url 'dashboard:dashboard' %}">Dashboard</a></li>
-                <li class="breadcrumb-item"><a href="{% url 'docs:documentation-list' %}">Documentation</a></li>
-                <li class="breadcrumb-item active">{{ documentation.title }}</li>
-            </ol>
-        </nav>
-    </div>
-</div>
+{% block main_content %}
+    <!-- Page header -->
+    <header class="page-header">
+        {# Use text-wrap for potentially long titles #}
+        <h1 class="page-title text-wrap">{{ documentation.title }}</h1>
+        <div class="action-menu"> {# Use action-menu class for consistency #}
+             {# Link Alert Button #}
+             {% comment %} {% if perms.docs.add_documentationalertgroup %}
+             <a href="{% url 'docs:link-documentation' documentation.pk %}" class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" data-bs-toggle="tooltip" title="Find and link alerts matching this documentation">
+                 <i class='bx bx-link'></i> Link Alerts
+             </a>
+             {% endif %} {% endcomment %}
+             {# Edit Button #}
+             {% if perms.docs.change_alertdocumentation %}
+             <a href="{% url 'docs:documentation-update' documentation.pk %}" class="action-btn" data-bs-toggle="tooltip" title="Edit Documentation">
+                 <i class='bx bx-pencil'></i>
+             </a>
+             {% endif %}
+             {# Delete Button #}
+             {% if perms.docs.delete_alertdocumentation %}
+             <a href="{% url 'docs:documentation-delete' documentation.pk %}" class="action-btn" data-bs-toggle="tooltip" title="Delete Documentation">
+                 <i class='bx bx-trash'></i>
+             </a>
+              {% endif %}
+        </div>
+    </header>
 
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">{{ documentation.title }}</h5>
-                    <div>
-                        {% if perms.docs.change_alertdocumentation %}
-                        <a href="{% url 'docs:documentation-update' documentation.pk %}" class="btn btn-outline-primary">
-                            <i class="bi bi-pencil"></i> Edit
-                        </a>
-                        {% endif %}
-                        {% if perms.docs.delete_alertdocumentation %}
-                        <a href="{% url 'docs:documentation-delete' documentation.pk %}" class="btn btn-outline-danger">
-                            <i class="bi bi-trash"></i> Delete
-                        </a>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-4">
-                        <h6 class="border-bottom pb-2 mb-3">Document Info</h6>
-                        <table class="table">
-                            <tr>
-                                <th style="width: 35%">Alert Name</th>
-                                <td>{{ documentation.title }}</td>
-                            </tr>
-                            <tr>
-                                <th>Created By</th>
-                                <td>{{ documentation.created_by.username|default:"System" }}</td>
-                            </tr>
-                            <tr>
-                                <th>Created At</th>
-                                <td>
-                                    {% if user.profile.date_format_preference == 'jalali' %}
-                                        {{ documentation.created_at|force_jalali:"%Y-%m-%d %H:%M:%S" }}
-                                    {% else %}
-                                        {{ documentation.created_at|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            <tr>
-                                <th>Last Updated</th>
-                                <td>
-                                    {% if user.profile.date_format_preference == 'jalali' %}
-                                        {{ documentation.updated_at|force_jalali:"%Y-%m-%d %H:%M:%S" }}
-                                    {% else %}
-                                        {{ documentation.updated_at|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
-                                    {% endif %}
-                                </td>
-                            </tr>
-                        </table>
-                    </div>
-                    
-                    <div class="col-md-8">
-                        <!-- Description Section -->
-                        <div class="documentation-section">
-                            <h5><i class="bi bi-info-circle"></i> Description</h5>
-                            <div class="documentation-content">
-                                {{ documentation.description|safe }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <!-- Main Documentation Content -->
+    <div class="content-card mb-4">
+        <div class="metadata-info mb-3 text-muted small">
+            <span>
+                <i class='bx bx-calendar-plus me-1'></i>Created:
+                <span data-bs-toggle="tooltip" title="{{ documentation.created_at|format_datetime:user }}">
+                    {{ documentation.created_at|time_ago }}
+                </span>
+            </span>
+            <span class="ms-3">
+                <i class='bx bx-calendar-edit me-1'></i>Updated:
+                 <span data-bs-toggle="tooltip" title="{{ documentation.updated_at|format_datetime:user }}">
+                     {{ documentation.updated_at|time_ago }}
+                 </span>
+            </span>
+        </div>
+        {# Add ID for JS targeting and data-rtl for automatic direction handling #}
+        <div id="description-content" class="description-content" data-rtl="true">
+            {{ documentation.description|safe }}
         </div>
     </div>
-</div>
 
-<!-- Linked Alerts Section -->
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Linked Alerts</h5>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table_hover">
-                        <thead>
-                            <tr>
-                                <th>Status</th>
-                                <th>Name</th>
-                                <th>Last Occurrence</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for alert in linked_alerts %}
-                            <tr>
-                                <td>
-                                    {% if alert.current_status == 'firing' %}
-                                    <span class="badge bg-danger">Firing</span>
-                                    {% else %}
-                                    <span class="badge bg-success">Resolved</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ alert.name }}</td>
-                                <td>
-                                    {% if user.profile.date_format_preference == 'jalali' %}
-                                        {{ alert.last_occurrence|force_jalali:"%Y-%m-%d %H:%M:%S" }}
-                                    {% else %}
-                                        {{ alert.last_occurrence|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <a href="{% url 'alerts:alert-detail' alert.fingerprint %}" class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-eye"></i> View
-                                    </a>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="4" class="text-center">No alerts linked to this documentation</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+    <!-- Linked Alerts Card -->
+    <div class="chart-card linked-alerts-card">
+        <div class="chart-card-header">
+            <h5 class="chart-title d-flex align-items-center gap-2">
+                <i class='bx bx-link-alt'></i> Linked Alerts
+                {# Assuming linked_alerts is a queryset or list passed from the view #}
+                <span class="badge bg-secondary rounded-pill fw-normal ms-1">{{ linked_alerts.count }}</span>
+            </h5>
+        </div>
+        <div class="chart-card-body p-0">
+             <div class="table-responsive">
+                 <table class="alert-table">
+                     <thead>
+                         <tr>
+                            <th>Status</th>
+                            <th>Name</th>
+                            <th>Instance</th>
+                            <th>Severity</th>
+                            <th>Last Seen</th>
+                            {% comment %} <th>Actions</th> {% endcomment %}
+                         </tr>
+                     </thead>
+                     <tbody>
+                         {% for alert_group in linked_alerts %}
+                         <tr>
+                             <td>
+                                 {% if alert_group.current_status == 'firing' %}
+                                 <span class="status-badge badge-critical"><i class='bx bxs-circle'></i> Firing</span>
+                                 {% else %}
+                                 <span class="status-badge badge-success"><i class='bx bxs-check-circle'></i> Resolved</span>
+                                 {% endif %}
+                             </td>
+                             <td>
+                                 <a href="{% url 'alerts:alert-detail' alert_group.fingerprint %}" class="alert-name-link">{{ alert_group.name }}</a>
+                                  {% if alert_group.is_silenced %}
+                                    <i class='bx bxs-volume-mute silence-indicator ms-1' data-bs-toggle="tooltip" data-bs-placement="top"
+                                       title="Silenced until {{ alert_group.silenced_until|format_datetime:user }}"></i>
+                                  {% endif %}
+                             </td>
+                              <td><span class="alert-host">{{ alert_group.instance|default:"-" }}</span></td>
+                             <td>
+                                {% if alert_group.severity == 'critical' %}
+                                <span class="status-badge badge-critical">Critical</span>
+                                {% elif alert_group.severity == 'warning' %}
+                                <span class="status-badge badge-warning">Warning</span>
+                                {% else %}
+                                <span class="status-badge badge-info">Info</span>
+                                {% endif %}
+                             </td>
+                             <td>
+                                 <span class="alert-time" data-bs-toggle="tooltip" data-bs-placement="top"
+                                       title="{{ alert_group.last_occurrence|format_datetime:user }}">
+                                     {{ alert_group.last_occurrence|time_ago }}
+                                 </span>
+                             </td>
+                             {% comment %} <td>
+                                 <div class="action-menu">
+                                     {# Unlink Button - Needs JS/View handling #}
+                                     {% if perms.docs.delete_documentationalertgroup %}
+                                     <form method="post" action="{% url 'docs:unlink-documentation' alert_group.pk documentation.pk %}" class="d-inline unlink-form">
+                                         {% csrf_token %}
+                                         <button type="submit" class="action-btn unlink-button" data-bs-toggle="tooltip" title="Unlink this alert">
+                                             <i class='bx bx-unlink'></i>
+                                         </button>
+                                     </form>
+                                     {% endif %}
+                                 </div>
+                             </td> {% endcomment %}
+                         </tr>
+                         {% empty %}
+                         <tr>
+                             <td colspan="6" class="text-center p-5">
+                                 <i class='bx bx-info-circle fs-1 text-muted mb-3 d-block'></i>
+                                 <p class="text-muted mb-0">No alerts are currently linked to this documentation.</p>
+                                 {% if perms.docs.add_documentationalertgroup %}
+                                 <a href="{% url 'docs:link-documentation-to-alert' documentation.pk %}" class="btn btn-sm btn-primary mt-3">
+                                     <i class='bx bx-link me-1'></i> Link Alerts Now
+                                 </a>
+                                 {% endif %}
+                             </td>
+                         </tr>
+                         {% endfor %}
+                     </tbody>
+                 </table>
+             </div>
+             {# Optional: Add pagination if the number of linked alerts can be large #}
+             {# {% include 'core/partials/_pagination.html' with page_obj=linked_alerts %} #}
         </div>
     </div>
-</div>
-{% endblock %}
+
+{% endblock main_content %}
 
 {% block extra_js %}
-<script src="{% static 'docs/js/documentation_detail.js' %}"></script>
+    <script src="{% static 'docs/js/documentation_detail.js' %}"></script>
 {% endblock %}
