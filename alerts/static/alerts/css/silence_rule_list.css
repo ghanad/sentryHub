@@ -1,0 +1,132 @@
+/* alerts/static/alerts/css/silence_rule_list.css */
+
+/* --- Status Badges --- */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.75rem; /* Consistent padding */
+    border-radius: 1rem;
+    font-weight: 500;
+    font-size: 0.8rem; /* Consistent size */
+    line-height: 1;
+    white-space: nowrap; /* Prevent badge text wrapping */
+}
+.status-badge i {
+    font-size: 0.7em; /* Smaller icon if needed */
+    line-height: 1;
+}
+
+/* Active Status (Green) */
+.badge-active {
+    background: rgba(var(--success-rgb, 46, 196, 182), 0.1);
+    color: var(--success, #2ec4b6);
+}
+[data-bs-theme="dark"] .badge-active {
+    background: rgba(var(--success-rgb, 46, 196, 182), 0.2);
+    color: var(--bs-success-text-emphasis);
+}
+
+/* Scheduled Status (Blue/Info) */
+.badge-scheduled {
+    background: rgba(var(--info-rgb, 58, 134, 255), 0.1);
+    color: var(--info, #3a86ff);
+}
+[data-bs-theme="dark"] .badge-scheduled {
+    background: rgba(var(--info-rgb, 58, 134, 255), 0.2);
+    color: var(--bs-info-text-emphasis);
+}
+
+/* Expired Status (Gray/Secondary) */
+.badge-expired {
+    background: rgba(var(--bs-secondary-rgb, 108, 117, 125), 0.1);
+    color: var(--bs-secondary, var(--gray-600));
+}
+[data-bs-theme="dark"] .badge-expired {
+    background: rgba(var(--bs-secondary-rgb, 108, 117, 125), 0.2);
+    color: var(--bs-secondary-text-emphasis);
+}
+
+/* --- Table Column Styling Adjustments --- */
+.alert-table th,
+.alert-table td {
+    vertical-align: middle;
+    /* Default: Prevent wrapping, except for specific columns below */
+    white-space: nowrap;
+    font-size: 0.875rem; /* Slightly smaller base font size for table */
+    padding: 0.65rem 1rem; /* Slightly reduced padding */
+}
+
+/* Allow specific columns to wrap */
+.alert-table td.matchers-column,
+.alert-table td.comment-column,
+.alert-table td.col-created-by,   /* Allow Created By to wrap */
+.alert-table td.col-created-at    /* Allow Created At to wrap */
+ {
+    white-space: normal;
+    word-wrap: break-word;
+}
+
+/* Adjust max-width for wrapping columns */
+.alert-table td.matchers-column {
+    min-width: 180px;
+    max-width: 300px; /* Slightly reduced max-width */
+}
+.alert-table td.comment-column {
+    min-width: 150px;
+    max-width: 250px; /* Slightly reduced max-width */
+}
+
+.matchers-column .badge {
+    margin-bottom: 0.2rem;
+    font-size: 0.7rem; /* Even smaller font for matchers */
+    padding: 0.25rem 0.4rem; /* Smaller padding for matcher badges */
+    display: inline-block;
+    margin-right: 0.2rem;
+}
+
+.comment-column {
+    font-size: 0.825rem; /* Slightly smaller comment font */
+    color: var(--gray-700);
+}
+[data-bs-theme="dark"] .comment-column {
+     color: var(--gray-400);
+}
+
+.alert-table .action-menu {
+    justify-content: flex-start;
+}
+
+/* --- Full Width Filter Section Styling --- */
+.filter-section {
+    background-color: var(--bs-tertiary-bg, white);
+    padding: 1.25rem 1.5rem;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--bs-border-color);
+    box-shadow: var(--box-shadow-sm);
+}
+
+.filter-section .form-label {
+    font-size: 0.8rem;
+    margin-bottom: 0.2rem;
+    color: var(--gray-600);
+}
+
+.filter-section .form-select-sm,
+.filter-section .form-control-sm {
+    font-size: 0.85rem;
+}
+
+.filter-section .btn-sm {
+    font-size: 0.85rem;
+}
+
+/* --- Status Badge Size Adjustment --- */
+/* Apply smaller size to status badges in the table */
+.alert-table .status-badge {
+    padding: 0.25rem 0.6rem; /* Smaller padding */
+    font-size: 0.75rem; /* Smaller font */
+}
+.alert-table .status-badge i {
+     font-size: 0.65em; /* Adjust icon size accordingly */
+}
