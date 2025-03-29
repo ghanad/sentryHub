@@ -1,282 +1,195 @@
-{% extends "alerts/base.html" %}
-{% load date_format_tags core_tags %}
-{% load static %}
+{% extends "main_dashboard/base_modern.html" %}
+{% load static date_format_tags core_tags %} {# Load necessary tags #}
 
 {% block title %}Alerts - SentryHub{% endblock %}
 
 {% block extra_css %}
-<style>
-    .silenced-row {
-        opacity: 0.65;
-        background-color: #f8f9fa !important; /* Light background for silenced rows */
-    }
-    .silenced-row td {
-        font-style: italic;
-    }
-</style>
+    {# Load the base modern dashboard CSS and potentially specific alert list CSS #}
+    <link rel="stylesheet" href="{% static 'main_dashboard/css/modern_dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'alerts/css/alerts_list.css' %}">
 {% endblock %}
 
-{% block content %}
-<div class="row mb-4">
-    <div class="col-12">
-        <h1 class="mb-4">Alerts</h1>
-    </div>
-</div>
 
-
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Filter Alerts</h5>
-            </div>
-            <div class="card-body">
-                <form method="get" class="row g-3">
-                    <div class="col-md-3">
-                        <label for="status" class="form-label">Status</label>
-                        <select class="form-select" id="status" name="status">
-                            <option value="" {% if not status %}selected{% endif %}>All</option>
-                            <option value="firing" {% if status == 'firing' %}selected{% endif %}>Firing</option>
-                            <option value="resolved" {% if status == 'resolved' %}selected{% endif %}>Resolved</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label for="severity" class="form-label">Severity</label>
-                        <select class="form-select" id="severity" name="severity">
-                            <option value="" {% if not severity %}selected{% endif %}>All</option>
-                            <option value="critical" {% if severity == 'critical' %}selected{% endif %}>Critical</option>
-                            <option value="warning" {% if severity == 'warning' %}selected{% endif %}>Warning</option>
-                            <option value="info" {% if severity == 'info' %}selected{% endif %}>Info</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label for="instance" class="form-label">Instance</label>
-                        <input type="text" class="form-control" id="instance" name="instance" value="{{ instance }}" placeholder="Instance">
-                    </div>
-                    <div class="col-md-3">
-                        <label for="acknowledged" class="form-label">Acknowledgement</label>
-                        <select class="form-select" id="acknowledged" name="acknowledged">
-                            <option value="" {% if not acknowledged %}selected{% endif %}>All</option>
-                            <option value="true" {% if acknowledged == 'true' %}selected{% endif %}>Acknowledged</option>
-                            <option value="false" {% if acknowledged == 'false' %}selected{% endif %}>Not Acknowledged</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3"> {# Added Silenced Filter #}
-                        <label for="silenced" class="form-label">Silenced Status</label>
-                        <select class="form-select" id="silenced" name="silenced">
-                            <option value="" {% if not silenced_filter %}selected{% endif %}>Show All</option>
-                            <option value="no" {% if silenced_filter == 'no' %}selected{% endif %}>Hide Silenced</option>
-                            <option value="yes" {% if silenced_filter == 'yes' %}selected{% endif %}>Show Only Silenced</option>
-                        </select>
-                    </div>
-                    <div class="col-md-9"> {# Adjusted width #}
-                        <label for="search" class="form-label">Search</label>
-                        <input type="text" class="form-control" id="search" name="search" value="{{ search }}" placeholder="Name, Fingerprint, Instance...">
-                    </div>
-                    <div class="col-12">
-                        <button type="submit" class="btn btn-primary">Apply Filters</button>
-                        <a href="{% url 'alerts:alert-list' %}" class="btn btn-outline-secondary">Reset</a>
-                    </div>
-                </form>
-            </div>
+{% block main_content %}
+    <!-- Page header -->
+    <header class="page-header">
+        <h1 class="page-title">Alerts</h1>
+        <div class="d-flex align-items-center gap-2">
+             {# Link to create a new silence rule #}
+             <a href="{% url 'alerts:silence-rule-create' %}" class="btn btn-primary d-flex align-items-center gap-2">
+                 <i class='bx bx-plus-circle'></i> Create Silence Rule
+             </a>
         </div>
-    </div>
-</div>
+    </header>
 
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Alert List</h5>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Status</th>
-                                <th>Name</th>
-                                <th>Instance</th>
-                                <th>Severity</th>
-                                <th>Last Occurrence</th>
-                                <th>Count</th>
-                                <th>Acknowledged</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for alert in alerts %}
-                            <tr class="{% if alert.is_silenced %}silenced-row{% endif %}">
-                                <td>
-                                    {% if alert.current_status == 'firing' %}
-                                    <span class="badge bg-danger">Firing</span>
-                                    {% else %}
-                                    <span class="badge bg-success">Resolved</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {{ alert.name }}
-                                    {% if alert.is_silenced %}
-                                        <i class="bi bi-bell-slash-fill text-secondary ms-1"
-                                           title="Silenced until {{ alert.silenced_until|format_datetime:user }}"></i>
-                                    {% endif %}
-                                </td>
-                                <td>{{ alert.instance|default:"-" }}</td>
-                                <td>
-                                    {% if alert.severity == 'critical' %}
-                                    <span class="badge bg-danger">Critical</span>
-                                    {% elif alert.severity == 'warning' %}
-                                    <span class="badge bg-warning text-dark">Warning</span>
-                                    {% else %}
-                                    <span class="badge bg-info text-dark">Info</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if user.profile.date_format_preference == 'jalali' %}
-                                        {{ alert.last_occurrence|force_jalali:"%Y-%m-%d %H:%M:%S" }}
-                                    {% else %}
-                                        {{ alert.last_occurrence|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
-                                    {% endif %}
-                                </td>
-                                <td>{{ alert.total_firing_count }}</td>
-                                <td>
-                                    {% if alert.acknowledged %}
-                                    <span class="badge bg-success">Yes</span>
-                                    <small>by <strong>{{ alert.acknowledged_by.username }}</strong> at
-                                    {% if user.profile.date_format_preference == 'jalali' %}
-                                        {{ alert.acknowledgement_time|force_jalali:"%Y-%m-%d %H:%M" }}
-                                    {% else %}
-                                        {{ alert.acknowledgement_time|force_gregorian:"%Y-%m-%d %H:%M" }}
-                                    {% endif %}
-                                    </small>
-                                    {% else %}
-                                    <span class="badge bg-secondary">No</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <a href="{% url 'alerts:alert-detail' alert.fingerprint %}" class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-eye"></i> View
-                                    </a>
-                                    <a href="{% url 'alerts:alert-detail' alert.fingerprint %}?tab=history" class="btn btn-sm btn-outline-secondary me-1" title="History">
-                                        <i class="bi bi-clock-history"></i>
-                                    </a>
-                                    {# Silence Button #}
-                                    <a href="{% url 'alerts:silence-rule-create' %}?labels={{ alert.labels|jsonify }}"
-                                       class="btn btn-sm btn-outline-warning btn-silence"
-                                       title="Create Silence Rule based on this alert's labels"
-                                       data-labels='{{ alert.labels|jsonify }}'>
-                                        <i class="bi bi-bell-slash"></i>
-                                    </a>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="8" class="text-center">No alerts found</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+    <!-- Filter Card -->
+    <div class="chart-card filter-card mb-4">
+         <div class="chart-card-body">
+            {# Use the filter form from the original alert_list.html, applying modern styling #}
+            <form method="get" class="row g-3">
+                <div class="col-lg-3 col-md-6">
+                    <label for="status" class="form-label">Status</label>
+                    <select class="form-select form-select-sm" id="status" name="status">
+                        <option value="" {% if not status %}selected{% endif %}>All</option>
+                        <option value="firing" {% if status == 'firing' %}selected{% endif %}>Firing</option>
+                        <option value="resolved" {% if status == 'resolved' %}selected{% endif %}>Resolved</option>
+                    </select>
                 </div>
-
-                <!-- Pagination -->
-                {% if is_paginated %}
-                <nav aria-label="Page navigation">
-                    <ul class="pagination justify-content-center">
-                        {% if page_obj.has_previous %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="First">
-                                <span aria-hidden="true">««</span>
-                            </a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Previous">
-                                <span aria-hidden="true">«</span>
-                            </a>
-                        </li>
-                        {% endif %}
-
-                        {% for num in page_obj.paginator.page_range %}
-                            {% if page_obj.number == num %}
-                            <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
-                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
-                            </li>
-                            {% endif %}
-                        {% endfor %}
-
-                        {% if page_obj.has_next %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Next">
-                                <span aria-hidden="true">»</span>
-                            </a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Last">
-                                <span aria-hidden="true">»»</span>
-                            </a>
-                        </li>
-                        {% endif %}
-                    </ul>
-                </nav>
-                {% endif %}
-            </div>
+                <div class="col-lg-3 col-md-6">
+                    <label for="severity" class="form-label">Severity</label>
+                    <select class="form-select form-select-sm" id="severity" name="severity">
+                        <option value="" {% if not severity %}selected{% endif %}>All</option>
+                        <option value="critical" {% if severity == 'critical' %}selected{% endif %}>Critical</option>
+                        <option value="warning" {% if severity == 'warning' %}selected{% endif %}>Warning</option>
+                        <option value="info" {% if severity == 'info' %}selected{% endif %}>Info</option>
+                    </select>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <label for="acknowledged" class="form-label">Acknowledgement</label>
+                    <select class="form-select form-select-sm" id="acknowledged" name="acknowledged">
+                        <option value="" {% if not acknowledged %}selected{% endif %}>All</option>
+                        <option value="true" {% if acknowledged == 'true' %}selected{% endif %}>Acknowledged</option>
+                        <option value="false" {% if acknowledged == 'false' %}selected{% endif %}>Not Acknowledged</option>
+                    </select>
+                </div>
+                 <div class="col-lg-3 col-md-6">
+                    <label for="silenced" class="form-label">Silenced</label>
+                    <select class="form-select form-select-sm" id="silenced" name="silenced">
+                        <option value="" {% if not silenced_filter %}selected{% endif %}>Show All</option>
+                        <option value="no" {% if silenced_filter == 'no' %}selected{% endif %}>Hide Silenced</option> {# Default view might hide silenced #}
+                        <option value="yes" {% if silenced_filter == 'yes' %}selected{% endif %}>Only Silenced</option>
+                    </select>
+                </div>
+                <div class="col-lg-6 col-md-6">
+                     <label for="instance" class="form-label">Instance</label>
+                     <input type="text" class="form-control form-control-sm" id="instance" name="instance" value="{{ instance }}" placeholder="e.g., server1:9100">
+                </div>
+                <div class="col-lg-6 col-md-6">
+                    <label for="search" class="form-label">Search</label>
+                    <input type="text" class="form-control form-control-sm" id="search" name="search" value="{{ search }}" placeholder="Name, Fingerprint...">
+                </div>
+                <div class="col-12 d-flex justify-content-end gap-2 mt-3">
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class='bx bx-filter-alt me-1'></i> Apply Filters
+                    </button>
+                    <a href="{% url 'alerts:alert-list' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class='bx bx-x me-1'></i> Reset
+                    </a>
+                </div>
+            </form>
         </div>
     </div>
-</div>
-{% endblock %}
+
+    <!-- Alert List Table Card -->
+    <div class="chart-card">
+         <div class="chart-card-header">
+             <h5 class="chart-title d-flex align-items-center gap-2">
+                 <i class='bx bx-list-ul'></i>
+                 Alert List
+                 {% if is_paginated %}
+                    <span class="badge bg-secondary rounded-pill fw-normal ms-2">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                 {% endif %}
+             </h5>
+             {# Optionally add info like total count here #}
+             <span class="text-muted small">Total: {{ page_obj.paginator.count }}</span>
+         </div>
+        <div class="chart-card-body p-0">
+            <div class="table-responsive">
+                <table class="alert-table">
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Name</th>
+                            <th>Instance</th>
+                            <th>Severity</th>
+                            <th>Last Seen</th>
+                            <th>Count</th>
+                            <th>Ack</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for alert in alerts %}
+                        {# Add silenced-row class if the alert is silenced #}
+                        <tr class="{% if alert.is_silenced %}silenced-row{% endif %}">
+                            <td>
+                                {# Status Badge Logic from original template #}
+                                {% if alert.current_status == 'firing' %}
+                                <span class="status-badge badge-critical"><i class='bx bxs-circle'></i> Firing</span>
+                                {% else %}
+                                <span class="status-badge badge-success"><i class='bx bxs-check-circle'></i> Resolved</span>
+                                {% endif %}
+                            </td>
+                            <td class="alert-name-cell"> {# Allow wrapping for name #}
+                                {# Alert Name Link + Silence Indicator #}
+                                <a href="{% url 'alerts:alert-detail' alert.fingerprint %}" class="alert-name-link">{{ alert.name }}</a>
+                                {% if alert.is_silenced %}
+                                    <i class='bx bxs-volume-mute silence-indicator ms-1' data-bs-toggle="tooltip" data-bs-placement="top"
+                                       title="Silenced until {{ alert.silenced_until|format_datetime:user }}"></i>
+                                {% endif %}
+                            </td>
+                            <td><span class="alert-host">{{ alert.instance|default:"-" }}</span></td>
+                            <td>
+                                {# Severity Badge Logic from original template #}
+                                {% if alert.severity == 'critical' %}
+                                <span class="status-badge badge-critical">Critical</span>
+                                {% elif alert.severity == 'warning' %}
+                                <span class="status-badge badge-warning">Warning</span>
+                                {% else %}
+                                <span class="status-badge badge-info">Info</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {# Last Occurrence Time #}
+                                <span class="alert-time" data-bs-toggle="tooltip" data-bs-placement="top"
+                                      title="{{ alert.last_occurrence|format_datetime:user }}">
+                                    {{ alert.last_occurrence|time_ago }}
+                                </span>
+                            </td>
+                            <td>{{ alert.total_firing_count }}</td>
+                            <td>
+                                {# Acknowledgement Icon/Status #}
+                                {% if alert.acknowledged %}
+                                <i class='bx bx-check-shield text-success' data-bs-toggle="tooltip" data-bs-placement="top"
+                                   title="Ack by {{ alert.acknowledged_by.username }} @ {{ alert.acknowledgement_time|format_datetime:user }}"></i>
+                                {% else %}
+                                <i class='bx bx-shield-x text-muted' data-bs-toggle="tooltip" data-bs-placement="top" title="Not Acknowledged"></i>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {# Action Buttons - Use modern styling #}
+                                <div class="action-menu">
+                                    <a href="{% url 'alerts:alert-detail' alert.fingerprint %}" class="action-btn" data-bs-toggle="tooltip" title="View Details"><i class='bx bx-show'></i></a>
+                                    <a href="{% url 'alerts:alert-detail' alert.fingerprint %}?tab=history" class="action-btn" data-bs-toggle="tooltip" title="View History"><i class='bx bx-history'></i></a>
+                                    {# Silence Button - Link to create form with labels prefilled via URL #}
+                                    <a href="{% url 'alerts:silence-rule-create' %}?labels={{ alert.labels|jsonify }}"
+                                       class="action-btn" data-bs-toggle="tooltip" title="Create Silence Rule">
+                                       <i class='bx bx-volume-mute'></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center p-5">
+                                <i class='bx bx-info-circle fs-1 text-muted mb-3 d-block'></i>
+                                <p class="text-muted mb-0">No alerts found matching your criteria.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+             <!-- Pagination (Using the Core Partial) -->
+             {% include 'core/partials/_pagination.html' with page_obj=page_obj %}
+        </div>
+    </div>
+{% endblock main_content %}
 
 {% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Basic example for handling the "Silence" button click
-    // This could be enhanced to open a modal instead of redirecting
-    const silenceButtons = document.querySelectorAll('.btn-silence');
-    silenceButtons.forEach(button => {
-        button.addEventListener('click', function(event) {
-            // The default behavior is to follow the href, which includes the labels in the URL query params.
-            // The CreateView will pick these up.
-            // If using a modal, prevent default and open the modal here, passing the labels.
-            // event.preventDefault();
-            // const labelsJson = this.getAttribute('data-labels');
-            // openSilenceModal(labelsJson);
-            console.log('Silence button clicked, redirecting to create form with labels.');
-        });
-    });
-
-    // Function to handle filter submission (optional, could rely on form submit)
-    // const filterForm = document.querySelector('#filter-form-id'); // Add an ID to your form if needed
-    // filterForm.addEventListener('submit', function(e) {
-    //     // Can modify query params here if needed before submission
-    // });
-});
-
-// Example function if using a modal (requires modal HTML and JS)
-/*
-function openSilenceModal(labelsJson) {
-    const modal = new bootstrap.Modal(document.getElementById('silenceRuleModal')); // Assuming a modal with this ID exists
-    const form = document.getElementById('silenceRuleModalForm'); // Assuming form inside modal
-    const matchersTextarea = form.querySelector('#id_matchers'); // Assuming this is the ID
-
-    try {
-        const labels = JSON.parse(labelsJson);
-        // Pretty print JSON
-        matchersTextarea.value = JSON.stringify(labels, null, 2);
-    } catch (e) {
-        console.error("Error parsing labels for modal:", e);
-        matchersTextarea.value = labelsJson; // Fallback to raw JSON
-        // Optionally show an error to the user
-    }
-
-    // Clear other fields if needed
-    form.querySelector('#id_starts_at_0').value = ''; // Date
-    form.querySelector('#id_starts_at_1').value = ''; // Time
-    form.querySelector('#id_ends_at_0').value = '';
-    form.querySelector('#id_ends_at_1').value = '';
-    form.querySelector('#id_comment').value = '';
-
-    modal.show();
-}
-*/
-</script>
+    {# The base template already includes tooltip initialization and theme/sidebar JS #}
+    {# Add any specific JS needed for this page, e.g., for handling silence modals if you implement them later #}
+    <script>
+        // console.log("Alert list page specific JS loaded.");
+    </script>
 {% endblock %}

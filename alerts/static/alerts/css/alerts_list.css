@@ -1,0 +1,49 @@
+.filter-card .form-label { 
+    font-size: 0.85rem; 
+    margin-bottom: 0.25rem; 
+    color: var(--gray-600); 
+}
+.filter-card .form-control, 
+.filter-card .form-select { 
+    font-size: 0.9rem; 
+}
+.alert-name-link { 
+    color: var(--bs-body-color); 
+    text-decoration: none; 
+    font-weight: 500;
+}
+.alert-name-link:hover { 
+    color: var(--primary); 
+    text-decoration: underline;
+}
+.silence-indicator { 
+    color: var(--bs-secondary); 
+}
+[data-bs-theme="dark"] .silence-indicator { 
+    color: var(--gray-500); 
+}
+.pagination .page-link { 
+    border-radius: 0.3rem !important; 
+    margin: 0 2px; 
+    font-size: 0.9rem; 
+}
+.pagination .page-item.active .page-link { 
+    background-color: var(--primary); 
+    border-color: var(--primary);
+}
+.alert-table th, 
+.alert-table td { 
+    white-space: nowrap; 
+}
+.alert-table td.alert-name-cell { 
+    white-space: normal; 
+}
+
+.silenced-row {
+     opacity: 0.7;
+}
+[data-bs-theme="dark"] .silenced-row {
+     opacity: 0.6;
+}
+.silenced-row .alert-name-link {
+}
