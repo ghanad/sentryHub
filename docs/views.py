@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.db.models import Q, Count
 from django.contrib import messages
 from django.http import JsonResponse
+from urllib.parse import unquote # Import unquote from urllib.parse
 
 from .models import AlertDocumentation, DocumentationAlertGroup
 from .forms import AlertDocumentationForm, DocumentationSearchForm
@@ -70,14 +71,40 @@ class DocumentationCreateView(LoginRequiredMixin, PermissionRequiredMixin, Creat
     form_class = AlertDocumentationForm
     template_name = 'docs/documentation_form.html'
     permission_required = 'docs.add_alertdocumentation'
-    
+
     def get_success_url(self):
+        # Redirect to the detail view of the newly created documentation
+        # Moved message here to ensure self.object exists
+        messages.success(self.request, f'Documentation "{self.object.title}" created successfully.')
         return reverse('docs:documentation-detail', kwargs={'pk': self.object.pk})
-    
+
+    def get_initial(self):
+        """
+        Override to pre-fill the title field if alert_name is in query params.
+        """
+        initial = super().get_initial()
+        alert_name_encoded = self.request.GET.get('alert_name')
+        if alert_name_encoded:
+            # Decode the alert name passed in the URL
+            try:
+                alert_name = unquote(alert_name_encoded) # Use unquote here
+                initial['title'] = alert_name
+                print(f"DEBUG: Pre-filling title with: {alert_name}") # Add debug print
+            except Exception as e:
+                print(f"DEBUG: Error decoding alert_name: {e}") # Handle potential errors
+        return initial
+
     def form_valid(self, form):
+        # Set the creator user
         form.instance.created_by = self.request.user
-        messages.success(self.request, 'Documentation created successfully.')
+        # Success message is now handled in get_success_url
         return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        """Set the default form title."""
+        context = super().get_context_data(**kwargs)
+        context['form_title'] = "Create New Documentation"
+        return context
 
 
 class DocumentationUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):

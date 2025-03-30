@@ -17,8 +17,15 @@
         </div>
         {% endfor %}
     {% else %}
-        <div class="alert alert-info">
-            <i class="bi bi-info-circle"></i> No documentation available for this alert. Documentation is automatically linked based on alert name.
+        <div class="alert alert-info d-flex justify-content-between align-items-center">
+            <span>
+                <i class="bi bi-info-circle me-2"></i> No documentation is currently linked to this alert.
+            </span>
+            {% if perms.docs.add_alertdocumentation %}
+            <a href="{% url 'docs:documentation-create' %}?alert_name={{ alert.name|urlencode }}" class="btn btn-sm btn-primary d-flex align-items-center gap-1">
+                <i class='bx bx-plus-circle'></i> Create Documentation
+            </a>
+            {% endif %}
         </div>
     {% endif %}
 </div>
