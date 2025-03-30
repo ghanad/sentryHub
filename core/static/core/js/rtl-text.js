@@ -66,7 +66,7 @@ function handleInputDirection(textarea) {
     }
 }
 
-// Initialize RTL detection for elements with data-rtl="true" attribute
+// Initialize RTL detection for elements with the .detect-rtl class
 document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('[data-rtl="true"]').forEach(setTextDirection);
-}); 
+    document.querySelectorAll('.detect-rtl').forEach(setTextDirection);
+});
