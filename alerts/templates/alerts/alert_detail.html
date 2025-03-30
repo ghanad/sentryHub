@@ -1,42 +1,162 @@
-<!-- alerts/templates/alerts/alert_detail.html -->
-{% extends "alerts/base.html" %}
+{% extends "main_dashboard/base_modern.html" %}
 {% load static %}
-{% load date_format_tags %}
+{% load date_format_tags core_tags %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="{% static 'main_dashboard/css/modern_dashboard.css' %}">
 <link rel="stylesheet" href="{% static 'alerts/css/alert_detail.css' %}">
 <link rel="stylesheet" href="{% static 'alerts/css/comments.css' %}">
+<link rel="stylesheet" href="{% static 'alerts/css/alert_history.css' %}">
 {% endblock %}
 
 {% block title %}{{ alert.name }} - SentryHub{% endblock %}
 
-{% block content %}
-<div class="container-fluid py-4">
-    <!-- Alert Header -->
-    {% include 'alerts/partials/alert_header.html' %}
-    
-    <!-- Alert Tabs -->
-    {% include 'alerts/partials/alert_tabs.html' %}
+{% block main_content %}
+<!-- Page Header -->
+<header class="page-header mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <h1 class="alert-header severity-{{ alert.severity }}">
+            {{ alert.name }}
+            {% if alert.current_status == 'firing' %}
+            <span class="badge bg-danger">Firing</span>
+            {% else %}
+            <span class="badge bg-success">Resolved</span>
+            {% endif %}
+            {% if alert.is_silenced %}
+                <i class="bx bx-bell-off text-secondary ms-2 fs-5" 
+                   title="Silenced until {{ alert.silenced_until|format_datetime:user }}"></i>
+            {% endif %}
+        </h1>
+        <div>
+            <!-- Silence Button -->
+            <a href="{% url 'alerts:silence-rule-create' %}?labels={{ alert.labels|jsonify }}"
+               class="btn btn-sm btn-outline-warning me-2"
+               title="Create Silence Rule based on this alert's labels">
+                <i class="bx bx-bell-off"></i> Silence
+            </a>
+
+            {% if not alert.acknowledged %}
+            <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#acknowledgeModal">
+                <i class="bx bx-check-circle"></i> Acknowledge
+            </button>
+            {% endif %}
+        </div>
+    </div>
+</header>
+
+<!-- Alert Details Card -->
+<div class="chart-card mb-4">
+    <div class="row">
+        <div class="col-md-6">
+            <table class="table table-sm">
+                <tr>
+                    <th style="width: 30%">Status</th>
+                    <td>
+                        {% if alert.current_status == 'firing' %}
+                        <span class="badge bg-danger">Firing</span>
+                        {% else %}
+                        <span class="badge bg-success">Resolved</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <th>Severity</th>
+                    <td>
+                        {% if alert.severity == 'critical' %}
+                        <span class="badge bg-danger">Critical</span>
+                        {% elif alert.severity == 'warning' %}
+                        <span class="badge bg-warning text-dark">Warning</span>
+                        {% else %}
+                        <span class="badge bg-info text-dark">Info</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <th>First Occurrence</th>
+                    <td>
+                        {% if user.profile.date_format_preference == 'jalali' %}
+                            {{ alert.first_occurrence|force_jalali:"%Y-%m-%d %H:%M:%S" }}
+                        {% else %}
+                            {{ alert.first_occurrence|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
+                        {% endif %}
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div class="col-md-6">
+            <table class="table table-sm">
+                <tr>
+                    <th style="width: 30%">Last Occurrence</th>
+                    <td>
+                        {% if user.profile.date_format_preference == 'jalali' %}
+                            {{ alert.last_occurrence|force_jalali:"%Y-%m-%d %H:%M:%S" }}
+                        {% else %}
+                            {{ alert.last_occurrence|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <th>Total Firing Count</th>
+                    <td>{{ alert.total_firing_count }}</td>
+                </tr>
+                <tr>
+                    <th>Acknowledged</th>
+                    <td>
+                        {% if alert.acknowledged %}
+                        <span class="badge bg-success">Yes</span> by <strong>{{ alert.acknowledged_by.username }}</strong> at
+                            {% if user.profile.date_format_preference == 'jalali' %}
+                                {{ alert.acknowledgement_time|force_jalali:"%Y-%m-%d %H:%M" }}
+                            {% else %}
+                                {{ alert.acknowledgement_time|force_gregorian:"%Y-%m-%d %H:%M" }}
+                            {% endif %}
+                        {% else %}
+                        <span class="badge bg-secondary">No</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
 </div>
+
+<!-- Alert Tabs -->
+{% include 'alerts/partials/alert_tabs.html' %}
+
+<!-- Acknowledge Modal -->
+{% if not alert.acknowledged %}
+<div class="modal fade" id="acknowledgeModal" tabindex="-1" aria-labelledby="acknowledgeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="acknowledgeModalLabel">Acknowledge Alert</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <p>You are acknowledging the alert: <strong>{{ alert.name }}</strong></p>
+                    <p>Please provide a comment explaining the reason for acknowledgement or any actions being taken:</p>
+
+                    <div class="mb-3">
+                        <label for="id_comment" class="form-label">Comment <span class="text-danger">*</span></label>
+                        {{ acknowledge_form.comment }}
+                        <div class="form-text">Required: Please provide details about why you're acknowledging this alert.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" name="acknowledge" class="btn btn-primary">Acknowledge Alert</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}
 <script src="{% static 'alerts/js/alert_detail.js' %}"></script>
 <script src="{% static 'alerts/js/comments.js' %}"></script>
-
-{# Add JS for silence button, similar to alert_list.html #}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Basic example for handling the "Silence" button click in the header
-    // It relies on the href attribute containing the labels query parameter
-    const silenceButton = document.querySelector('.card-body .btn-silence'); // Target button within header card body
-    if (silenceButton) {
-        silenceButton.addEventListener('click', function(event) {
-            // Default behavior redirects to the create form with labels pre-filled via GET params.
-            console.log('Silence button clicked in detail view, redirecting to create form with labels.');
-            // If a modal approach is preferred later, preventDefault() and trigger modal here.
-        });
-    }
-});
-</script>
+<script src="{% static 'alerts/js/alert_history.js' %}"></script>
+{{ form.media }}
 {% endblock %}

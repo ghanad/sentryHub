@@ -84,7 +84,7 @@ def update_alert_timestamps(alert_data, shift_minutes=0):
 def main():
     parser = argparse.ArgumentParser(description='Send alerts to SentryHub webhook')
     parser.add_argument('file', help='JSON file containing alert data')
-    parser.add_argument('--url', default='http://localhost:8000/api/v1/webhook/', 
+    parser.add_argument('--url', default='http://localhost:8000/alerts/api/v1/webhook/', 
                       help='Webhook URL (default: http://localhost:8000/api/v1/webhook/)')
     parser.add_argument('--update-time', action='store_true', 
                       help='Update alert timestamps to current time')

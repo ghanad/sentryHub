@@ -1,41 +1,42 @@
-<!-- Tabs Navigation -->
-<ul class="nav nav-tabs" id="alertTabs" role="tablist">
-    <li class="nav-item" role="presentation">
-        <button class="nav-link {% if active_tab == 'details' %}active{% endif %}" id="details-tab" data-bs-toggle="tab" data-bs-target="#details" type="button" role="tab" aria-controls="details" aria-selected="{% if active_tab == 'details' %}true{% else %}false{% endif %}">
-            <i class="bi bi-info-circle"></i> Alert Details
-        </button>
-    </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link {% if active_tab == 'history' %}active{% endif %}" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab" aria-controls="history" aria-selected="{% if active_tab == 'history' %}true{% else %}false{% endif %}">
-            <i class="bi bi-clock-history"></i> Alert History
-        </button>
-    </li>
+<div class="chart-card">
+    <!-- Tabs Navigation -->
+    <ul class="nav nav-tabs" id="alertTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {% if active_tab == 'details' %}active{% endif %}" id="details-tab" data-bs-toggle="tab" data-bs-target="#details" type="button" role="tab" aria-controls="details" aria-selected="{% if active_tab == 'details' %}true{% else %}false{% endif %}">
+                <i class="bx bx-info-circle"></i> Alert Details
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {% if active_tab == 'history' %}active{% endif %}" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab" aria-controls="history" aria-selected="{% if active_tab == 'history' %}true{% else %}false{% endif %}">
+                <i class="bx bx-history"></i> Alert History
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {% if active_tab == 'docs' %}active{% endif %}" id="docs-tab" data-bs-toggle="tab" data-bs-target="#docs" type="button" role="tab" aria-controls="docs" aria-selected="{% if active_tab == 'docs' %}true{% else %}false{% endif %}">
+                <i class="bx bx-book"></i> Documentation 
+                <span class="badge bg-secondary rounded-pill">{{ linked_documentation|length }}</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {% if active_tab == 'comments' %}active{% endif %}" id="comments-tab" data-bs-toggle="tab" data-bs-target="#comments" type="button" role="tab" aria-controls="comments" aria-selected="{% if active_tab == 'comments' %}true{% else %}false{% endif %}">
+                <i class="bx bx-message-dots"></i> Comments 
+                <span class="badge bg-secondary rounded-pill">{{ comments.paginator.count }}</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {% if active_tab == 'ack_history' %}active{% endif %}" id="ack-history-tab" data-bs-toggle="tab" data-bs-target="#ack_history" type="button" role="tab" aria-controls="ack_history" aria-selected="{% if active_tab == 'ack_history' %}true{% else %}false{% endif %}">
+                <i class="bx bx-check-circle"></i> Ack History
+                <span class="badge bg-secondary rounded-pill">{{ acknowledgement_history.count }}</span>
+            </button>
+        </li>
+    </ul>
 
-    <li class="nav-item" role="presentation">
-        <button class="nav-link {% if active_tab == 'docs' %}active{% endif %}" id="docs-tab" data-bs-toggle="tab" data-bs-target="#docs" type="button" role="tab" aria-controls="docs" aria-selected="{% if active_tab == 'docs' %}true{% else %}false{% endif %}">
-            <i class="bi bi-book"></i> Documentation 
-            <span class="badge bg-secondary rounded-pill">{{ linked_documentation|length }}</span>
-        </button>
-    </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link {% if active_tab == 'comments' %}active{% endif %}" id="comments-tab" data-bs-toggle="tab" data-bs-target="#comments" type="button" role="tab" aria-controls="comments" aria-selected="{% if active_tab == 'comments' %}true{% else %}false{% endif %}">
-            <i class="bi bi-chat-dots"></i> Comments 
-            <span class="badge bg-secondary rounded-pill">{{ comments.paginator.count }}</span>
-        </button>
-    </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link {% if active_tab == 'ack_history' %}active{% endif %}" id="ack-history-tab" data-bs-toggle="tab" data-bs-target="#ack_history" type="button" role="tab" aria-controls="ack_history" aria-selected="{% if active_tab == 'ack_history' %}true{% else %}false{% endif %}">
-            <i class="bi bi-check-circle"></i> Ack History
-            <span class="badge bg-secondary rounded-pill">{{ acknowledgement_history.count }}</span>
-        </button>
-    </li>
-</ul>
-
-<!-- Tab Content -->
-<div class="tab-content" id="alertTabsContent">
-    {% include "alerts/partials/alert_details_tab.html" %}
-    {% include "alerts/partials/alert_history_tab.html" %}
-    {% include "alerts/partials/alert_ack_history_tab.html" %}
-    {% include "alerts/partials/alert_docs_tab.html" %}
-    {% include "alerts/partials/alert_comments_tab.html" %}
+    <!-- Tab Content -->
+    <div class="tab-content" id="alertTabsContent">
+        {% include "alerts/partials/alert_details_tab.html" %}
+        {% include "alerts/partials/alert_history_tab.html" %}
+        {% include "alerts/partials/alert_docs_tab.html" %}
+        {% include "alerts/partials/alert_comments_tab.html" %}
+        {% include "alerts/partials/alert_ack_history_tab.html" %}
+    </div>
 </div>
