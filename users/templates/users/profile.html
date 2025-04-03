@@ -1,78 +1,104 @@
-{% extends "users/base.html" %}
-{% load date_format_tags %}
+{% extends "main_dashboard/base_modern.html" %}
+{% load static date_format_tags %}
 
 {% block title %}My Profile - SentryHub{% endblock %}
 
-{% block user_content %}
-<div class="row">
-    <div class="col-md-8">
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Profile Information</h5>
-            </div>
-            <div class="card-body">
-                <div class="row mb-3">
-                    <div class="col-sm-3 text-muted">Username:</div>
-                    <div class="col-sm-9">{{ user.username }}</div>
+{% block extra_css %}
+    {# Load the base modern dashboard CSS #}
+    <link rel="stylesheet" href="{% static 'main_dashboard/css/modern_dashboard.css' %}">
+    {# Add specific profile CSS if needed later #}
+    {# <link rel="stylesheet" href="{% static 'users/css/profile.css' %}"> #}
+{% endblock %}
+
+{% block main_content %}
+    <!-- Page header -->
+    <header class="page-header">
+        <h1 class="page-title">My Profile</h1>
+        {# Add any header actions if needed in the future #}
+    </header>
+
+    <div class="row">
+        {# Profile Information Card #}
+        <div class="col-lg-8 mb-4"> {# Reverted from col-lg-12 #}
+            <div class="chart-card h-100">
+                <div class="chart-card-header">
+                    <h5 class="chart-title d-flex align-items-center gap-2">
+                        <i class='bx bx-user-circle'></i>
+                        Profile Information
+                    </h5>
                 </div>
-                <div class="row mb-3">
-                    <div class="col-sm-3 text-muted">Email:</div>
-                    <div class="col-sm-9">{{ user.email }}</div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-sm-3 text-muted">First Name:</div>
-                    <div class="col-sm-9">{{ user.first_name|default:"-" }}</div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-sm-3 text-muted">Last Name:</div>
-                    <div class="col-sm-9">{{ user.last_name|default:"-" }}</div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-sm-3 text-muted">Date Joined:</div>
-                    <div class="col-sm-9">
-                        {% if user.profile.date_format_preference == 'jalali' %}
-                            {{ user.date_joined|force_jalali:"%Y-%m-%d %H:%M:%S" }}
-                        {% else %}
-                            {{ user.date_joined|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-sm-3 text-muted">Last Login:</div>
-                    <div class="col-sm-9">
-                        {% if user.profile.date_format_preference == 'jalali' %}
-                            {{ user.last_login|force_jalali:"%Y-%m-%d %H:%M:%S" }}
-                        {% else %}
-                            {{ user.last_login|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
-                        {% endif %}
-                    </div>
+                <div class="chart-card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4 text-muted">Username:</dt>
+                        <dd class="col-sm-8 detect-rtl">{{ user.username }}</dd>
+
+                        <dt class="col-sm-4 text-muted">Email:</dt>
+                        <dd class="col-sm-8 detect-rtl">{{ user.email }}</dd>
+
+                        <dt class="col-sm-4 text-muted">First Name:</dt>
+                        <dd class="col-sm-8 detect-rtl">{{ user.first_name|default:"-" }}</dd>
+
+                        <dt class="col-sm-4 text-muted">Last Name:</dt>
+                        <dd class="col-sm-8 detect-rtl">{{ user.last_name|default:"-" }}</dd>
+
+                        <dt class="col-sm-4 text-muted">Date Joined:</dt>
+                        <dd class="col-sm-8">
+                            {% if user.profile.date_format_preference == 'jalali' %}
+                                {{ user.date_joined|force_jalali:"%Y-%m-%d %H:%M:%S" }}
+                            {% else %}
+                                {{ user.date_joined|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-sm-4 text-muted">Last Login:</dt>
+                        <dd class="col-sm-8">
+                            {% if user.last_login %}
+                                {% if user.profile.date_format_preference == 'jalali' %}
+                                    {{ user.last_login|force_jalali:"%Y-%m-%d %H:%M:%S" }}
+                                {% else %}
+                                    {{ user.last_login|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
+                                {% endif %}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </dd>
+                    </dl>
                 </div>
             </div>
         </div>
 
-    </div>
-    
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Quick Actions</h5>
-            </div>
-            <div class="card-body">
-                <div class="d-grid gap-2">
-                    <a href="{% url 'users:preferences' %}" class="btn btn-primary mb-2">
-                        <i class="bi bi-gear me-2"></i>Preferences
-                    </a>
-                    <a href="{% url 'password_change' %}" class="btn btn-primary">
-                        <i class="bi bi-key me-2"></i>Change Password
-                    </a>
-                    {% if user.is_staff %}
-                    <a href="{% url 'admin_dashboard:dashboard' %}" class="btn btn-secondary">
-                        <i class="bi bi-shield-lock me-2"></i>Admin Dashboard
-                    </a>
-                    {% endif %}
+        {# Quick Actions Card - Restored #}
+        <div class="col-lg-4 mb-4">
+            <div class="chart-card h-100">
+                <div class="chart-card-header">
+                    <h5 class="chart-title d-flex align-items-center gap-2">
+                        <i class='bx bx-bolt-circle'></i>
+                        Quick Actions
+                    </h5>
+                </div>
+                <div class="chart-card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'users:preferences' %}" class="btn btn-primary d-flex align-items-center justify-content-center gap-2">
+                            <i class='bx bx-cog'></i>Preferences
+                        </a>
+                        <a href="{% url 'password_change' %}" class="btn btn-primary d-flex align-items-center justify-content-center gap-2">
+                            <i class='bx bx-key'></i>Change Password
+                        </a>
+                        {% if user.is_staff %}
+                        <a href="{% url 'admin_dashboard:dashboard' %}" class="btn btn-secondary d-flex align-items-center justify-content-center gap-2">
+                            <i class='bx bx-shield-quarter'></i>Admin Dashboard
+                        </a>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
+{% endblock main_content %}
+
+{% block extra_js %}
+    {# Add any specific JS needed for the profile page #}
+    <script>
+        // console.log("Profile page specific JS loaded.");
+    </script>
 {% endblock %}
