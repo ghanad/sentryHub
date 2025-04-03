@@ -1,4 +1,4 @@
-{% extends "users/base.html" %}
+{% extends "main_dashboard/base_modern.html" %}
 {% load static %}
 
 {% block title %}
@@ -6,239 +6,281 @@
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'users/css/user_form.css' %}">
+    <link rel="stylesheet" href="{% static 'main_dashboard/css/modern_dashboard.css' %}">
+    {# <link rel="stylesheet" href="{% static 'users/css/user_form.css' %}"> #} {# Keep original form CSS if needed #}
 {% endblock %}
 
-{% block user_content %}
-<div class="row mb-4">
-    <div class="col-12">
+{% block main_content %}
+    <!-- Page header -->
+    <header class="page-header">
+        <h1 class="page-title">{% if form.instance.pk %}Edit{% else %}Create{% endif %} User</h1>
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="{% url 'dashboard:dashboard' %}">Dashboard</a></li>
                 <li class="breadcrumb-item"><a href="{% url 'users:user_list' %}">Users</a></li>
-                <li class="breadcrumb-item active">{% if form.instance.pk %}Edit{% else %}Create{% endif %} User</li>
+                <li class="breadcrumb-item active" aria-current="page">{% if form.instance.pk %}Edit{% else %}Create{% endif %} User</li>
             </ol>
         </nav>
-    </div>
-</div>
+    </header>
 
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">{% if form.instance.pk %}Edit{% else %}Create{% endif %} User</h5>
-            </div>
-            <div class="card-body">
-                <form id="userForm" method="post">
-                    {% csrf_token %}
-                    
-                    {% if form.non_field_errors %}
-                    <div class="alert alert-danger">
-                        {{ form.non_field_errors }}
-                    </div>
-                    {% endif %}
+    <div class="row">
+        <div class="col-12">
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <h5 class="chart-title d-flex align-items-center gap-2">
+                        <i class='bx {% if form.instance.pk %}bxs-edit{% else %}bx-user-plus{% endif %}'></i>
+                        User Details
+                    </h5>
+                </div>
+                <div class="chart-card-body">
+                    <form id="userForm" method="post" novalidate>
+                        {% csrf_token %}
 
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="{{ form.username.id_for_label }}" class="form-label">Username <span class="text-danger">*</span></label>
-                            {{ form.username }}
-                            {% if form.username.errors %}
-                            <div class="invalid-feedback d-block">
-                                {{ form.username.errors }}
-                            </div>
-                            {% endif %}
-                            {% if form.username.help_text %}
-                            <div class="form-text">{{ form.username.help_text }}</div>
-                            {% endif %}
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            {% for error in form.non_field_errors %} {{ error }} {% endfor %}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
-                        <div class="col-md-6">
-                            <label for="{{ form.email.id_for_label }}" class="form-label">Email <span class="text-danger">*</span></label>
-                            {{ form.email }}
-                            {% if form.email.errors %}
-                            <div class="invalid-feedback d-block">
-                                {{ form.email.errors }}
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
+                        {% endif %}
 
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="{{ form.department.id_for_label }}" class="form-label">Department</label>
-                            {{ form.department }}
-                            {% if form.department.errors %}
-                            <div class="invalid-feedback d-block">
-                                {{ form.department.errors }}
+                        {# Basic Info #}
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="{{ form.username.id_for_label }}" class="form-label">Username <span class="text-danger">*</span></label>
+                                {{ form.username }}
+                                {% if form.username.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.username.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                                {% if form.username.help_text %}
+                                <div class="form-text">{{ form.username.help_text|safe }}</div>
+                                {% endif %}
                             </div>
-                            {% endif %}
-                        </div>
-                        <div class="col-md-6">
-                            <label for="{{ form.phone_number.id_for_label }}" class="form-label">Phone Number</label>
-                            {{ form.phone_number }}
-                            {% if form.phone_number.errors %}
-                            <div class="invalid-feedback d-block">
-                                {{ form.phone_number.errors }}
+                            <div class="col-md-6">
+                                <label for="{{ form.email.id_for_label }}" class="form-label">Email <span class="text-danger">*</span></label>
+                                {{ form.email }}
+                                {% if form.email.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.email.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
                             </div>
-                            {% endif %}
                         </div>
-                    </div>
 
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <div class="form-check">
-                                {{ form.is_staff }}
-                                <label for="{{ form.is_staff.id_for_label }}" class="form-check-label">
-                                    Admin Access
-                                </label>
+                        {# Additional Info #}
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="{{ form.department.id_for_label }}" class="form-label">Department</label>
+                                {{ form.department }}
+                                {% if form.department.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.department.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.phone_number.id_for_label }}" class="form-label">Phone Number</label>
+                                {{ form.phone_number }}
+                                {% if form.phone_number.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.phone_number.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
                             </div>
                         </div>
-                    </div>
 
-                    {% if form.instance.pk %}
-                    <hr class="my-4">
-                    <h6 class="mb-3">Reset Password</h6>
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="{{ form.password1.id_for_label }}" class="form-label">New Password</label>
-                            {{ form.password1 }}
-                            {% if form.password1.errors %}
-                            <div class="invalid-feedback d-block">
-                                {{ form.password1.errors }}
+                        {# Permissions #}
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div class="form-check form-switch"> {# Using form-switch for better look #}
+                                    {{ form.is_staff }}
+                                    <label for="{{ form.is_staff.id_for_label }}" class="form-check-label">
+                                        Admin Access (Staff Status)
+                                    </label>
+                                </div>
+                                {% if form.is_staff.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.is_staff.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
                             </div>
-                            {% endif %}
-                            {% if form.password1.help_text %}
-                            <div class="form-text">{{ form.password1.help_text }}</div>
-                            {% endif %}
                         </div>
-                        <div class="col-md-6">
-                            <label for="{{ form.password2.id_for_label }}" class="form-label">Confirm New Password</label>
-                            {{ form.password2 }}
-                            {% if form.password2.errors %}
-                            <div class="invalid-feedback d-block">
-                                {{ form.password2.errors }}
-                            </div>
-                            {% endif %}
-                            {% if form.password2.help_text %}
-                            <div class="form-text">{{ form.password2.help_text }}</div>
-                            {% endif %}
-                        </div>
-                    </div>
-                    {% else %}
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="{{ form.password1.id_for_label }}" class="form-label">Password <span class="text-danger">*</span></label>
-                            {{ form.password1 }}
-                            {% if form.password1.errors %}
-                            <div class="invalid-feedback d-block">
-                                {{ form.password1.errors }}
-                            </div>
-                            {% endif %}
-                            {% if form.password1.help_text %}
-                            <div class="form-text">{{ form.password1.help_text }}</div>
-                            {% endif %}
-                        </div>
-                        <div class="col-md-6">
-                            <label for="{{ form.password2.id_for_label }}" class="form-label">Confirm Password <span class="text-danger">*</span></label>
-                            {{ form.password2 }}
-                            {% if form.password2.errors %}
-                            <div class="invalid-feedback d-block">
-                                {{ form.password2.errors }}
-                            </div>
-                            {% endif %}
-                            {% if form.password2.help_text %}
-                            <div class="form-text">{{ form.password2.help_text }}</div>
-                            {% endif %}
-                        </div>
-                    </div>
-                    {% endif %}
 
-                    <div class="row mt-4">
-                        <div class="col-12">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-save"></i> {% if form.instance.pk %}Update{% else %}Create{% endif %} User
-                            </button>
-                            <a href="{% url 'users:user_list' %}" class="btn btn-secondary">
-                                <i class="bi bi-x-circle"></i> Cancel
-                            </a>
+                        {# Password Section #}
+                        <hr class="my-4">
+                        <h6 class="mb-3">{% if form.instance.pk %}Reset Password (Optional){% else %}Set Password{% endif %}</h6>
+                        {% if form.instance.pk %}
+                            <p class="text-muted small">Leave these fields blank to keep the current password.</p>
+                        {% endif %}
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="{{ form.password1.id_for_label }}" class="form-label">New Password {% if not form.instance.pk %}<span class="text-danger">*</span>{% endif %}</label>
+                                {{ form.password1 }}
+                                {% if form.password1.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.password1.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                                {% if form.password1.help_text %}
+                                <div class="form-text">{{ form.password1.help_text|safe }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.password2.id_for_label }}" class="form-label">Confirm New Password {% if not form.instance.pk %}<span class="text-danger">*</span>{% endif %}</label>
+                                {{ form.password2 }}
+                                {% if form.password2.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.password2.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                                {% if form.password2.help_text %}
+                                <div class="form-text">{{ form.password2.help_text|safe }}</div>
+                                {% endif %}
+                            </div>
                         </div>
-                    </div>
-                </form>
+
+                        {# Action Buttons #}
+                        <div class="row mt-4">
+                            <div class="col-12 d-flex justify-content-end gap-2">
+                                <a href="{% url 'users:user_list' %}" class="btn btn-outline-secondary">
+                                    <i class='bx bx-x'></i> Cancel
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class='bx bx-save'></i> {% if form.instance.pk %}Update{% else %}Create{% endif %} User
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
-</div>
-{% endblock %}
+{% endblock main_content %}
 
 {% block extra_js %}
 <script>
-document.getElementById('userForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(this);
-    const url = this.action;
-    
-    // Show loading state
-    const submitButton = this.querySelector('button[type="submit"]');
-    const originalText = submitButton.innerHTML;
-    submitButton.disabled = true;
-    submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
-    
-    fetch(url, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest'
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('userForm');
+    if (!form) return;
+
+    // Apply Bootstrap classes to form elements rendered by Django
+    form.querySelectorAll('input[type="text"], input[type="email"], input[type="password"], select').forEach(input => {
+        if (!input.classList.contains('form-check-input')) { // Don't add form-control to checkboxes/radios
+             input.classList.add('form-control');
         }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === 'success') {
-            toastr.success('{% if form.instance.pk %}User updated successfully{% else %}User created successfully{% endif %}', 'Success', {
-                timeOut: 3000,
-                closeButton: true,
-                progressBar: true
-            });
-            setTimeout(() => {
-                window.location.href = "{% url 'users:user_list' %}";
-            }, 1000);
+        // Check for sibling error lists (Django's default) or parent error containers
+        const errorNode = input.nextElementSibling; // Check direct sibling first
+        let hasError = false;
+        if (errorNode && errorNode.classList.contains('errorlist')) {
+             hasError = true;
         } else {
-            // Clear previous errors
-            document.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
-            document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
-            
-            // Display new errors
-            if (data.errors) {
-                Object.entries(data.errors).forEach(([field, errors]) => {
-                    const input = document.querySelector(`[name="${field}"]`);
-                    if (input) {
-                        input.classList.add('is-invalid');
-                        const errorDiv = document.createElement('div');
-                        errorDiv.className = 'invalid-feedback d-block';
-                        errorDiv.textContent = errors[0];
-                        input.parentNode.appendChild(errorDiv);
-                    }
-                });
-            }
-            
-            toastr.error(data.message || 'Please correct the errors below.', 'Error', {
-                timeOut: 5000,
-                closeButton: true,
-                progressBar: true
-            });
+             // Check for our custom invalid-feedback div
+             const errorContainer = input.closest('.mb-3, .col-md-6, .col-12').querySelector('.invalid-feedback');
+             if (errorContainer && errorContainer.textContent.trim() !== '') {
+                 hasError = true;
+             }
         }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        toastr.error('An error occurred while processing your request.', 'Error', {
-            timeOut: 5000,
-            closeButton: true,
-            progressBar: true
+        if(hasError) {
+            input.classList.add('is-invalid');
+        }
+    });
+     form.querySelectorAll('input[type="checkbox"]').forEach(input => {
+        if (!input.classList.contains('form-check-input')) {
+             input.classList.add('form-check-input');
+        }
+         const errorContainer = input.closest('.mb-3, .col-md-6, .col-12').querySelector('.invalid-feedback');
+         if (errorContainer && errorContainer.textContent.trim() !== '') {
+             input.classList.add('is-invalid');
+         }
+    });
+
+
+    // Retain AJAX submission logic from original template
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+        const url = this.action || window.location.href; // Use current URL if action is empty
+
+        // Show loading state
+        const submitButton = this.querySelector('button[type="submit"]');
+        const originalHtml = submitButton.innerHTML;
+        submitButton.disabled = true;
+        submitButton.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...`;
+
+        // Clear previous errors visually
+        document.querySelectorAll('.invalid-feedback').forEach(el => el.textContent = ''); // Clear text instead of removing
+        document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+
+        fetch(url, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken') // Ensure CSRF token is sent
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                SentryNotification.success(data.message || '{% if form.instance.pk %}User updated successfully{% else %}User created successfully{% endif %}', {
+                     clearBeforeShow: true
+                });
+                // Redirect after a short delay
+                setTimeout(() => {
+                    window.location.href = data.redirect_url || "{% url 'users:user_list' %}";
+                }, 1500);
+            } else {
+                // Display new errors
+                let firstErrorField = null;
+                if (data.errors) {
+                    Object.entries(data.errors).forEach(([field, errors]) => {
+                        // Handle non-field errors
+                        if (field === '__all__') {
+                             const nonFieldContainer = form.querySelector('.alert'); // Assuming an alert div exists for non-field errors
+                             if(nonFieldContainer) {
+                                 nonFieldContainer.innerHTML = errors.join('<br>');
+                                 nonFieldContainer.classList.remove('d-none'); // Make sure it's visible
+                                 nonFieldContainer.focus(); // Focus for accessibility
+                                 if (!firstErrorField) firstErrorField = nonFieldContainer;
+                             } else {
+                                 // Fallback if no dedicated non-field error area
+                                 SentryNotification.error(errors.join('<br>'));
+                             }
+                        } else {
+                            // Handle field-specific errors
+                            const input = document.querySelector(`[name="${field}"]`);
+                            if (input) {
+                                input.classList.add('is-invalid');
+                                const errorContainer = input.closest('.mb-3, .col-md-6, .col-12').querySelector('.invalid-feedback');
+                                if (errorContainer) {
+                                    errorContainer.textContent = errors[0]; // Display first error
+                                    errorContainer.classList.add('d-block'); // Ensure it's visible
+                                }
+                                if (!firstErrorField) firstErrorField = input; // Track first field with error
+                            }
+                        }
+                    });
+                }
+
+                SentryNotification.error(data.message || 'Please correct the errors highlighted below.');
+
+                // Focus the first field with an error for accessibility
+                if (firstErrorField) {
+                    firstErrorField.focus();
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            SentryNotification.error('An unexpected error occurred. Please try again.');
+        })
+        .finally(() => {
+            // Restore button state
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalHtml;
         });
-    })
-    .finally(() => {
-        // Restore button state
-        submitButton.disabled = false;
-        submitButton.innerHTML = originalText;
     });
 });
 </script>
