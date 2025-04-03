@@ -1,130 +1,25 @@
-/* Preferences Page Styles */
-.preferences-container {
-    margin: 0;
-    padding: 0;
-    background: rgb(250, 250, 250);
-    min-height: 100vh;
-    width: 100%;
-}
+/* users/static/users/css/preferences.css - Minimal adjustments for modern layout */
 
-body.preferences-page {
-    margin: 0;
-    padding: 0;
-    background: rgb(250, 250, 250);
-}
-
-.preferences-content {
-    max-width: 800px;
-    margin: 0 auto;
-    background: rgb(250, 250, 250);
-    border-radius: 8px;
-    padding: 2rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.preferences-header {
-    text-align: center;
-    margin-bottom: 2.5rem;
-}
-
-.preferences-title {
-    font-size: 2rem;
-    font-weight: 600;
-    color: #1a1a1a;
-    margin-bottom: 0.5rem;
-}
-
-.preferences-subtitle {
-    font-size: 1.1rem;
-    color: #666;
-}
-
-.preferences-content {
-    background: rgb(250, 250, 250);
-    border-radius: 8px;
-    padding: 2rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.form-section {
-    margin-bottom: 2rem;
-}
-
+/* Keep section title styling if needed, adjust margin/padding */
 .section-title {
-    font-size: 1.3rem;
-    font-weight: 500;
-    color: #333;
-    margin-bottom: 1.5rem;
+    font-size: 1.1rem; /* Slightly smaller than original */
+    font-weight: 600; /* Slightly bolder than original */
+    color: var(--bs-body-color); /* Use Bootstrap variable for theme compatibility */
+    margin-bottom: 1rem; /* Adjust spacing */
     padding-bottom: 0.5rem;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--bs-border-color); /* Use Bootstrap variable */
 }
 
-.form-group {
-    margin-bottom: 1.5rem;
-}
-
-.form-label {
-    display: block;
-    font-size: 0.95rem;
-    font-weight: 500;
-    color: #444;
-    margin-bottom: 0.5rem;
-}
-
-.form-select {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 0.95rem;
-    background: #fff;
-    transition: border-color 0.2s ease;
-}
-
-.form-select:focus {
-    outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
-}
-
-
-.form-hint {
-    font-size: 0.85rem;
-    color: #666;
-    margin-top: 0.5rem;
-}
-
-.btn-save {
-    background: #007bff;
-    color: #fff;
-    border: none;
-    padding: 0.75rem 1.5rem;
-    border-radius: 4px;
-    font-size: 0.95rem;
-    cursor: pointer;
-    transition: background 0.2s ease;
-}
-
-.btn-save:hover {
-    background: #0056b3;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .preferences-container {
-        margin: 1rem;
-        padding: 0;
-    }
-    
-    .preferences-content {
-        padding: 1.5rem;
-    }
-    
-    .preferences-title {
-        font-size: 1.8rem;
-    }
-    
-    .preferences-subtitle {
-        font-size: 1rem;
-    }
-}
+/*
+Removed styles previously targeting:
+- .preferences-container
+- body.preferences-page
+- .preferences-content (overall layout, background, shadow)
+- .preferences-header, .preferences-title, .preferences-subtitle
+- .form-group (use Bootstrap mb-3 instead)
+- .form-label (use Bootstrap form-label)
+- .form-select (use Bootstrap form-select)
+- .form-hint (use Bootstrap form-text)
+- .btn-save (use Bootstrap btn btn-primary)
+- Responsive media queries (handled by Bootstrap grid/utilities)
+*/

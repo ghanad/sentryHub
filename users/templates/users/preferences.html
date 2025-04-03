@@ -1,51 +1,67 @@
-{% extends "users/base.html" %}
-{% load date_format_tags %}
+{% extends "main_dashboard/base_modern.html" %}
 {% load static %}
+{% load date_format_tags %}
 
 {% block title %}My Preferences - SentryHub{% endblock %}
 
 {% block extra_css %}
+{# Link the updated, minimal preferences CSS if needed #}
 <link rel="stylesheet" href="{% static 'users/css/preferences.css' %}">
 {% endblock %}
 
-{% block extra_js %} 
+{% block extra_js %}
+{# Include preferences JS if it contains necessary logic #}
 <script src="{% static 'users/js/preferences.js' %}"></script>
 {% endblock %}
 
-{% block user_content %}
-<body class="preferences-page">
-<div class="preferences-container">
-    <div class="preferences-header">
-        <h1 class="preferences-title">Preferences</h1>
-        <p class="preferences-subtitle">Customize your SentryHub experience</p>
-    </div>
+{% block main_content %}
+<div class="container-fluid px-4"> {# Added container-fluid for padding consistent with other modern pages #}
+    <!-- Page Header -->
+    <header class="page-header mb-4">
+        <h1 class="page-title">Preferences</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'dashboard:dashboard' %}">Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Preferences</li>
+            </ol>
+        </nav>
+    </header>
 
-    <div class="preferences-content">
-        <form method="post" action="{% url 'users:update_preferences' %}" class="preferences-form">
-            {% csrf_token %}
-            
-            <div class="form-section">
-                <h2 class="section-title">Display Settings</h2>
-                <div class="form-group">
-                    <label for="date_format_preference" class="form-label">Date Format</label>
-                    <select name="date_format_preference" id="date_format_preference" class="form-select">
-                        <option value="gregorian" {% if user.profile.date_format_preference == 'gregorian' %}selected{% endif %}>
-                            Gregorian (Western)
-                        </option>
-                        <option value="jalali" {% if user.profile.date_format_preference == 'jalali' %}selected{% endif %}>
-                            Jalali (Persian)
-                        </option>
-                    </select>
-                    <p class="form-hint">Choose how dates should be displayed throughout the application.</p>
+    <!-- Preferences Card -->
+    <div class="row">
+        <div class="col-lg-8 col-md-10 mx-auto"> {# Centering the card a bit #}
+            <div class="chart-card">
+                <div class="chart-card-body">
+                    <form method="post" action="{% url 'users:update_preferences' %}" class="preferences-form">
+                        {% csrf_token %}
+
+                        <div class="form-section">
+                            <h2 class="section-title">Display Settings</h2>
+                            <div class="mb-3"> {# Use Bootstrap margin bottom class #}
+                                <label for="date_format_preference" class="form-label">Date Format</label>
+                                <select name="date_format_preference" id="date_format_preference" class="form-select">
+                                    <option value="gregorian" {% if user.profile.date_format_preference == 'gregorian' %}selected{% endif %}>
+                                        Gregorian (Western)
+                                    </option>
+                                    <option value="jalali" {% if user.profile.date_format_preference == 'jalali' %}selected{% endif %}>
+                                        Jalali (Persian)
+                                    </option>
+                                </select>
+                                <div class="form-text"> {# Use Bootstrap form-text class #}
+                                    Choose how dates should be displayed throughout the application.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="text-end"> {# Align button to the right #}
+                            <button type="submit" class="btn btn-primary">
+                                <i class='bx bx-save me-1'></i> Save Changes {# Use BoxIcon and Bootstrap button classes #}
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
-
-            <div class="form-actions">
-                <button type="submit" class="btn-save">
-                    <i class="bi bi-save"></i> Save Changes
-                </button>
-            </div>
-        </form>
+        </div>
     </div>
 </div>
 {% endblock %}
