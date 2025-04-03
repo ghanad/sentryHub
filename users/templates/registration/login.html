@@ -1,94 +1,95 @@
-{% extends "alerts/base.html" %}
+{% extends "users/base_auth.html" %}
+{% load static %}
 
 {% block title %}Login - SentryHub{% endblock %}
 
+{# No extra_css needed, inheriting from base_auth.html #}
+
 {% block content %}
-<div class="container">
-    <div class="row justify-content-center align-items-center min-vh-75">
-        <div class="col-12 col-md-6 col-lg-4">
-            <div class="card shadow-sm">
-                <div class="card-header text-center py-3">
-                    <h4 class="mb-0">Welcome Back</h4>
-                    <p class="text-muted small mb-0">Please log in to your account</p>
-                </div>
-                <div class="card-body p-4">
-                    <form method="post" novalidate>
-                        {% csrf_token %}
-                        
-                        {% if form.non_field_errors %}
-                        <div class="alert alert-danger">
-                            {% for error in form.non_field_errors %}
-                                {{ error }}
-                            {% endfor %}
-                        </div>
-                        {% endif %}
+    {# The auth-wrapper in base_auth.html handles centering #}
+    <div class="card auth-card"> {# Use standard Bootstrap card and custom auth-card class #}
+        <div class="card-body p-4 p-md-5"> {# Standard card-body padding #}
+                <h4 class="text-center mb-2">Welcome Back</h4>
+                <p class="text-muted text-center small mb-4">Please log in to your account</p>
 
-                        <div class="mb-3">
-                            <label for="username" class="form-label">Username</label>
-                            <div class="input-group">
-                                <span class="input-group-text">
-                                    <i class="bi bi-person"></i>
-                                </span>
-                                <input type="text" 
-                                       class="form-control {% if form.username.errors %}is-invalid{% endif %}" 
-                                       id="username" 
-                                       name="username" 
-                                       placeholder="Enter your username"
-                                       required>
-                                {% if form.username.errors %}
-                                <div class="invalid-feedback">
-                                    {% for error in form.username.errors %}{{ error }}{% endfor %}
-                                </div>
-                                {% endif %}
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        {% for error in form.non_field_errors %}
+                            {{ error }}
+                        {% endfor %}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label for="id_username" class="form-label">Username</label> {# Use id_username for default Django form field ID #}
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-person-fill"></i> {# Use Bootstrap Icon #}
+                            </span>
+                            <input type="text"
+                                   class="form-control {% if form.username.errors %}is-invalid{% endif %}"
+                                   id="id_username" {# Use id_username #}
+                                   name="username"
+                                   placeholder="Enter your username"
+                                   required
+                                   value="{{ form.username.value|default:'' }}"> {# Retain value on error #}
+                            {% if form.username.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.username.errors %}{{ error }}{% endfor %}
                             </div>
+                            {% endif %}
                         </div>
+                    </div>
 
-                        <div class="mb-3">
-                            <label for="password" class="form-label">Password</label>
-                            <div class="input-group">
-                                <span class="input-group-text">
-                                    <i class="bi bi-lock"></i>
-                                </span>
-                                <input type="password" 
-                                       class="form-control {% if form.password.errors %}is-invalid{% endif %}" 
-                                       id="password" 
-                                       name="password" 
-                                       placeholder="Enter your password"
-                                       required>
-                                {% if form.password.errors %}
-                                <div class="invalid-feedback">
-                                    {% for error in form.password.errors %}{{ error }}{% endfor %}
-                                </div>
-                                {% endif %}
+                    <div class="mb-4"> {# Increased bottom margin #}
+                        <label for="id_password" class="form-label">Password</label> {# Use id_password #}
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-lock-fill"></i> {# Use Bootstrap Icon #}
+                            </span>
+                            <input type="password"
+                                   class="form-control {% if form.password.errors %}is-invalid{% endif %}"
+                                   id="id_password" {# Use id_password #}
+                                   name="password"
+                                   placeholder="Enter your password"
+                                   required>
+                            {% if form.password.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.password.errors %}{{ error }}{% endfor %}
                             </div>
+                            {% endif %}
                         </div>
+                    </div>
 
-                        <div class="mb-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="remember" name="remember">
-                                <label class="form-check-label" for="remember">
-                                    Remember me
-                                </label>
-                            </div>
-                        </div>
+                    {# Optional: Remember me - Uncomment if needed and form supports it #}
+                    <div class="mb-3 form-check">
+                        <input class="form-check-input" type="checkbox" id="id_remember" name="remember">
+                        <label class="form-check-label" for="id_remember">
+                            Remember me
+                        </label>
+                    </div>
 
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-box-arrow-in-right me-2"></i>Log In
-                            </button>
-                        </div>
-                    </form>
+                    <div class="d-grid gap-2 mt-4"> {# Add margin top to button #}
+                        <button type="submit" class="btn btn-primary d-flex align-items-center justify-content-center gap-2">
+                            <i class="bi bi-box-arrow-in-right"></i> {# Use Bootstrap Icon #}
+                            Log In
+                        </button>
+                    </div>
+                </form>
 
-                    {% comment %}
-                    <p class="mb-0 mt-3 text-center">
-                        <a href="{% url 'password_reset' %}" class="text-decoration-none">
-                            <i class="bi bi-key me-1"></i>Forgot Password?
-                        </a>
-                    </p>
-                    {% endcomment %}
-                </div>
+                {# Optional: Forgot Password Link - Uncomment if needed #}
+                {% comment %} <p class="mb-0 mt-3 text-center">
+                    <a href="{% url 'password_reset' %}" class="text-decoration-none small">
+                        <i class="bi bi-key-fill me-1"></i>Forgot Password? {# Use Bootstrap Icon #}
+                    </a>
+                </p> {% endcomment %}
             </div>
         </div>
-    </div>
-</div>
-{% endblock %} 
+    {# Removed closing div for login-card-container as it's not needed with auth-wrapper #}
+{% endblock content %}
+
+{# Removed extra_js block #}
