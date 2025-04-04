@@ -404,6 +404,11 @@ html.sidebar-is-initially-collapsed .nav-icon {
     margin-left: 0.4rem;
 }
 
+/* Hide Profile text when sidebar is collapsed */
+.sidebar-collapsed .profile-link-footer .profile-text {
+    display: none;
+}
+
 .nav-submenu .nav-link:hover,
 .nav-submenu .nav-link.active {
     background: rgba(255, 255, 255, 0.15);

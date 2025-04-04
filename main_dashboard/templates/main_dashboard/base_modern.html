@@ -116,12 +116,6 @@
             </li>
             {% endif %}
              <li class="nav-item">
-                 <a href="{% url 'users:profile' %}" class="nav-link {% if request.resolver_match.namespace == 'users' and request.resolver_match.url_name == 'profile' %}active{% endif %}">
-                    <i class='bx bxs-user-circle nav-icon'></i>
-                    <span class="nav-text">Profile</span>
-                </a>
-            </li>
-             <li class="nav-item">
                  <a href="{% url 'logout' %}" class="nav-link">
                      <i class='bx bx-log-out nav-icon'></i>
                      <span class="nav-text">Logout</span>
@@ -146,6 +140,13 @@
                     <span class="icon-sun"><i class='bx bx-sun'></i></span>
                     <span class="icon-moon"><i class='bx bx-moon'></i></span>
                 </button>
+            </div>
+            {# Profile Link (Icon + Text) #}
+            <div class="mb-2 profile-link-footer"> {# Removed text-center, added specific class #}
+                 <a href="{% url 'users:profile' %}" class="nav-link d-flex align-items-center" title="Profile"> {# Use flex for alignment #}
+                    <i class='bx bxs-user-circle fs-4 me-2'></i> {# Added margin-end #}
+                    <span class="profile-text">Profile</span> {# Added text span #}
+                 </a>
             </div>
             <span class="small px-3 version-text">Version 1.0.0</span>
         </div>
