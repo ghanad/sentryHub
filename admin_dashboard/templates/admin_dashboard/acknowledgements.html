@@ -119,9 +119,11 @@
                                         <a href="{% url 'alerts:alert-detail' ack.alert_group.fingerprint %}?tab=ack_history" class="action-btn" data-bs-toggle="tooltip" title="View Acknowledgement on Alert">
                                             <i class='bx bx-show'></i>
                                         </a>
-                                        <button type="button" class="action-btn" data-bs-toggle="modal" data-bs-target="#deleteAckModal{{ ack.id }}" title="Delete Acknowledgement"> {# Removed text-danger #}
-                                            <i class='bx bx-trash'></i>
-                                        </button>
+                                        <span data-bs-toggle="tooltip" title="Delete Acknowledgement"> {# Wrapper for tooltip #}
+                                            <button type="button" class="action-btn" data-bs-toggle="modal" data-bs-target="#deleteAckModal{{ ack.id }}"> {# Modal toggle remains on button #}
+                                                <i class='bx bx-trash'></i>
+                                            </button>
+                                        </span>
                                     </div>
                                     <!-- Delete Modal -->
                                     <div class="modal fade" id="deleteAckModal{{ ack.id }}" tabindex="-1" aria-labelledby="deleteAckModalLabel{{ ack.id }}" aria-hidden="true">
