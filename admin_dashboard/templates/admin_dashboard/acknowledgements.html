@@ -119,11 +119,9 @@
                                         <a href="{% url 'alerts:alert-detail' ack.alert_group.fingerprint %}?tab=ack_history" class="action-btn" data-bs-toggle="tooltip" title="View Acknowledgement on Alert">
                                             <i class='bx bx-show'></i>
                                         </a>
-                                        <span data-bs-toggle="tooltip" title="Delete Acknowledgement"> {# Wrapper for tooltip #}
-                                            <button type="button" class="action-btn" data-bs-toggle="modal" data-bs-target="#deleteAckModal{{ ack.id }}"> {# Modal toggle remains on button #}
-                                                <i class='bx bx-trash'></i>
-                                            </button>
-                                        </span>
+                                        <button type="button" class="action-btn" data-bs-toggle="modal" data-bs-target="#deleteAckModal{{ ack.id }}" title="Delete Acknowledgement"> {# Removed tooltip toggle, will be handled by JS #}
+                                             <i class='bx bx-trash'></i>
+                                         </button>
                                     </div>
                                     <!-- Delete Modal -->
                                     <div class="modal fade" id="deleteAckModal{{ ack.id }}" tabindex="-1" aria-labelledby="deleteAckModalLabel{{ ack.id }}" aria-hidden="true">
@@ -186,3 +184,16 @@
     </div>
 </div>
 {% endblock main_content %} {# Changed block name #}
+
+{% block extra_js %}
+<script>
+   document.addEventListener('DOMContentLoaded', function () {
+       // Select only the delete buttons (which have modal toggle and title)
+       const deleteButtons = document.querySelectorAll('.action-menu button[data-bs-toggle="modal"][title]');
+       deleteButtons.forEach(function(button) {
+           // Initialize tooltip manually
+           new bootstrap.Tooltip(button);
+       });
+   });
+</script>
+{% endblock extra_js %}
