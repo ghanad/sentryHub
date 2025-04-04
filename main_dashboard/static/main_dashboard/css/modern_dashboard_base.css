@@ -404,9 +404,101 @@ html.sidebar-is-initially-collapsed .nav-icon {
     margin-left: 0.4rem;
 }
 
-/* Hide Profile text when sidebar is collapsed */
-.sidebar-collapsed .profile-link-footer .profile-text {
+/* Account Management Section */
+.account-management {
+    margin-bottom: 1rem;
+    border-radius: var(--border-radius);
+    transition: var(--transition);
+}
+
+.account-header {
+    padding: 0.5rem;
+    cursor: pointer;
+    border-radius: var(--border-radius);
+    transition: var(--transition);
+}
+
+.account-header:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.account-toggle {
+    transition: transform 0.2s ease;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.account-menu {
     display: none;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 0 0 var(--border-radius) var(--border-radius);
+    padding: 0.5rem 0;
+    margin-top: 0.25rem;
+}
+
+.account-menu a {
+    color: rgba(255, 255, 255, 0.7);
+    transition: var(--transition);
+}
+
+.account-menu a:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+/* Collapsed Logout Icon */
+.collapsed-account {
+    display: none;
+    margin-bottom: 1rem;
+}
+
+.collapsed-account a {
+    color: rgba(255, 255, 255, 0.7);
+    transition: var(--transition);
+}
+
+.collapsed-account a:hover {
+    color: white;
+}
+
+/* Show collapsed account section when sidebar is collapsed */
+.sidebar-collapsed .collapsed-account {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.sidebar-collapsed .account-management {
+    display: none;
+}
+
+/* Collapsed Account Menu */
+.account-menu-collapsed {
+    display: none;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: var(--border-radius);
+    padding: 0.5rem;
+    margin-top: 0.25rem;
+    width: 100%;
+}
+
+.sidebar-collapsed .account-collapsed-icon:hover + .account-menu-collapsed,
+.sidebar-collapsed .account-menu-collapsed:hover {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.sidebar-collapsed .account-menu-collapsed a {
+    color: rgba(255, 255, 255, 0.7);
+    transition: var(--transition);
+    padding: 0.5rem;
+    border-radius: 50%;
+}
+
+.sidebar-collapsed .account-menu-collapsed a:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
 }
 
 .nav-submenu .nav-link:hover,

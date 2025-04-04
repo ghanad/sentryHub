@@ -115,12 +115,6 @@
                 </a>
             </li>
             {% endif %}
-             <li class="nav-item">
-                 <a href="{% url 'logout' %}" class="nav-link">
-                     <i class='bx bx-log-out nav-icon'></i>
-                     <span class="nav-text">Logout</span>
-                 </a>
-            </li>
         </ul>
 
         <div class="sidebar-footer mt-auto">
@@ -141,12 +135,38 @@
                     <span class="icon-moon"><i class='bx bx-moon'></i></span>
                 </button>
             </div>
-            {# Profile Link (Icon + Text) #}
-            <div class="mb-2 profile-link-footer"> {# Removed text-center, added specific class #}
-                 <a href="{% url 'users:profile' %}" class="nav-link d-flex align-items-center" title="Profile"> {# Use flex for alignment #}
-                    <i class='bx bxs-user-circle fs-4 me-2'></i> {# Added margin-end #}
-                    <span class="profile-text">Profile</span> {# Added text span #}
-                 </a>
+            {# Account Management Section #}
+            <div class="account-management mb-2">
+                <div class="d-flex align-items-center justify-content-between px-3 account-header">
+                    <div class="d-flex align-items-center">
+                        <i class='bx bxs-user-circle fs-4 me-2'></i>
+                        <span class="profile-text">Account</span>
+                    </div>
+                    <i class='bx bx-chevron-down account-toggle'></i>
+                </div>
+                <div class="account-menu mt-2">
+                    <a href="{% url 'users:profile' %}" class="nav-link d-flex align-items-center px-3 py-1">
+                        <i class='bx bxs-user me-2'></i>
+                        <span>Profile</span>
+                    </a>
+                    <a href="{% url 'logout' %}" class="nav-link d-flex align-items-center px-3 py-1">
+                        <i class='bx bx-log-out me-2'></i>
+                        <span>Logout</span>
+                    </a>
+                </div>
+            </div>
+            <div class="collapsed-account">
+                <a href="#" class="nav-link d-flex justify-content-center py-2 account-collapsed-icon" title="Account">
+                    <i class='bx bxs-user-circle fs-4'></i>
+                </a>
+                <div class="account-menu-collapsed">
+                    <a href="{% url 'users:profile' %}" class="nav-link d-flex justify-content-center py-1" title="Profile">
+                        <i class='bx bxs-user fs-4'></i>
+                    </a>
+                    <a href="{% url 'logout' %}" class="nav-link d-flex justify-content-center py-1" title="Logout">
+                        <i class='bx bx-log-out fs-4'></i>
+                    </a>
+                </div>
             </div>
             <span class="small px-3 version-text">Version 1.0.0</span>
         </div>

@@ -4,6 +4,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const sidebarToggle = document.getElementById('sidebarToggle');
     const mobileToggle = document.getElementById('mobileToggle');
     const mainContent = document.getElementById('mainContent');
+    const accountHeader = document.querySelector('.account-header');
+    const accountMenu = document.querySelector('.account-menu');
+    const accountToggle = document.querySelector('.account-toggle');
     // Get references to both theme toggle buttons
     const themeToggleExpanded = document.getElementById('themeToggleExpanded');
     const themeToggleCollapsed = document.getElementById('themeToggleCollapsed');
@@ -30,6 +33,38 @@ document.addEventListener('DOMContentLoaded', function() {
      if (mobileToggle) {
          mobileToggle.addEventListener('click', toggleMobileSidebar);
      }
+ 
+     // Collapsed Account Menu Toggle
+     const collapsedAccountIcon = document.querySelector('.account-collapsed-icon');
+     const accountMenuCollapsed = document.querySelector('.account-menu-collapsed');
+     
+     if (collapsedAccountIcon && accountMenuCollapsed) {
+         collapsedAccountIcon.addEventListener('click', function(e) {
+             e.preventDefault();
+             accountMenuCollapsed.style.display =
+                 accountMenuCollapsed.style.display === 'flex' ? 'none' : 'flex';
+         });
+     }
+ 
+     // Account Dropdown Toggle
+     if (accountHeader) {
+         accountHeader.addEventListener('click', function(e) {
+             e.preventDefault();
+             accountMenu.style.display = accountMenu.style.display === 'block' ? 'none' : 'block';
+             accountToggle.style.transform = accountMenu.style.display === 'block' ? 'rotate(180deg)' : 'rotate(0)';
+         });
+     }
+ 
+     // Close account menu when sidebar is collapsed
+     function handleSidebarState() {
+         if (sidebar.classList.contains('sidebar-collapsed') && accountMenu) {
+             accountMenu.style.display = 'none';
+             if (accountToggle) accountToggle.style.transform = 'rotate(0)';
+         }
+     }
+ 
+     // Initial setup
+     handleSidebarState();
 
     // --- Apply Initial Sidebar State ---
     // Check localStorage for desktop state
