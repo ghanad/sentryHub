@@ -50,21 +50,21 @@ body {
 }
 
 .sidebar-collapsed {
-    width: 70px;
-    padding: 1.5rem 0.75rem;
+    width: 60px;
+    padding: 1.5rem 0.5rem;
 }
 
 /* ----- Add these rules for initial collapsed state ----- */
 
 /* Initial collapsed state applied via JS on html element to prevent flicker */
 html.sidebar-is-initially-collapsed .sidebar {
-    width: 70px;
-    padding: 1.5rem 0.75rem;
+    width: 60px;
+    padding: 1.5rem 0.5rem;
 }
 
 html.sidebar-is-initially-collapsed .main-content {
-    margin-left: 70px;
-    width: calc(100% - 70px);
+    margin-left: 60px;
+    width: calc(100% - 60px);
 }
 
 /* Hide elements initially if collapsed */
@@ -245,8 +245,8 @@ html.sidebar-is-initially-collapsed .nav-icon {
 }
 
 .main-collapsed {
-    margin-left: 70px;
-    width: calc(100% - 70px);
+    margin-left: 60px;
+    width: calc(100% - 60px);
 }
 
 /* Mobile header specific */
