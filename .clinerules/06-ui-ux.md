@@ -144,3 +144,27 @@ All data tables should follow this basic HTML structure, utilizing Bootstrap 5 c
 *   Include a relevant BoxIcon and a descriptive text message (e.g., "No alerts found matching your criteria.", "No users available.").
 
 By adhering to these guidelines, we can ensure all tables across the application share a consistent look, feel, and behavior, improving the overall user experience.
+
+## 9. Building Pages with the Modern UI
+
+Whether creating a new page or migrating an existing one, follow these standards to ensure consistency with the modern SentryHub look and feel:
+
+1.  **Use Modern Base Template:** All pages using the modern UI *must* extend the correct base template:
+   ```html
+   {% extends "main_dashboard/base_modern.html" %}
+   ```
+2.  **Update Block Names:** Ensure you are using the correct block names defined in `base_modern.html`. The primary content block is typically `{% block main_content %}`. Replace older block names like `{% block content %}`. Check `main_dashboard/base_modern.html` for other available blocks (e.g., `extra_css`, `extra_js`).
+3.  **Adopt Modern Structure:** Refactor the page content to use the standard structures outlined in this guideline:
+   *   Use `<header class="page-header">` for page titles (See Section 1 example).
+   *   Wrap main content sections (like tables, forms, stats) in `<div class="chart-card">` elements (See Section 1).
+   *   Implement tables following the structure in Section 1, using `div.table-responsive` and `table.alert-table`.
+4.  **Apply Standard Classes:** Replace any old or custom CSS classes with the standard classes defined in this guideline and `modern_dashboard.css`:
+   *   Use `chart-card`, `chart-card-header`, `chart-card-body`, `chart-title`.
+   *   Use `alert-table`, `col-*` classes for table columns (See Section 2).
+   *   Use `action-menu` and `action-btn` for table actions (See Section 3).
+   *   Use `status-badge` classes for badges (See Section 4).
+   *   Use the standard date formatting pattern (See Section 5).
+   *   Use `alert-name-link` for primary links (See Section 6).
+   *   Structure filters/search using the patterns in Section 7.
+5.  **Rely on Standard CSS:** Ensure styling primarily comes from the CSS included via `base_modern.html` (like Bootstrap and `modern_dashboard.css`). Avoid adding page-specific CSS files unless absolutely necessary for unique components not covered by the standard styles. If migrating, remove links to old, redundant CSS files.
+6.  **Verify Consistency:** Review the updated page against other modern pages (like Acknowledgements or the Main Dashboard) to ensure visual and functional consistency.
