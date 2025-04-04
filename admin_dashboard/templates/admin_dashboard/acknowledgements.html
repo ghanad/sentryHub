@@ -1,43 +1,61 @@
 {# Path: admin_dashboard/templates/admin_dashboard/acknowledgements.html #}
-{% extends "admin_dashboard/base.html" %}
-{% load date_format_tags %}
+{% extends "main_dashboard/base_modern.html" %}
+{% load static date_format_tags core_tags %} {# Added static and core_tags #}
 
-{% block title %}Admin Acknowledgements - SentryHub{% endblock %}
+{% block title %}Manage Acknowledgements - SentryHub{% endblock %}
 
-{% block content %}
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'main_dashboard/css/modern_dashboard.css' %}">
+    {# <link rel="stylesheet" href="{% static 'admin_dashboard/css/admin_dashboard.css' %}"> #} {# Optional: Add specific styles if needed #}
+    <style>
+        /* Define column widths */
+        .alert-table th.col-id, .alert-table td.col-id { width: 5%; }
+        .alert-table th.col-alert, .alert-table td.col-alert { width: 20%; }
+        .alert-table th.col-user, .alert-table td.col-user { width: 15%; }
+        .alert-table th.col-ack-date, .alert-table td.col-ack-date { width: 15%; }
+        .alert-table th.col-alert-start, .alert-table td.col-alert-start { width: 15%; }
+        .alert-table th.col-comment, .alert-table td.col-comment { width: 20%; }
+        .alert-table th.col-actions, .alert-table td.col-actions { width: 10%; text-align: end; }
+    </style>
+{% endblock %}
+
+{% block main_content %} {# Changed block name #}
+<!-- Page header -->
+<header class="page-header">
+    <h1 class="page-title">Manage Acknowledgements</h1>
+    {# Optional: Add buttons or info here if needed #}
+</header>
+
 <div class="row mb-4">
     <div class="col-12">
-        <h1 class="mb-4">Manage Acknowledgements</h1>
-    </div>
-</div>
-
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Filter Acknowledgements</h5>
-            </div>
-            <div class="card-body">
-                <form method="get" class="row g-3">
-                    <div class="col-md-3">
+        <div class="chart-card filter-card"> {# Changed card class #}
+             <div class="chart-card-body">
+                <form method="get" class="row g-3 align-items-end"> {# Added align-items-end #}
+                    <div class="col-lg-3 col-md-6">
                         <label for="user" class="form-label">User</label>
-                        <input type="text" class="form-control" id="user" name="user" value="{{ user_filter }}" placeholder="Username">
+                        <input type="text" class="form-control form-control-sm" id="user" name="user" value="{{ user_filter }}" placeholder="Username"> {# Added form-control-sm #}
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-lg-3 col-md-6">
                         <label for="alert" class="form-label">Alert</label>
-                        <input type="text" class="form-control" id="alert" name="alert" value="{{ alert_filter }}" placeholder="Alert name">
+                        <input type="text" class="form-control form-control-sm" id="alert" name="alert" value="{{ alert_filter }}" placeholder="Alert name"> {# Added form-control-sm #}
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-lg-2 col-md-6">
                         <label for="date_from" class="form-label">From Date</label>
-                        <input type="date" class="form-control" id="date_from" name="date_from" value="{{ date_from }}">
+                        <input type="date" class="form-control form-control-sm" id="date_from" name="date_from" value="{{ date_from }}"> {# Added form-control-sm #}
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-lg-2 col-md-6">
                         <label for="date_to" class="form-label">To Date</label>
-                        <input type="date" class="form-control" id="date_to" name="date_to" value="{{ date_to }}">
+                        <input type="date" class="form-control form-control-sm" id="date_to" name="date_to" value="{{ date_to }}"> {# Added form-control-sm #}
                     </div>
-                    <div class="col-12">
-                        <button type="submit" class="btn btn-primary">Apply Filters</button>
-                        <a href="{% url 'admin_dashboard:acknowledgements' %}" class="btn btn-outline-secondary">Reset</a>
+                    <div class="col-lg-2 col-md-12"> {# Adjusted column for buttons #}
+                        <div class="d-flex justify-content-end gap-2"> {# Aligned buttons #}
+                            <button type="submit" class="btn btn-primary btn-sm d-flex align-items-center gap-1"> {# Added btn-sm and icon #}
+                                <i class='bx bx-filter-alt'></i> Filter
+                            </button>
+                            <a href="{% url 'admin_dashboard:acknowledgements' %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1"> {# Added btn-sm and icon #}
+                                <i class='bx bx-x'></i> Reset
+                            </a>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -47,63 +65,72 @@
 
 <div class="row">
     <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Acknowledgement List</h5>
+        <div class="chart-card"> {# Changed card class #}
+            <div class="chart-card-header"> {# Changed card header class #}
+                 <h5 class="chart-title d-flex align-items-center gap-2"> {# Added title class and structure #}
+                    <i class='bx bx-list-ul'></i> {# Added icon #}
+                    Acknowledgement List
+                    {% if is_paginated %}
+                       <span class="badge bg-secondary rounded-pill fw-normal ms-2">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                    {% endif %}
+                </h5>
+                 <span class="text-muted small">Total: {{ page_obj.paginator.count }}</span> {# Added total count #}
             </div>
-            <div class="card-body">
+            <div class="chart-card-body p-0"> {# Changed card body class and added p-0 #}
                 <div class="table-responsive">
-                    <table class="table table-hover">
+                    <table class="alert-table"> {# Changed table class #}
                         <thead>
                             <tr>
-                                <th>ID</th>
-                                <th>Alert</th>
-                                <th>User</th>
-                                <th>Ack Date</th>
-                                <th>Alert Start Date</th>
-                                <th>Comment</th>
-                                <th>Actions</th>
+                                <th class="col-id">ID</th> {# Added class #}
+                                <th class="col-alert">Alert</th> {# Added class #}
+                                <th class="col-user">User</th> {# Added class #}
+                                <th class="col-ack-date">Ack Date</th> {# Added class #}
+                                <th class="col-alert-start">Alert Start</th> {# Added class #}
+                                <th class="col-comment">Comment</th> {# Added class #}
+                                <th class="col-actions">Actions</th> {# Added class #}
                             </tr>
                         </thead>
                         <tbody>
                             {% for ack in acknowledgements %}
                             <tr>
-                                <td>{{ ack.id }}</td>
-                                <td>
-                                    <a href="{% url 'alerts:alert-detail' ack.alert_group.fingerprint %}">
+                                <td class="col-id">{{ ack.id }}</td> {# Added class #}
+                                <td class="col-alert"> {# Added class #}
+                                    <a href="{% url 'alerts:alert-detail' ack.alert_group.fingerprint %}" class="alert-name-link"> {# Added class #}
                                         {{ ack.alert_group.name }}
                                     </a>
                                 </td>
-                                <td>{{ ack.acknowledged_by.username }}</td>
-                                <td>
-                                    {% if user.profile.date_format_preference == 'jalali' %}
-                                        {{ ack.acknowledged_at|force_jalali:"%Y-%m-%d %H:%M:%S" }}
-                                    {% else %}
-                                        {{ ack.acknowledged_at|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
-                                    {% endif %}
+                                <td class="col-user">{{ ack.acknowledged_by.username }}</td> {# Added class #}
+                                <td class="col-ack-date"> {# Added class #}
+                                    {# Standardized date format #}
+                                    <span data-bs-toggle="tooltip" title="{{ ack.acknowledged_at|format_datetime:user }}">
+                                        {{ ack.acknowledged_at|time_ago }}
+                                    </span>
                                 </td>
-                                <td>
-                                    {% if user.profile.date_format_preference == 'jalali' %}
-                                        {{ ack.alert_group.first_occurrence|force_jalali:"%Y-%m-%d %H:%M:%S" }}
-                                    {% else %}
-                                        {{ ack.alert_group.first_occurrence|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
-                                    {% endif %}
+                                <td class="col-alert-start"> {# Added class #}
+                                    {# Standardized date format #}
+                                     <span data-bs-toggle="tooltip" title="{{ ack.alert_group.first_occurrence|format_datetime:user }}">
+                                        {{ ack.alert_group.first_occurrence|time_ago }}
+                                    </span>
                                 </td>
-                                <td>{{ ack.comment|default:"No comment"|truncatechars:100 }}</td>
-                                <td>
-                                    <a href="{% url 'alerts:alert-detail' ack.alert_group.fingerprint %}?tab=ack_history" class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-eye"></i> View
-                                    </a>
-                                    <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteAckModal{{ ack.id }}">
-                                        <i class="bi bi-trash"></i> Delete
-                                    </button>
-                                    
+                                <td class="col-comment">{{ ack.comment|default:"-"|truncatechars:100 }}</td> {# Added class, changed default #}
+                                <td class="col-actions"> {# Added class #}
+                                    {# Standardized action menu #}
+                                    <div class="action-menu">
+                                        <a href="{% url 'alerts:alert-detail' ack.alert_group.fingerprint %}?tab=ack_history" class="action-btn" data-bs-toggle="tooltip" title="View Acknowledgement on Alert">
+                                            <i class='bx bx-show'></i>
+                                        </a>
+                                        <button type="button" class="action-btn" data-bs-toggle="modal" data-bs-target="#deleteAckModal{{ ack.id }}" title="Delete Acknowledgement"> {# Removed text-danger #}
+                                            <i class='bx bx-trash'></i>
+                                        </button>
+                                    </div>
                                     <!-- Delete Modal -->
                                     <div class="modal fade" id="deleteAckModal{{ ack.id }}" tabindex="-1" aria-labelledby="deleteAckModalLabel{{ ack.id }}" aria-hidden="true">
-                                        <div class="modal-dialog">
+                                        <div class="modal-dialog modal-dialog-centered"> {# Added modal-dialog-centered #}
                                             <div class="modal-content">
                                                 <div class="modal-header">
-                                                    <h5 class="modal-title" id="deleteAckModalLabel{{ ack.id }}">Confirm Delete</h5>
+                                                    <h5 class="modal-title" id="deleteAckModalLabel{{ ack.id }}">
+                                                        <i class='bx bx-error-circle text-danger me-2'></i>Confirm Delete {# Added icon #}
+                                                    </h5>
                                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                                 </div>
                                                 <div class="modal-body">
@@ -111,13 +138,7 @@
                                                     <div class="alert alert-warning">
                                                         <p><strong>Alert:</strong> {{ ack.alert_group.name }}</p>
                                                         <p><strong>User:</strong> {{ ack.acknowledged_by.username }}</p>
-                                                        <p><strong>Date:</strong> 
-                                                            {% if user.profile.date_format_preference == 'jalali' %}
-                                                                {{ ack.acknowledged_at|force_jalali:"%Y-%m-%d %H:%M:%S" }}
-                                                            {% else %}
-                                                                {{ ack.acknowledged_at|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
-                                                            {% endif %}
-                                                        </p>
+                                                        <p><strong>Date:</strong> {{ ack.acknowledged_at|format_datetime:user }}</p> {# Simplified date #}
                                                         {% if ack.comment %}
                                                         <p><strong>Comment:</strong> {{ ack.comment|truncatechars:150 }}</p>
                                                         {% endif %}
@@ -126,10 +147,13 @@
                                                 </div>
                                                 <div class="modal-footer">
                                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                    <form method="post" action="#">
+                                                    {# TODO: Ideally, handle delete via JS/Fetch API like in user_list.html for better UX #}
+                                                    <form method="post" action="#"> {# Reverted action to post to the current URL #}
                                                         {% csrf_token %}
                                                         <input type="hidden" name="ack_id" value="{{ ack.id }}">
-                                                        <button type="submit" class="btn btn-danger">Delete Acknowledgement</button>
+                                                        <button type="submit" class="btn btn-primary d-flex align-items-center gap-1"> {# Changed btn-danger to btn-primary #}
+                                                            <i class='bx bx-trash'></i> Delete
+                                                        </button>
                                                     </form>
                                                 </div>
                                             </div>
@@ -138,8 +162,12 @@
                                 </td>
                             </tr>
                             {% empty %}
+                            {# Standardized empty state #}
                             <tr>
-                                <td colspan="7" class="text-center">No acknowledgements found</td>
+                                <td colspan="7" class="text-center p-5">
+                                    <i class='bx bx-shield-quarter fs-1 text-muted mb-3 d-block'></i>
+                                    <p class="text-muted mb-0">No acknowledgements found matching your criteria.</p>
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -147,49 +175,12 @@
                 </div>
 
                 <!-- Pagination -->
+                <!-- Pagination -->
                 {% if is_paginated %}
-                <nav aria-label="Page navigation">
-                    <ul class="pagination justify-content-center mt-4">
-                        {% if page_obj.has_previous %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="First">
-                                <span aria-hidden="true">&laquo;&laquo;</span>
-                            </a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Previous">
-                                <span aria-hidden="true">&laquo;</span>
-                            </a>
-                        </li>
-                        {% endif %}
-
-                        {% for num in page_obj.paginator.page_range %}
-                            {% if page_obj.number == num %}
-                            <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
-                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
-                            </li>
-                            {% endif %}
-                        {% endfor %}
-
-                        {% if page_obj.has_next %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Next">
-                                <span aria-hidden="true">&raquo;</span>
-                            </a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Last">
-                                <span aria-hidden="true">&raquo;&raquo;</span>
-                            </a>
-                        </li>
-                        {% endif %}
-                    </ul>
-                </nav>
+                   {% include 'core/partials/_pagination.html' with page_obj=page_obj %}
                 {% endif %}
             </div>
         </div>
     </div>
 </div>
-{% endblock %}
+{% endblock main_content %} {# Changed block name #}
