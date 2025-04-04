@@ -97,6 +97,14 @@ All data tables should follow this basic HTML structure, utilizing Bootstrap 5 c
 *   Use BoxIcons (`<i>` tags) within the action buttons.
 *   Always include tooltips (`data-bs-toggle="tooltip" title="..."`) to clarify the action button's purpose.
 *   For destructive actions like "Delete", use a confirmation mechanism (e.g., a JavaScript confirmation dialog or a Bootstrap modal) triggered by the button/link. Refer to `users/templates/users/user_list.html` for a modal example.
+*   **Combining Tooltips and Modals:** If an action button needs to *both* trigger a modal (`data-bs-toggle="modal"`) and display a tooltip (`data-bs-toggle="tooltip"`), place the tooltip attributes on a wrapper `<span>` element around the button. This avoids conflicts between the two Bootstrap JavaScript triggers.
+    ```html
+    <span data-bs-toggle="tooltip" title="Your Tooltip Text">
+        <button type="button" class="action-btn" data-bs-toggle="modal" data-bs-target="#yourModalId">
+            <i class='bx bx-your-icon'></i>
+        </button>
+    </span>
+    ```
 
 ## 4. Badges
 
