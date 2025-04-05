@@ -52,7 +52,6 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% with last_instance=instances.first %}
                     {% if last_instance %}
                         {% for key, value in last_instance.annotations.items %}
                         <tr>
@@ -75,7 +74,6 @@
                         <td colspan="2" class="text-center">No instances</td>
                     </tr>
                     {% endif %}
-                    {% endwith %}
                 </tbody>
             </table>
 

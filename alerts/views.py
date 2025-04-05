@@ -165,17 +165,21 @@ class AlertDetailView(LoginRequiredMixin, DetailView):
         except (TypeError, ValueError):
             page = 1
             
-        instances = self.object.instances.all().order_by('-started_at')
-        paginator = Paginator(instances, 10)  # Show 10 instances per page
+        # Get all instances ordered by started_at (newest first)
+        all_instances = self.object.instances.all().order_by('-started_at')
         
+        # Paginate for the history tab
+        paginator = Paginator(all_instances, 10)
         try:
-            instances = paginator.page(page)
+            paginated_instances = paginator.page(page)
         except PageNotAnInteger:
-            instances = paginator.page(1)
+            paginated_instances = paginator.page(1)
         except EmptyPage:
-            instances = paginator.page(paginator.num_pages)
+            paginated_instances = paginator.page(paginator.num_pages)
             
-        context['instances'] = instances
+        # For the details tab, we want the first instance (most recent)
+        context['instances'] = paginated_instances
+        context['last_instance'] = all_instances.first() if all_instances.exists() else None
         
         # Get acknowledgement history
         context['acknowledgement_history'] = self.object.acknowledgement_history.select_related(
@@ -207,7 +211,6 @@ class AlertDetailView(LoginRequiredMixin, DetailView):
         
         # Add active tab to context
         context['active_tab'] = self.request.GET.get('tab', 'details')
-        
         return context
     
     def post(self, request, *args, **kwargs):
