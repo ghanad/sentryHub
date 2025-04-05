@@ -58,7 +58,13 @@
                             <td><code>{{ key }}</code></td>
                             <td>
                                 {% if key == 'graph' %}
-                                    <a href="{{ value }}" target="_blank" rel="noopener noreferrer">{{ value }}</a>
+                                    <a href="{{ value }}" target="_blank" rel="noopener noreferrer" title="{{ value }}">
+                                        {% if 'http' in value %}
+                                            Graph Link
+                                        {% else %}
+                                            {{ value|truncatechars:40 }}
+                                        {% endif %}
+                                    </a>
                                 {% else %}
                                     {{ value }}
                                 {% endif %}
