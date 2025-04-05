@@ -12,12 +12,38 @@ document.addEventListener('DOMContentLoaded', function() {
     const themeToggleCollapsed = document.getElementById('themeToggleCollapsed');
     const htmlElement = document.documentElement;
 
-    // --- Sidebar Toggle ---
-    function toggleSidebarClass() {
-        sidebar.classList.toggle('sidebar-collapsed');
-        mainContent.classList.toggle('main-collapsed');
-        // Store state in localStorage
-        localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('sidebar-collapsed'));
+    // --- Sidebar Toggle & Pin ---
+    function toggleSidebarClass(e) {
+        // Check for long press (pin action)
+        const isLongPress = e && e.timeStamp - (e.currentTarget.dataset.lastClick || 0) > 500;
+        
+        if (isLongPress) {
+            // Toggle pin state
+            const isPinned = !sidebar.classList.contains('sidebar-pinned');
+            sidebar.classList.toggle('sidebar-pinned', isPinned);
+            localStorage.setItem('sidebarPinned', isPinned);
+            
+            // Ensure sidebar stays open when pinned
+            if (isPinned) {
+                sidebar.classList.remove('sidebar-collapsed');
+                mainContent.classList.remove('main-collapsed');
+            }
+        } else {
+            // Normal toggle
+            sidebar.classList.toggle('sidebar-collapsed');
+            mainContent.classList.toggle('main-collapsed');
+            // Remove pinned state when manually toggling
+            if (sidebar.classList.contains('sidebar-pinned')) {
+                sidebar.classList.remove('sidebar-pinned');
+                localStorage.setItem('sidebarPinned', 'false');
+            }
+            localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('sidebar-collapsed'));
+        }
+        
+        // Update last click time
+        if (e) {
+            e.currentTarget.dataset.lastClick = e.timeStamp;
+        }
     }
 
      // --- Mobile Sidebar Toggle ---
@@ -65,17 +91,42 @@ document.addEventListener('DOMContentLoaded', function() {
  
      // Initial setup
      handleSidebarState();
-
-    // --- Apply Initial Sidebar State ---
-    // Check localStorage for desktop state
-    if (window.innerWidth >= 992) {
-        if (localStorage.getItem('sidebarCollapsed') === 'true') {
-            sidebar.classList.add('sidebar-collapsed');
-            mainContent.classList.add('main-collapsed');
-        }
-        // Remove the temporary initial state class
-        htmlElement.classList.remove('sidebar-is-initially-collapsed');
-    }
+ 
+     // --- Apply Initial Sidebar State ---
+     // Check localStorage for desktop state
+     if (window.innerWidth >= 992) {
+         if (localStorage.getItem('sidebarPinned') === 'true') {
+             sidebar.classList.add('sidebar-pinned');
+             sidebar.classList.remove('sidebar-collapsed');
+             mainContent.classList.remove('main-collapsed');
+         } else if (localStorage.getItem('sidebarCollapsed') === 'true') {
+             sidebar.classList.add('sidebar-collapsed');
+             mainContent.classList.add('main-collapsed');
+         }
+         // Remove the temporary initial state class
+         htmlElement.classList.remove('sidebar-is-initially-collapsed');
+     }
+ 
+     // Modified hover behavior
+     sidebar.addEventListener('mouseenter', function() {
+         if (this.classList.contains('sidebar-collapsed') &&
+             !this.classList.contains('sidebar-pinned')) {
+             this.classList.remove('sidebar-collapsed');
+             this.classList.add('sidebar-hover');
+             mainContent.classList.remove('main-collapsed');
+         }
+     });
+ 
+     sidebar.addEventListener('mouseleave', function() {
+         if (this.classList.contains('sidebar-hover') &&
+             !this.classList.contains('sidebar-pinned')) {
+             setTimeout(() => {
+                 this.classList.add('sidebar-collapsed');
+                 this.classList.remove('sidebar-hover');
+                 mainContent.classList.add('main-collapsed');
+             }, 300);
+         }
+     });
     // Ensure sidebar is hidden on mobile initially if using sidebar-visible class
      if (window.innerWidth < 992) {
          sidebar.classList.remove('sidebar-visible');
