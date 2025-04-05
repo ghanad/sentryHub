@@ -57,7 +57,13 @@
                         {% for key, value in last_instance.annotations.items %}
                         <tr>
                             <td><code>{{ key }}</code></td>
-                            <td>{{ value }}</td>
+                            <td>
+                                {% if key == 'graph' %}
+                                    <a href="{{ value }}" target="_blank" rel="noopener noreferrer">{{ value }}</a>
+                                {% else %}
+                                    {{ value }}
+                                {% endif %}
+                            </td>
                         </tr>
                         {% empty %}
                         <tr>
