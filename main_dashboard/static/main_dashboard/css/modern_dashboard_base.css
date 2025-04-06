@@ -41,7 +41,7 @@ body {
     height: 100vh;
     background: linear-gradient(180deg, var(--dark) 0%, var(--dark-blue) 100%);
     color: white;
-    padding: 1.5rem;
+    padding: 0.6rem;
     z-index: 1000;
     transition: var(--transition);
     overflow-y: auto;
