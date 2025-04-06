@@ -113,15 +113,13 @@
                         {# Add silenced-row class if the alert is silenced #}
                         <tr class="{% if alert.is_silenced %}silenced-row{% endif %}">
                             <td>
-                                {# Status Badge Logic from original template #}
                                 {% if alert.current_status == 'firing' %}
                                 <span class="status-badge badge-critical"><i class='bx bxs-circle'></i> Firing</span>
                                 {% else %}
                                 <span class="status-badge badge-success"><i class='bx bxs-check-circle'></i> Resolved</span>
                                 {% endif %}
                             </td>
-                            <td class="alert-name-cell"> {# Allow wrapping for name #}
-                                {# Alert Name Link + Silence Indicator #}
+                            <td class="alert-name-cell">
                                 <a href="{% url 'alerts:alert-detail' alert.fingerprint %}" class="alert-name-link">{{ alert.name }}</a>
                                 {% if alert.is_silenced %}
                                     <i class='bx bxs-volume-mute silence-indicator ms-1' data-bs-toggle="tooltip" data-bs-placement="top"
@@ -130,7 +128,6 @@
                             </td>
                             <td><span class="alert-host">{{ alert.instance|default:"-" }}</span></td>
                             <td>
-                                {# Severity Badge Logic from original template #}
                                 {% if alert.severity == 'critical' %}
                                 <span class="status-badge badge-critical">Critical</span>
                                 {% elif alert.severity == 'warning' %}
@@ -140,7 +137,6 @@
                                 {% endif %}
                             </td>
                             <td>
-                                {# Last Occurrence Time #}
                                 <span class="alert-time" data-bs-toggle="tooltip" data-bs-placement="top"
                                       title="{{ alert.last_occurrence|format_datetime:user }}">
                                     {{ alert.last_occurrence|time_ago }}
@@ -148,7 +144,6 @@
                             </td>
                             <td>{{ alert.total_firing_count }}</td>
                             <td>
-                                {# Acknowledgement Icon/Status #}
                                 {% if alert.acknowledged %}
                                 <i class='bx bx-check-shield text-success' data-bs-toggle="tooltip" data-bs-placement="top"
                                    title="Ack by {{ alert.acknowledged_by.username }} @ {{ alert.acknowledgement_time|format_datetime:user }}"></i>
@@ -157,16 +152,27 @@
                                 {% endif %}
                             </td>
                             <td>
-                                {# Action Buttons - Use modern styling #}
                                 <div class="action-menu">
+                                    <button class="action-btn expand-btn"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#details-{{ alert.fingerprint }}"
+                                        aria-expanded="false"
+                                        aria-controls="details-{{ alert.fingerprint }}"
+                                        data-bs-toggle="tooltip" title="Show Details">
+                                        <i class='bx bx-chevron-right'></i>
+                                    </button>
                                     <a href="{% url 'alerts:alert-detail' alert.fingerprint %}" class="action-btn" data-bs-toggle="tooltip" title="View Details"><i class='bx bx-show'></i></a>
                                     <a href="{% url 'alerts:alert-detail' alert.fingerprint %}?tab=history" class="action-btn" data-bs-toggle="tooltip" title="View History"><i class='bx bx-history'></i></a>
-                                    {# Silence Button - Link to create form with labels prefilled via URL #}
                                     <a href="{% url 'alerts:silence-rule-create' %}?labels={{ alert.labels|jsonify }}"
                                        class="action-btn" data-bs-toggle="tooltip" title="Create Silence Rule">
                                        <i class='bx bx-volume-mute'></i>
                                     </a>
                                 </div>
+                            </td>
+                        </tr>
+                        <tr class="collapse alert-details-row" id="details-{{ alert.fingerprint }}">
+                            <td colspan="8">
+                                {% include "alerts/partials/alert_row_details.html" with alert=alert %}
                             </td>
                         </tr>
                         {% empty %}
@@ -187,9 +193,59 @@
 {% endblock main_content %}
 
 {% block extra_js %}
-    {# The base template already includes tooltip initialization and theme/sidebar JS #}
-    {# Add any specific JS needed for this page, e.g., for handling silence modals if you implement them later #}
     <script>
-        // console.log("Alert list page specific JS loaded.");
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle expand/collapse buttons
+            const expandButtons = document.querySelectorAll('.expand-btn');
+            expandButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const icon = this.querySelector('i');
+                    if (icon) {
+                        icon.classList.toggle('bx-chevron-right');
+                        icon.classList.toggle('bx-chevron-down');
+                    }
+                });
+            });
+
+            // Initialize tooltips
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
     </script>
+    <style>
+        .alert-row {
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .alert-row:hover {
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+        .expand-icon {
+            margin-right: 8px;
+            transition: transform 0.2s ease;
+        }
+        .alert-details-row {
+            background-color: #f8f9fa;
+        }
+        .alert-details-content {
+            padding: 15px;
+        }
+        .label-container, .annotation-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 8px;
+        }
+        .label-item, .annotation-item {
+            padding: 4px 0;
+        }
+        .label-key, .annotation-key {
+            font-weight: 500;
+            color: #495057;
+        }
+        .label-value, .annotation-value {
+            color: #6c757d;
+        }
+    </style>
 {% endblock %}
