@@ -134,8 +134,8 @@
                             </td>
                             <td> {# Duration #}
                                 {% if alert.current_status == 'firing' and alert.current_problem_start_time %}
-                                    <span data-bs-toggle="tooltip" data-bs-placement="top"
-                                          title="Problem started at {{ alert.current_problem_start_time|format_datetime:user }}">
+                                    <span data-bs-toggle="tooltip" data-bs-placement="top" data-bs-html="true"
+                                          title="Problem started at<br>{{ alert.current_problem_start_time|format_datetime:user }}">
                                         {{ alert.current_problem_start_time|calculate_duration }}
                                     </span>
                                 {% else %}
