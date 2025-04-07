@@ -1,0 +1,186 @@
+{% extends "main_dashboard/base_modern.html" %} {# Use the modern base template #}
+{% load static core_tags date_format_tags %} {# Ensure necessary tags are loaded #}
+
+{% block title %}Unacknowledged Alerts - Tier 1{% endblock %}
+
+{% block extra_css %}
+    {# Load the same CSS files as the main alert list #}
+    <link rel="stylesheet" href="{% static 'main_dashboard/css/modern_dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'alerts/css/alerts_list.css' %}">
+    <style>
+        /* Optional: Add specific styles if needed, e.g., for the refresh badge */
+        .page-header .badge {
+            font-size: 0.8em;
+            vertical-align: middle;
+        }
+    </style>
+{% endblock %}
+
+{% block main_content %}
+    <!-- Page header -->
+    <header class="page-header">
+        <h1 class="page-title d-flex align-items-center">
+            <i class='bx bx-bell-off me-2'></i> {# Changed icon #}
+            Unacknowledged Alerts
+            <span class="badge bg-secondary ms-3" id="refresh-badge">Auto-Refresh: 30s</span>
+        </h1>
+        {# No filter buttons needed here #}
+    </header>
+
+    <!-- Alert List Table Card -->
+    <div class="chart-card">
+         <div class="chart-card-header">
+             <h5 class="chart-title d-flex align-items-center gap-2">
+                 <i class='bx bx-list-ul'></i>
+                 Alert List (Unacknowledged Only)
+             </h5>
+             {# No pagination info needed as pagination is disabled #}
+             <span class="text-muted small">Total: {{ alerts.count }}</span> {# Show total count #}
+         </div>
+        <div class="chart-card-body p-0">
+            <div class="table-responsive">
+                {# Use the same table structure and classes as alerts/alert_list.html #}
+                <table class="alert-table">
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Name</th>
+                            <th>Instance</th>
+                            <th>Severity</th>
+                            <th>Age</th>
+                            <th>Start Time</th>
+                            {# Removed Ack column as all are unacknowledged #}
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for alert in alerts %}
+                        <tr class="alert-row {% if alert.is_silenced %}silenced-row{% endif %}"> {# Keep silenced row style if needed #}
+                            <td> {# Status #}
+                                {% if alert.current_status == 'firing' %}
+                                <span class="status-badge badge-critical"><i class='bx bxs-circle'></i> Firing</span>
+                                {% else %}
+                                <span class="status-badge badge-success"><i class='bx bxs-check-circle'></i> Resolved</span> {# Should not appear if only firing are shown, but keep for consistency #}
+                                {% endif %}
+                            </td>
+                            <td> {# Name #}
+                                <a href="{% url 'alerts:alert-detail' alert.fingerprint %}" class="alert-name-link">{{ alert.name }}</a>
+                                {% if alert.is_silenced %}
+                                    <i class='bx bxs-volume-mute silence-indicator ms-1' data-bs-toggle="tooltip" data-bs-placement="top"
+                                       title="Silenced until {{ alert.silenced_until|format_datetime:user }}"></i>
+                                {% endif %}
+                            </td>
+                            <td> {# Instance #}
+                                <span class="alert-host">
+                                    {% if alert.labels.name %}
+                                        {{ alert.labels.name }} ({{ alert.instance|default:"-" }})
+                                    {% else %}
+                                        {{ alert.instance|default:"-" }}
+                                    {% endif %}
+                                </span>
+                            </td>
+                            <td> {# Severity #}
+                                {% if alert.severity == 'critical' %}
+                                <span class="status-badge badge-critical">Critical</span>
+                                {% elif alert.severity == 'warning' %}
+                                <span class="status-badge badge-warning">Warning</span>
+                                {% else %}
+                                <span class="status-badge badge-info">Info</span>
+                                {% endif %}
+                            </td>
+                            <td> {# Duration/Age #}
+                                {% if alert.current_status == 'firing' and alert.current_problem_start_time %}
+                                    <span>
+                                        {{ alert.current_problem_start_time|calculate_duration }}
+                                    </span>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td> {# Start Time #}
+                                {% if alert.latest_instance_start %}
+                                    {{ alert.latest_instance_start|format_datetime:user }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            {# Removed Ack column #}
+                            <td> {# Actions #}
+                                <div class="action-menu text-center justify-content-center">
+                                    {# Simplified actions - only view details? #}
+                                    <a href="{% url 'alerts:alert-detail' alert.fingerprint %}" class="action-btn" data-bs-toggle="tooltip" title="View Details"><i class='bx bx-show'></i></a>
+                                    {# Maybe add silence link? #}
+                                    <a href="{% url 'alerts:silence-rule-create' %}?labels={{ alert.labels|jsonify }}"
+                                       class="action-btn" data-bs-toggle="tooltip" title="Create Silence Rule">
+                                       <i class='bx bx-volume-mute'></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {# Removed the collapsible details row for simplicity, can be added back if needed #}
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center p-5"> {# Adjusted colspan #}
+                                <i class='bx bx-check-circle fs-1 text-success mb-3 d-block'></i>
+                                <p class="text-muted mb-0">No unacknowledged alerts found.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+             {# No pagination needed #}
+        </div>
+    </div>
+{% endblock main_content %}
+
+{% block extra_js %}
+    {# Auto-refresh script #}
+    <script>
+    (function() {
+        const refreshInterval = 30000; // 30 seconds
+        let refreshTimer;
+        const refreshBadge = document.getElementById('refresh-badge');
+        let countdown = refreshInterval / 1000;
+
+        function updateBadge() {
+            if (refreshBadge) {
+                refreshBadge.textContent = `Auto-Refresh: ${countdown}s`;
+                countdown--;
+                if (countdown < 0) countdown = refreshInterval / 1000; // Reset if timer somehow goes negative
+            }
+        }
+
+        function scheduleRefresh() {
+            clearTimeout(refreshTimer);
+            countdown = refreshInterval / 1000;
+            updateBadge(); // Initial update
+
+            const intervalId = setInterval(updateBadge, 1000);
+
+            refreshTimer = setTimeout(() => {
+                clearInterval(intervalId);
+                console.log('Refreshing page...');
+                window.location.reload();
+            }, refreshInterval);
+        }
+
+        scheduleRefresh();
+
+        window.addEventListener('beforeunload', () => {
+            clearTimeout(refreshTimer);
+        });
+
+    })();
+    </script>
+
+    {# Tooltip initialization script (copied from alerts/alert_list.html) #}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
+    </script>
+{% endblock %}
