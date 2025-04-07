@@ -97,8 +97,8 @@
                             <th>Name</th>
                             <th>Instance</th>
                             <th>Severity</th>
-                            <th>Duration</th>
-                            <th>Count</th>
+                            <th>Age</th>
+                            <th>Start Time</th>
                             <th>Ack</th>
                             <th class="text-center">Actions</th>
                         </tr>
@@ -134,15 +134,22 @@
                             </td>
                             <td> {# Duration #}
                                 {% if alert.current_status == 'firing' and alert.current_problem_start_time %}
-                                    <span data-bs-toggle="tooltip" data-bs-placement="top" data-bs-html="true"
-                                          title="Problem started at<br>{{ alert.current_problem_start_time|format_datetime:user }}">
+                                    <span>
                                         {{ alert.current_problem_start_time|calculate_duration }}
                                     </span>
                                 {% else %}
                                     -
                                 {% endif %}
                             </td>
-                            <td>{{ alert.total_firing_count }}</td> {# Count #}
+                            <td>
+                                {% if alert.current_problem_start_time %}
+                                    {{ alert.current_problem_start_time|format_datetime:user }}
+                                {% elif alert.first_instance_start_time %}
+                                    {{ alert.first_instance_start_time|format_datetime:user }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
                             <td> {# Ack #}
                                 {% if alert.acknowledged %}
                                 <i class='bx bx-check-shield text-success' data-bs-toggle="tooltip" data-bs-placement="top"

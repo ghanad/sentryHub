@@ -32,29 +32,23 @@ class AlertListView(LoginRequiredMixin, ListView):
     paginate_by = 10 # Changed from 20 to 10
     
     def get_queryset(self):
-        # Subquery to get the minimum start time of active instances for each group
-        active_instances_subquery = AlertInstance.objects.filter(
-            alert_group=OuterRef('pk'),
-            status='firing',
-            # ended_at__isnull=True # Optional: usually covered by status='firing'
+        # Subquery to get the first instance start time for each group (for sorting)
+        first_instance_subquery = AlertInstance.objects.filter(
+            alert_group=OuterRef('pk')
         ).order_by('started_at').values('started_at')[:1]
 
-        # Define severity order for sorting
-        severity_order = Case(
-            When(severity='critical', then=Value(1)),
-            When(severity='warning', then=Value(2)),
-            When(severity='info', then=Value(3)),
-            default=Value(4),
-            output_field=IntegerField(),
-        )
+        # Subquery to get the minimum start time of active instances (for duration calculation)
+        active_instances_subquery = AlertInstance.objects.filter(
+            alert_group=OuterRef('pk'),
+            status='firing'
+        ).order_by('started_at').values('started_at')[:1]
 
         queryset = AlertGroup.objects.annotate(
-            # Use Coalesce to handle cases where no active instance exists, defaulting to None
+            first_instance_start_time=Subquery(first_instance_subquery),
             current_problem_start_time=Coalesce(
                 Subquery(active_instances_subquery),
-                None # Explicitly set to None if no active instance found
-            ),
-             severity_priority=severity_order # Annotate for sorting
+                None
+            )
         )
 
         # --- Apply Filters ---
@@ -92,17 +86,10 @@ class AlertListView(LoginRequiredMixin, ListView):
         # --- End Apply Filters ---
 
         # --- Ordering ---
-        # Order primarily by firing status (firing first), then severity, then start time
+        # Order all alerts by start time (newest first)
         queryset = queryset.order_by(
-             Case(When(current_status='firing', then=0), default=1), # Firing first
-             'severity_priority', # Then by severity (Critical first)
-             # Order firing alerts by newest first (shortest duration)
-             # Order resolved alerts by most recent last_occurrence
-             Case(
-                When(current_status='firing', then=F('current_problem_start_time')), # DESC for firing
-                default=F('last_occurrence'), # DESC for resolved (needs '-' prefix)
-             ).desc(nulls_last=True), # Firing with newest start time first
-             '-last_occurrence' # Secondary sort for resolved or firing with same start time
+             '-first_instance_start_time', # Newest alerts first
+             '-last_occurrence' # Secondary sort for alerts with same start time
          )
 
         return queryset
