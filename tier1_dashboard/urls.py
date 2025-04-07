@@ -1,12 +1,12 @@
 # Path: tier1_dashboard/urls.py
 from django.urls import path, include
-from .views import Tier1DashboardView, Tier1AlertListView # Import the new view
+from .views import Tier1AlertListView # Removed Tier1DashboardView import
 from .api.views import Tier1AlertDataAPIView # Assuming api views are in api/views.py
 
 app_name = 'tier1_dashboard'
 
 urlpatterns = [
-    path('', Tier1DashboardView.as_view(), name='dashboard'),
+    # Removed path for the old Tier1DashboardView
     # New path for the unacknowledged alerts list view
     path(
         'unacked/', # Shortened path
