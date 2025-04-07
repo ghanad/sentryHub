@@ -1,5 +1,5 @@
 from django.views.generic import TemplateView, ListView, DetailView, FormView
-from django.db.models import Count, Q, Min, OuterRef, Subquery, F, Value, Case, When, IntegerField
+from django.db.models import Count, Q, Min, OuterRef, Subquery, F, Value, Case, When, IntegerField, Max
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -48,7 +48,8 @@ class AlertListView(LoginRequiredMixin, ListView):
             current_problem_start_time=Coalesce(
                 Subquery(active_instances_subquery),
                 None
-            )
+            ),
+            latest_instance_start=Max('instances__started_at')
         )
 
         # --- Apply Filters ---
@@ -86,10 +87,10 @@ class AlertListView(LoginRequiredMixin, ListView):
         # --- End Apply Filters ---
 
         # --- Ordering ---
-        # Order all alerts by start time (newest first)
+        # Order all alerts by most recent instance start time (newest first)
         queryset = queryset.order_by(
-             '-first_instance_start_time', # Newest alerts first
-             '-last_occurrence' # Secondary sort for alerts with same start time
+             '-latest_instance_start', # Newest alerts first
+             '-pk' # Secondary sort for alerts with same start time
          )
 
         return queryset

@@ -142,10 +142,8 @@
                                 {% endif %}
                             </td>
                             <td>
-                                {% if alert.current_problem_start_time %}
-                                    {{ alert.current_problem_start_time|format_datetime:user }}
-                                {% elif alert.first_instance_start_time %}
-                                    {{ alert.first_instance_start_time|format_datetime:user }}
+                                {% if alert.latest_instance_start %}
+                                    {{ alert.latest_instance_start|format_datetime:user }}
                                 {% else %}
                                     -
                                 {% endif %}
