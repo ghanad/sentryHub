@@ -1,39 +1,33 @@
-{% extends "main_dashboard/base_modern.html" %} {# Use the modern base template #}
-{% load static core_tags date_format_tags %} {# Ensure necessary tags are loaded #}
+{% extends "main_dashboard/base_modern.html" %}
+{% load static core_tags date_format_tags %}
 
 {% block title %}Unacknowledged Alerts - Tier 1{% endblock %}
 
 {% block extra_css %}
-    {# Load the same CSS files as the main alert list #}
     <link rel="stylesheet" href="{% static 'main_dashboard/css/modern_dashboard.css' %}">
     <link rel="stylesheet" href="{% static 'alerts/css/alerts_list.css' %}">
     <link rel="stylesheet" href="{% static 'tier1_dashboard/css/unack_alerts.css' %}">
 {% endblock %}
 
 {% block main_content %}
-    <!-- Page header -->
     <header class="page-header">
         <h1 class="page-title d-flex align-items-center">
-            <i class='bx bx-bell-off me-2'></i> {# Changed icon #}
+            <i class='bx bx-bell-off me-2'></i>
             Unacknowledged Alerts
             <span class="badge bg-secondary ms-3" id="refresh-badge">Auto-Refresh: 30s</span>
         </h1>
-        {# No filter buttons needed here #}
     </header>
 
-    <!-- Alert List Table Card -->
     <div class="chart-card">
          <div class="chart-card-header">
              <h5 class="chart-title d-flex align-items-center gap-2">
                  <i class='bx bx-list-ul'></i>
                  Alert List (Unacknowledged Only)
              </h5>
-             {# No pagination info needed as pagination is disabled #}
-             <span class="text-muted small">Total: {{ alerts.count }}</span> {# Show total count #}
+             <span class="text-muted small">Total: {{ alerts.count }}</span>
          </div>
         <div class="chart-card-body p-0">
             <div class="table-responsive">
-                {# Use the same table structure and classes as alerts/alert_list.html #}
                 <table class="alert-table">
                     <thead>
                         <tr>
@@ -43,28 +37,27 @@
                             <th>Severity</th>
                             <th>Age</th>
                             <th>Start Time</th>
-                            {# Removed Ack column as all are unacknowledged #}
                             <th class="text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for alert in alerts %}
-                        <tr class="alert-row {% if alert.is_silenced %}silenced-row{% endif %}"> {# Keep silenced row style if needed #}
-                            <td> {# Status #}
+                        <tr class="alert-row {% if alert.is_silenced %}silenced-row{% endif %}">
+                            <td>
                                 {% if alert.current_status == 'firing' %}
                                 <span class="status-badge badge-critical"><i class='bx bxs-circle'></i> Firing</span>
                                 {% else %}
-                                <span class="status-badge badge-success"><i class='bx bxs-check-circle'></i> Resolved</span> {# Should not appear if only firing are shown, but keep for consistency #}
+                                <span class="status-badge badge-success"><i class='bx bxs-check-circle'></i> Resolved</span>
                                 {% endif %}
                             </td>
-                            <td> {# Name #}
-                                <a href="{% url 'alerts:alert-detail' alert.fingerprint %}" class="alert-name-link">{{ alert.name }}</a>
+                            <td>
+                                <a href="{% url 'tier1_dashboard:tier1-alert-detail' alert.fingerprint %}" class="alert-name-link">{{ alert.name }}</a>
                                 {% if alert.is_silenced %}
                                     <i class='bx bxs-volume-mute silence-indicator ms-1' data-bs-toggle="tooltip" data-bs-placement="top"
                                        title="Silenced until {{ alert.silenced_until|format_datetime:user }}"></i>
                                 {% endif %}
                             </td>
-                            <td> {# Instance #}
+                            <td>
                                 <span class="alert-host">
                                     {% if alert.labels.name %}
                                         {{ alert.labels.name }} ({{ alert.instance|default:"-" }})
@@ -73,7 +66,7 @@
                                     {% endif %}
                                 </span>
                             </td>
-                            <td> {# Severity #}
+                            <td>
                                 {% if alert.severity == 'critical' %}
                                 <span class="status-badge badge-critical">Critical</span>
                                 {% elif alert.severity == 'warning' %}
@@ -82,7 +75,7 @@
                                 <span class="status-badge badge-info">Info</span>
                                 {% endif %}
                             </td>
-                            <td> {# Duration/Age #}
+                            <td>
                                 {% if alert.current_status == 'firing' and alert.current_problem_start_time %}
                                     <span>
                                         {{ alert.current_problem_start_time|calculate_duration }}
@@ -91,23 +84,27 @@
                                     -
                                 {% endif %}
                             </td>
-                            <td> {# Start Time #}
+                            <td>
                                 {% if alert.latest_instance_start %}
                                     {{ alert.latest_instance_start|format_datetime:user }}
                                 {% else %}
                                     -
                                 {% endif %}
                             </td>
-                            {# Removed Ack column #}
-                            <td> {# Actions #}
+                            <td>
                                 <div class="action-menu text-center justify-content-center">
-                                    {# Link to View Details page #}
-                                    <a href="{% url 'alerts:alert-detail' alert.fingerprint %}" class="action-btn" data-bs-toggle="tooltip" title="View Details"><i class='bx bx-show'></i></a>
-                                    {# Button to trigger Acknowledge Modal #}
+                                    <button class="action-btn expand-btn"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#details-{{ alert.fingerprint }}"
+                                        aria-expanded="false"
+                                        aria-controls="details-{{ alert.fingerprint }}"
+                                        data-bs-toggle="tooltip" title="Show Details">
+                                        <i class='bx bx-chevron-right'></i>
+                                    </button>
+                                    <a href="{% url 'tier1_dashboard:tier1-alert-detail' alert.fingerprint %}" class="action-btn" data-bs-toggle="tooltip" title="View Details"><i class='bx bx-show'></i></a>
                                     <button type="button" class="action-btn" data-bs-toggle="modal" data-bs-target="#acknowledgeModal-{{ alert.fingerprint }}" title="Acknowledge Alert">
                                         <i class='bx bx-check-shield'></i>
                                     </button>
-                                    {# Link to Create Silence Rule #}
                                     <a href="{% url 'alerts:silence-rule-create' %}?labels={{ alert.labels|jsonify }}"
                                        class="action-btn" data-bs-toggle="tooltip" title="Create Silence Rule">
                                        <i class='bx bx-volume-mute'></i>
@@ -115,9 +112,14 @@
                                 </div>
                             </td>
                         </tr>
+                        <tr class="collapse alert-details-row" id="details-{{ alert.fingerprint }}">
+                            <td colspan="7">
+                                {% include "alerts/partials/alert_row_details.html" with alert=alert %}
+                            </td>
+                        </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="7" class="text-center p-5"> {# Adjusted colspan #}
+                            <td colspan="7" class="text-center p-5">
                                 <i class='bx bx-check-circle fs-1 text-success mb-3 d-block'></i>
                                 <p class="text-muted mb-0">No unacknowledged alerts found.</p>
                             </td>
@@ -126,11 +128,9 @@
                     </tbody>
                 </table>
             </div>
-             {# No pagination needed #}
         </div>
     </div>
 
-    {# Acknowledge Modals - One for each alert #}
     {% for alert in alerts %}
     <div class="modal fade" id="acknowledgeModal-{{ alert.fingerprint }}" tabindex="-1" aria-labelledby="acknowledgeModalLabel-{{ alert.fingerprint }}" aria-hidden="true">
         <div class="modal-dialog">
@@ -139,25 +139,17 @@
                     <h5 class="modal-title" id="acknowledgeModalLabel-{{ alert.fingerprint }}">Acknowledge Alert</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                {# Form action points to the detail view's POST handler #}
-                <form method="post" action="{% url 'alerts:alert-detail' alert.fingerprint %}">
+                <form method="post" action="{% url 'tier1_dashboard:tier1-alert-detail' alert.fingerprint %}">
                     <div class="modal-body">
                         {% csrf_token %}
-                        {# Add hidden field to specify the redirect URL after successful acknowledgement #}
                         <input type="hidden" name="next" value="{% url 'tier1_dashboard:tier1-unacked-alerts' %}">
                         <p>You are acknowledging the alert: <strong>{{ alert.name }}</strong></p>
                         <p>Please provide a comment explaining the reason for acknowledgement or any actions being taken:</p>
 
                         <div class="mb-3">
                             <label for="id_comment_{{ alert.fingerprint }}" class="form-label">Comment <span class="text-danger">*</span></label>
-                            {# Use the form passed from context, but ensure unique ID for label #}
                             <textarea name="{{ acknowledge_form.comment.name }}" class="form-control" required id="id_comment_{{ alert.fingerprint }}"></textarea>
                             <div class="form-text">Required: Please provide details about why you're acknowledging this alert.</div>
-                            {% if acknowledge_form.comment.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ acknowledge_form.comment.errors|striptags }}
-                                </div>
-                            {% endif %}
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -169,7 +161,6 @@
         </div>
     </div>
     {% endfor %}
-
 {% endblock main_content %}
 
 {% block extra_js %}

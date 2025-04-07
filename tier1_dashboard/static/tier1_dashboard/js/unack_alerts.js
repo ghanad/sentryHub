@@ -1,43 +1,30 @@
-// JavaScript for unacknowledged alerts page
-
-// Auto-refresh functionality
-(function() {
-    const refreshInterval = 30000; // 30 seconds
-    let refreshTimer;
-    const refreshBadge = document.getElementById('refresh-badge');
-    let countdown = refreshInterval / 1000;
-
-    function updateBadge() {
-        if (refreshBadge) {
-            refreshBadge.textContent = `Auto-Refresh: ${countdown}s`;
-            countdown--;
-            if (countdown < 0) countdown = refreshInterval / 1000;
-        }
-    }
-
-    function scheduleRefresh() {
-        clearTimeout(refreshTimer);
-        countdown = refreshInterval / 1000;
-        updateBadge();
-
-        const intervalId = setInterval(updateBadge, 1000);
-
-        refreshTimer = setTimeout(() => {
-            clearInterval(intervalId);
-            console.log('Refreshing page...');
-            window.location.reload();
-        }, refreshInterval);
-    }
-
-    scheduleRefresh();
-
-    window.addEventListener('beforeunload', () => {
-        clearTimeout(refreshTimer);
-    });
-})();
-
-// Tooltip initialization
 document.addEventListener('DOMContentLoaded', function() {
+    // Handle row clicks for expansion
+    document.querySelectorAll('.alert-row').forEach(row => {
+        row.addEventListener('click', function(e) {
+            if (e.target.tagName === 'A' || e.target.closest('a') || e.target.closest('button')) return;
+            const expandBtn = this.querySelector('.expand-btn');
+            if (expandBtn) {
+                e.stopPropagation();
+                expandBtn.click();
+            }
+        });
+    });
+
+    // Handle expand/collapse buttons
+    const expandButtons = document.querySelectorAll('.expand-btn');
+    expandButtons.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const icon = this.querySelector('i');
+            if (icon) {
+                icon.classList.toggle('bx-chevron-right');
+                icon.classList.toggle('bx-chevron-down');
+            }
+        });
+    });
+
+    // Initialize tooltips
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
