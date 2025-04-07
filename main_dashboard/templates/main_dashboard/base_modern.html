@@ -80,9 +80,10 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="{% url 'tier1_dashboard:dashboard' %}" class="nav-link {% if request.resolver_match.namespace == 'tier1_dashboard' %}active{% endif %}">
-                            <i class='bx bx-radio-circle nav-icon-sub'></i>
-                            <span class="nav-text">Tier 1 Dashboard</span>
+                        {# Updated link to point to the new unacknowledged alerts view #}
+                        <a href="{% url 'tier1_dashboard:tier1-unacked-alerts' %}" class="nav-link {% if request.resolver_match.namespace == 'tier1_dashboard' and request.resolver_match.url_name == 'tier1-unacked-alerts' %}active{% endif %}">
+                            <i class='bx bx-bell-off nav-icon-sub'></i> {# Changed icon #}
+                            <span class="nav-text">Tier 1 Unacked</span> {# Changed text #}
                         </a>
                     </li>
                 </ul>

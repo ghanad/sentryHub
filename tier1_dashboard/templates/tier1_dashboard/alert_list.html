@@ -157,7 +157,7 @@
                     <div class="modal-body">
                         {% csrf_token %}
                         {# Add hidden field to specify the redirect URL after successful acknowledgement #}
-                        <input type="hidden" name="next" value="{% url 'tier1_dashboard:tier1-unacknowledged-alerts' %}">
+                        <input type="hidden" name="next" value="{% url 'tier1_dashboard:tier1-unacked-alerts' %}">
                         <p>You are acknowledging the alert: <strong>{{ alert.name }}</strong></p>
                         <p>Please provide a comment explaining the reason for acknowledgement or any actions being taken:</p>
 

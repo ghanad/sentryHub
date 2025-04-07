@@ -9,9 +9,9 @@ urlpatterns = [
     path('', Tier1DashboardView.as_view(), name='dashboard'),
     # New path for the unacknowledged alerts list view
     path(
-        'alerts/unacknowledged/',
+        'unacked/', # Shortened path
         Tier1AlertListView.as_view(),
-        name='tier1-unacknowledged-alerts'
+        name='tier1-unacked-alerts' # Shortened name
     ),
     # API endpoint for auto-refresh (potentially for the main dashboard)
     path('api/alerts/', Tier1AlertDataAPIView.as_view(), name='api_alert_data'),
