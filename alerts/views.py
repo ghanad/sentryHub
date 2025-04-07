@@ -249,9 +249,17 @@ class AlertDetailView(LoginRequiredMixin, DetailView):
                 # Then acknowledge the alert
                 acknowledge_alert(alert, request.user, comment_text)
                 
+                # Determine redirect URL
+                next_url = request.POST.get('next')
+                if next_url:
+                    # Validate next_url here if needed for security
+                    redirect_url = next_url
+                else:
+                    redirect_url = reverse('alerts:alert-detail', kwargs={'fingerprint': alert.fingerprint})
+
                 if not is_ajax:
                     messages.success(request, "Alert has been acknowledged successfully.")
-                return redirect('alerts:alert-detail', fingerprint=alert.fingerprint)
+                return redirect(redirect_url)
             else:
                 logger.warning(f"Invalid acknowledgement form for alert: {alert.name}")
                 if not is_ajax:
@@ -280,7 +288,9 @@ class AlertDetailView(LoginRequiredMixin, DetailView):
                         'content': form.cleaned_data['content']
                     })
                 else:
+                    # Redirect back to the detail page after adding a comment
                     messages.success(request, "Comment added successfully.")
+                    # Comments don't usually need the 'next' parameter logic
                     return redirect('alerts:alert-detail', fingerprint=alert.fingerprint)
             else:
                 logger.warning(f"Invalid comment form for alert: {alert.name}")

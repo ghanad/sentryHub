@@ -4,6 +4,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin # Removed UserPassesTe
 from django.db.models import Count, Q, Case, When, Value, IntegerField
 from alerts.models import AlertGroup
 from alerts.views import AlertListView # Import base AlertListView
+from alerts.forms import AlertAcknowledgementForm # Import the acknowledgement form
 import logging
 
 logger = logging.getLogger(__name__)
@@ -72,15 +73,18 @@ class Tier1AlertListView(AlertListView): # Inherit only from AlertListView (whic
 
     def get_context_data(self, **kwargs):
         """
-        Override to remove context variables related to filtering.
+        Override to remove context variables related to filtering and add the acknowledgement form.
         """
         context = super().get_context_data(**kwargs)
-        # Remove filter parameters from the context as they are not used in the template
+        # Remove filter parameters from the context
         filter_keys = ['status', 'severity', 'instance', 'acknowledged', 'silenced_filter', 'search']
         for key in filter_keys:
             context.pop(key, None)
-        # Also remove pagination related context if any exists from parent
+        # Remove pagination context
         context.pop('paginator', None)
         context.pop('page_obj', None)
         context.pop('is_paginated', None)
+
+        # Add the acknowledgement form to the context
+        context['acknowledge_form'] = AlertAcknowledgementForm()
         return context

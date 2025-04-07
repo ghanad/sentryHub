@@ -13,6 +13,13 @@
             font-size: 0.8em;
             vertical-align: middle;
         }
+        /* Ensure modal form elements are styled correctly */
+        .modal-body .form-label {
+            margin-bottom: 0.5rem;
+        }
+        .modal-body textarea {
+            min-height: 100px;
+        }
     </style>
 {% endblock %}
 
@@ -107,9 +114,13 @@
                             {# Removed Ack column #}
                             <td> {# Actions #}
                                 <div class="action-menu text-center justify-content-center">
-                                    {# Simplified actions - only view details? #}
+                                    {# Link to View Details page #}
                                     <a href="{% url 'alerts:alert-detail' alert.fingerprint %}" class="action-btn" data-bs-toggle="tooltip" title="View Details"><i class='bx bx-show'></i></a>
-                                    {# Maybe add silence link? #}
+                                    {# Button to trigger Acknowledge Modal #}
+                                    <button type="button" class="action-btn" data-bs-toggle="modal" data-bs-target="#acknowledgeModal-{{ alert.fingerprint }}" title="Acknowledge Alert">
+                                        <i class='bx bx-check-shield'></i>
+                                    </button>
+                                    {# Link to Create Silence Rule #}
                                     <a href="{% url 'alerts:silence-rule-create' %}?labels={{ alert.labels|jsonify }}"
                                        class="action-btn" data-bs-toggle="tooltip" title="Create Silence Rule">
                                        <i class='bx bx-volume-mute'></i>
@@ -117,7 +128,6 @@
                                 </div>
                             </td>
                         </tr>
-                        {# Removed the collapsible details row for simplicity, can be added back if needed #}
                         {% empty %}
                         <tr>
                             <td colspan="7" class="text-center p-5"> {# Adjusted colspan #}
@@ -132,6 +142,47 @@
              {# No pagination needed #}
         </div>
     </div>
+
+    {# Acknowledge Modals - One for each alert #}
+    {% for alert in alerts %}
+    <div class="modal fade" id="acknowledgeModal-{{ alert.fingerprint }}" tabindex="-1" aria-labelledby="acknowledgeModalLabel-{{ alert.fingerprint }}" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="acknowledgeModalLabel-{{ alert.fingerprint }}">Acknowledge Alert</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                {# Form action points to the detail view's POST handler #}
+                <form method="post" action="{% url 'alerts:alert-detail' alert.fingerprint %}">
+                    <div class="modal-body">
+                        {% csrf_token %}
+                        {# Add hidden field to specify the redirect URL after successful acknowledgement #}
+                        <input type="hidden" name="next" value="{% url 'tier1_dashboard:tier1-unacknowledged-alerts' %}">
+                        <p>You are acknowledging the alert: <strong>{{ alert.name }}</strong></p>
+                        <p>Please provide a comment explaining the reason for acknowledgement or any actions being taken:</p>
+
+                        <div class="mb-3">
+                            <label for="id_comment_{{ alert.fingerprint }}" class="form-label">Comment <span class="text-danger">*</span></label>
+                            {# Use the form passed from context, but ensure unique ID for label #}
+                            <textarea name="{{ acknowledge_form.comment.name }}" class="form-control" required id="id_comment_{{ alert.fingerprint }}"></textarea>
+                            <div class="form-text">Required: Please provide details about why you're acknowledging this alert.</div>
+                            {% if acknowledge_form.comment.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ acknowledge_form.comment.errors|striptags }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" name="acknowledge" class="btn btn-primary">Acknowledge Alert</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
 {% endblock main_content %}
 
 {% block extra_js %}
@@ -174,13 +225,20 @@
     })();
     </script>
 
-    {# Tooltip initialization script (copied from alerts/alert_list.html) #}
+    {# Tooltip initialization script #}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
             tooltipTriggerList.map(function (tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl);
             });
+
+            // Handle potential form errors after submission (re-rendering the page)
+            // If a modal has an error, it should be shown automatically.
+            // This requires the server-side view to handle errors and potentially pass
+            // back which modal should be open. For simplicity, we'll just ensure
+            // modals can be opened manually. A more robust solution might involve
+            // checking for error elements within modals on page load.
         });
     </script>
 {% endblock %}
