@@ -7,20 +7,7 @@
     {# Load the same CSS files as the main alert list #}
     <link rel="stylesheet" href="{% static 'main_dashboard/css/modern_dashboard.css' %}">
     <link rel="stylesheet" href="{% static 'alerts/css/alerts_list.css' %}">
-    <style>
-        /* Optional: Add specific styles if needed, e.g., for the refresh badge */
-        .page-header .badge {
-            font-size: 0.8em;
-            vertical-align: middle;
-        }
-        /* Ensure modal form elements are styled correctly */
-        .modal-body .form-label {
-            margin-bottom: 0.5rem;
-        }
-        .modal-body textarea {
-            min-height: 100px;
-        }
-    </style>
+    <link rel="stylesheet" href="{% static 'tier1_dashboard/css/unack_alerts.css' %}">
 {% endblock %}
 
 {% block main_content %}
@@ -186,59 +173,5 @@
 {% endblock main_content %}
 
 {% block extra_js %}
-    {# Auto-refresh script #}
-    <script>
-    (function() {
-        const refreshInterval = 30000; // 30 seconds
-        let refreshTimer;
-        const refreshBadge = document.getElementById('refresh-badge');
-        let countdown = refreshInterval / 1000;
-
-        function updateBadge() {
-            if (refreshBadge) {
-                refreshBadge.textContent = `Auto-Refresh: ${countdown}s`;
-                countdown--;
-                if (countdown < 0) countdown = refreshInterval / 1000; // Reset if timer somehow goes negative
-            }
-        }
-
-        function scheduleRefresh() {
-            clearTimeout(refreshTimer);
-            countdown = refreshInterval / 1000;
-            updateBadge(); // Initial update
-
-            const intervalId = setInterval(updateBadge, 1000);
-
-            refreshTimer = setTimeout(() => {
-                clearInterval(intervalId);
-                console.log('Refreshing page...');
-                window.location.reload();
-            }, refreshInterval);
-        }
-
-        scheduleRefresh();
-
-        window.addEventListener('beforeunload', () => {
-            clearTimeout(refreshTimer);
-        });
-
-    })();
-    </script>
-
-    {# Tooltip initialization script #}
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            tooltipTriggerList.map(function (tooltipTriggerEl) {
-                return new bootstrap.Tooltip(tooltipTriggerEl);
-            });
-
-            // Handle potential form errors after submission (re-rendering the page)
-            // If a modal has an error, it should be shown automatically.
-            // This requires the server-side view to handle errors and potentially pass
-            // back which modal should be open. For simplicity, we'll just ensure
-            // modals can be opened manually. A more robust solution might involve
-            // checking for error elements within modals on page load.
-        });
-    </script>
+    <script src="{% static 'tier1_dashboard/js/unack_alerts.js' %}"></script>
 {% endblock %}

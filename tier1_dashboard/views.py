@@ -17,7 +17,7 @@ class Tier1AlertListView(AlertListView): # Inherit only from AlertListView (whic
     Inherits filtering logic and base structure from alerts.views.AlertListView.
     """
     paginate_by = None  # Disable pagination
-    template_name = 'tier1_dashboard/alert_list.html' # Specify the new template
+    template_name = 'tier1_dashboard/unack_alerts.html' # Updated template name
 
     # Removed test_func - Access control temporarily disabled for testing
 
