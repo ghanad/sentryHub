@@ -1,21 +1,18 @@
 {% extends "main_dashboard/base_modern.html" %}
-{% load static date_format_tags core_tags %} {# Load necessary tags #}
+{% load static core_tags date_format_tags %} {# Ensure core_tags is loaded #}
 
 {% block title %}Alerts - SentryHub{% endblock %}
 
 {% block extra_css %}
-    {# Load the base modern dashboard CSS and potentially specific alert list CSS #}
     <link rel="stylesheet" href="{% static 'main_dashboard/css/modern_dashboard.css' %}">
     <link rel="stylesheet" href="{% static 'alerts/css/alerts_list.css' %}">
 {% endblock %}
-
 
 {% block main_content %}
     <!-- Page header -->
     <header class="page-header">
         <h1 class="page-title">Alerts</h1>
         <div class="d-flex align-items-center gap-2">
-             {# Link to create a new silence rule #}
              <a href="{% url 'alerts:silence-rule-create' %}" class="btn btn-primary d-flex align-items-center gap-2">
                  <i class='bx bx-plus-circle'></i> Create Silence Rule
              </a>
@@ -25,7 +22,6 @@
     <!-- Filter Card -->
     <div class="chart-card filter-card mb-4">
          <div class="chart-card-body">
-            {# Use the filter form from the original alert_list.html, applying modern styling #}
             <form method="get" class="row g-3">
                 <div class="col-lg-3 col-md-6">
                     <label for="status" class="form-label">Status</label>
@@ -56,7 +52,7 @@
                     <label for="silenced" class="form-label">Silenced</label>
                     <select class="form-select form-select-sm" id="silenced" name="silenced">
                         <option value="" {% if not silenced_filter %}selected{% endif %}>Show All</option>
-                        <option value="no" {% if silenced_filter == 'no' %}selected{% endif %}>Hide Silenced</option> {# Default view might hide silenced #}
+                        <option value="no" {% if silenced_filter == 'no' %}selected{% endif %}>Hide Silenced</option>
                         <option value="yes" {% if silenced_filter == 'yes' %}selected{% endif %}>Only Silenced</option>
                     </select>
                 </div>
@@ -90,7 +86,6 @@
                     <span class="badge bg-secondary rounded-pill fw-normal ms-2">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
                  {% endif %}
              </h5>
-             {# Optionally add info like total count here #}
              <span class="text-muted small">Total: {{ page_obj.paginator.count }}</span>
          </div>
         <div class="chart-card-body p-0">
@@ -102,7 +97,7 @@
                             <th>Name</th>
                             <th>Instance</th>
                             <th>Severity</th>
-                            <th>Last Seen</th>
+                            <th>Duration</th>
                             <th>Count</th>
                             <th>Ack</th>
                             <th>Actions</th>
@@ -110,24 +105,25 @@
                     </thead>
                     <tbody>
                         {% for alert in alerts %}
-                        {# Add silenced-row class if the alert is silenced #}
                         <tr class="alert-row {% if alert.is_silenced %}silenced-row{% endif %}">
-                            <td>
+                            <td> {# Status #}
                                 {% if alert.current_status == 'firing' %}
                                 <span class="status-badge badge-critical"><i class='bx bxs-circle'></i> Firing</span>
                                 {% else %}
                                 <span class="status-badge badge-success"><i class='bx bxs-check-circle'></i> Resolved</span>
                                 {% endif %}
                             </td>
-                            <td class="alert-name-cell">
+                            <td> {# Name #}
                                 <a href="{% url 'alerts:alert-detail' alert.fingerprint %}" class="alert-name-link">{{ alert.name }}</a>
                                 {% if alert.is_silenced %}
                                     <i class='bx bxs-volume-mute silence-indicator ms-1' data-bs-toggle="tooltip" data-bs-placement="top"
                                        title="Silenced until {{ alert.silenced_until|format_datetime:user }}"></i>
                                 {% endif %}
                             </td>
-                            <td><span class="alert-host">{{ alert.instance|default:"-" }}</span></td>
-                            <td>
+                            <td> {# Instance #}
+                                <span class="alert-host">{{ alert.instance|default:"-" }}</span>
+                            </td>
+                            <td> {# Severity #}
                                 {% if alert.severity == 'critical' %}
                                 <span class="status-badge badge-critical">Critical</span>
                                 {% elif alert.severity == 'warning' %}
@@ -136,14 +132,18 @@
                                 <span class="status-badge badge-info">Info</span>
                                 {% endif %}
                             </td>
-                            <td>
-                                <span class="alert-time" data-bs-toggle="tooltip" data-bs-placement="top"
-                                      title="{{ alert.last_occurrence|format_datetime:user }}">
-                                    {{ alert.last_occurrence|time_ago }}
-                                </span>
+                            <td> {# Duration #}
+                                {% if alert.current_status == 'firing' and alert.current_problem_start_time %}
+                                    <span data-bs-toggle="tooltip" data-bs-placement="top"
+                                          title="Problem started at {{ alert.current_problem_start_time|format_datetime:user }}">
+                                        {{ alert.current_problem_start_time|calculate_duration }}
+                                    </span>
+                                {% else %}
+                                    -
+                                {% endif %}
                             </td>
-                            <td>{{ alert.total_firing_count }}</td>
-                            <td>
+                            <td>{{ alert.total_firing_count }}</td> {# Count #}
+                            <td> {# Ack #}
                                 {% if alert.acknowledged %}
                                 <i class='bx bx-check-shield text-success' data-bs-toggle="tooltip" data-bs-placement="top"
                                    title="Ack by {{ alert.acknowledged_by.username }} @ {{ alert.acknowledgement_time|format_datetime:user }}"></i>
@@ -151,7 +151,7 @@
                                 <i class='bx bx-shield-x text-muted' data-bs-toggle="tooltip" data-bs-placement="top" title="Not Acknowledged"></i>
                                 {% endif %}
                             </td>
-                            <td>
+                            <td> {# Actions #}
                                 <div class="action-menu">
                                     <button class="action-btn expand-btn"
                                         data-bs-toggle="collapse"
@@ -171,13 +171,13 @@
                             </td>
                         </tr>
                         <tr class="collapse alert-details-row" id="details-{{ alert.fingerprint }}">
-                            <td colspan="8">
+                            <td colspan="8"> {# Adjusted colspan #}
                                 {% include "alerts/partials/alert_row_details.html" with alert=alert %}
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="8" class="text-center p-5">
+                            <td colspan="8" class="text-center p-5"> {# Adjusted colspan #}
                                 <i class='bx bx-info-circle fs-1 text-muted mb-3 d-block'></i>
                                 <p class="text-muted mb-0">No alerts found matching your criteria.</p>
                             </td>
@@ -186,7 +186,7 @@
                     </tbody>
                 </table>
             </div>
-             <!-- Pagination (Using the Core Partial) -->
+             <!-- Pagination -->
              {% include 'core/partials/_pagination.html' with page_obj=page_obj %}
         </div>
     </div>
@@ -198,10 +198,7 @@
             // Handle row clicks for expansion
             document.querySelectorAll('.alert-row').forEach(row => {
                 row.addEventListener('click', function(e) {
-                    // Skip if click is on a link or within a link
-                    if (e.target.tagName === 'A' || e.target.closest('a')) return;
-                    
-                    // Find and click the expand button
+                    if (e.target.tagName === 'A' || e.target.closest('a') || e.target.closest('button')) return;
                     const expandBtn = this.querySelector('.expand-btn');
                     if (expandBtn) {
                         e.stopPropagation();
@@ -231,40 +228,19 @@
         });
     </script>
     <style>
-        .alert-row {
-            cursor: pointer;
-            transition: background-color 0.2s ease;
-        }
-        .alert-row:hover {
-            background-color: rgba(0, 0, 0, 0.02);
-        }
-        .alert-row:active {
-            background-color: rgba(0, 0, 0, 0.05);
-        }
-        .expand-icon {
-            margin-right: 8px;
-            transition: transform 0.2s ease;
-        }
-        .alert-details-row {
-            background-color: #f8f9fa;
-        }
-        .alert-details-content {
-            padding: 15px;
-        }
-        .label-container, .annotation-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 8px;
-        }
-        .label-item, .annotation-item {
-            padding: 4px 0;
-        }
-        .label-key, .annotation-key {
-            font-weight: 500;
-            color: #495057;
-        }
-        .label-value, .annotation-value {
-            color: #6c757d;
-        }
+        .alert-row { cursor: pointer; transition: background-color 0.2s ease; }
+        .alert-row:hover { background-color: rgba(0, 0, 0, 0.02); }
+        .alert-row:active { background-color: rgba(0, 0, 0, 0.05); }
+        .alert-details-row { background-color: #f8f9fa; }
+        [data-bs-theme="dark"] .alert-details-row { background-color: rgba(255, 255, 255, 0.03); }
+        .alert-details-content { padding: 15px; }
+        .label-container, .annotation-container { display: flex; flex-direction: column; gap: 4px; }
+        .label-item, .annotation-item { padding: 4px 0; }
+        .label-key, .annotation-key { font-weight: 500; color: #495057; }
+        .label-value, .annotation-value { color: #6c757d; }
+         [data-bs-theme="dark"] .label-key, [data-bs-theme="dark"] .annotation-key { color: var(--bs-secondary-color); }
+         [data-bs-theme="dark"] .label-value, [data-bs-theme="dark"] .annotation-value { color: var(--bs-tertiary-color); }
+         /* Ensure Name column can wrap */
+         .alert-table td:nth-child(2) a { white-space: normal; }
     </style>
 {% endblock %}

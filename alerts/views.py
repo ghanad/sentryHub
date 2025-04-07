@@ -1,5 +1,6 @@
 from django.views.generic import TemplateView, ListView, DetailView, FormView
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Min, OuterRef, Subquery, F, Value, Case, When, IntegerField
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404, redirect, render
@@ -31,48 +32,80 @@ class AlertListView(LoginRequiredMixin, ListView):
     paginate_by = 10 # Changed from 20 to 10
     
     def get_queryset(self):
-        queryset = AlertGroup.objects.all()
-        
-        # Filter by status
+        # Subquery to get the minimum start time of active instances for each group
+        active_instances_subquery = AlertInstance.objects.filter(
+            alert_group=OuterRef('pk'),
+            status='firing',
+            # ended_at__isnull=True # Optional: usually covered by status='firing'
+        ).order_by('started_at').values('started_at')[:1]
+
+        # Define severity order for sorting
+        severity_order = Case(
+            When(severity='critical', then=Value(1)),
+            When(severity='warning', then=Value(2)),
+            When(severity='info', then=Value(3)),
+            default=Value(4),
+            output_field=IntegerField(),
+        )
+
+        queryset = AlertGroup.objects.annotate(
+            # Use Coalesce to handle cases where no active instance exists, defaulting to None
+            current_problem_start_time=Coalesce(
+                Subquery(active_instances_subquery),
+                None # Explicitly set to None if no active instance found
+            ),
+             severity_priority=severity_order # Annotate for sorting
+        )
+
+        # --- Apply Filters ---
         status = self.request.GET.get('status')
         if status:
             queryset = queryset.filter(current_status=status)
-        
-        # Filter by severity
+
         severity = self.request.GET.get('severity')
         if severity:
             queryset = queryset.filter(severity=severity)
-        
-        # Filter by instance
+
         instance = self.request.GET.get('instance')
         if instance:
             queryset = queryset.filter(instance__icontains=instance)
-        
-        # Filter by acknowledgement status
+
         acknowledged = self.request.GET.get('acknowledged')
         if acknowledged == 'true':
             queryset = queryset.filter(acknowledged=True)
         elif acknowledged == 'false':
             queryset = queryset.filter(acknowledged=False)
 
-        # Filter by silenced status
         silenced_filter = self.request.GET.get('silenced')
         if silenced_filter == 'yes':
             queryset = queryset.filter(is_silenced=True)
         elif silenced_filter == 'no':
             queryset = queryset.filter(is_silenced=False)
-        # If '', show all (default)
 
-        # Search by name or fingerprint
         search = self.request.GET.get('search')
         if search:
             queryset = queryset.filter(
-                Q(name__icontains=search) | 
+                Q(name__icontains=search) |
                 Q(fingerprint__icontains=search) |
                 Q(instance__icontains=search)
             )
-        
-        return queryset.order_by('-last_occurrence')
+        # --- End Apply Filters ---
+
+        # --- Ordering ---
+        # Order primarily by firing status (firing first), then severity, then start time
+        queryset = queryset.order_by(
+             Case(When(current_status='firing', then=0), default=1), # Firing first
+             'severity_priority', # Then by severity (Critical first)
+             # Order firing alerts by oldest first (longest duration)
+             # Order resolved alerts by most recent last_occurrence
+             Case(
+                When(current_status='firing', then=F('current_problem_start_time')), # ASC for firing
+                default=F('last_occurrence'), # DESC for resolved (needs '-' prefix)
+             ).asc(nulls_last=True), # Firing with oldest start time first
+             '-last_occurrence' # Secondary sort for resolved or firing with same start time
+         )
+
+        return queryset
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -108,40 +141,33 @@ class AlertListView(LoginRequiredMixin, ListView):
         return context
 
     def paginate_queryset(self, queryset, page_size):
-        """Override to handle invalid page numbers gracefully."""
-        paginator = self.get_paginator(
-            queryset,
-            page_size,
-            orphans=self.get_paginate_orphans(),
-            allow_empty_first_page=self.get_allow_empty(),
-        )
-        page_kwarg = self.page_kwarg
-        page = self.kwargs.get(page_kwarg) or self.request.GET.get(page_kwarg) or 1
-        try:
-            page_number = int(page)
-        except ValueError:
-            if page == "last":
-                page_number = paginator.num_pages
-            else:
-                # Default to page 1 for non-integer values like 'abc'
-                logger.warning(f"Invalid page number '{page}' requested. Defaulting to page 1.")
-                page_number = 1 # Default for non-integer
+         paginator = self.get_paginator(
+             queryset,
+             page_size,
+             orphans=self.get_paginate_orphans(),
+             allow_empty_first_page=self.get_allow_empty(),
+         )
+         page_kwarg = self.page_kwarg
+         page = self.kwargs.get(page_kwarg) or self.request.GET.get(page_kwarg) or 1
+         try:
+             page_number = int(page)
+         except ValueError:
+             if page == "last":
+                 page_number = paginator.num_pages
+             else:
+                 page_number = 1 # Default for non-integer
 
-        try:
-            page = paginator.page(page_number)
-        except EmptyPage: # Catch page < 1 or page > num_pages
-            if page_number < 1:
-                logger.warning(f"Invalid page number {page_number} requested. Defaulting to page 1.")
-                page = paginator.page(1) # Default to page 1 if page < 1
-            else:
-                logger.warning(f"Invalid page number {page_number} requested. Defaulting to last page ({paginator.num_pages}).")
-                page = paginator.page(paginator.num_pages) # Default to last page if page > num_pages
-        except PageNotAnInteger: # Should be caught by ValueError, but keep for safety
-             logger.warning(f"Non-integer page number '{page}' requested. Defaulting to page 1.")
-             page = paginator.page(1)
+         try:
+             page = paginator.page(page_number)
+         except EmptyPage: # Catch page < 1 or page > num_pages
+             if page_number < 1:
+                  page = paginator.page(1) # Default to page 1 if page < 1
+             else:
+                  page = paginator.page(paginator.num_pages) # Default to last page if page > num_pages
+         except PageNotAnInteger: # Should be caught by ValueError, but keep for safety
+              page = paginator.page(1)
 
-        # This return statement should be outside the try...except block
-        return (paginator, page, page.object_list, page.has_other_pages())
+         return (paginator, page, page.object_list, page.has_other_pages())
 
 
 class AlertDetailView(LoginRequiredMixin, DetailView):

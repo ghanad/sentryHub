@@ -1,7 +1,7 @@
 import json
 from django import template
 from django.utils import timezone
-from datetime import timedelta
+from datetime import timedelta, datetime
 from django.utils.safestring import mark_safe
 
 register = template.Library()
@@ -92,3 +92,44 @@ def format_datetime(value, user=None, format_string="%Y-%m-%d %H:%M:%S"):
             return value.strftime(format_string)
         except:
             return str(value) # Raw string representation as last resort
+
+@register.filter
+def calculate_duration(start_time):
+    """
+    Calculates the duration between a start datetime and now.
+    Returns a human-readable string like "3d 4h", "5h 12m", "3m", "<1m".
+    """
+    if not isinstance(start_time, (datetime)):
+         return "-" # Return a placeholder if input is invalid
+
+    # Ensure start_time is offset-aware for comparison with timezone.now()
+    if timezone.is_naive(start_time):
+         try:
+            start_time = timezone.make_aware(start_time, timezone.get_default_timezone())
+         except Exception:
+             return "-" # Cannot make aware
+
+    now = timezone.now()
+
+    # Handle potential future start times gracefully
+    if start_time > now:
+         return "Starts soon"
+
+    diff = now - start_time
+    total_seconds = int(diff.total_seconds())
+
+    if total_seconds < 0:
+        return "Error"
+    elif total_seconds < 60:
+        return "<1m"
+    elif total_seconds < 3600: # Less than 1 hour
+        minutes = total_seconds // 60
+        return f"{minutes}m"
+    elif total_seconds < 86400: # Less than 1 day
+        hours = total_seconds // 3600
+        minutes = (total_seconds % 3600) // 60
+        return f"{hours}h {minutes}m"
+    else: # 1 day or more
+        days = total_seconds // 86400
+        hours = (total_seconds % 86400) // 3600
+        return f"{days}d {hours}h"
