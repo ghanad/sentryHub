@@ -121,7 +121,13 @@
                                 {% endif %}
                             </td>
                             <td> {# Instance #}
-                                <span class="alert-host">{{ alert.instance|default:"-" }}</span>
+                                <span class="alert-host">
+                                    {% if alert.labels.name %}
+                                        {{ alert.labels.name }} ({{ alert.instance|default:"-" }})
+                                    {% else %}
+                                        {{ alert.instance|default:"-" }}
+                                    {% endif %}
+                                </span>
                             </td>
                             <td> {# Severity #}
                                 {% if alert.severity == 'critical' %}
