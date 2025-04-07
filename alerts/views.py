@@ -96,12 +96,12 @@ class AlertListView(LoginRequiredMixin, ListView):
         queryset = queryset.order_by(
              Case(When(current_status='firing', then=0), default=1), # Firing first
              'severity_priority', # Then by severity (Critical first)
-             # Order firing alerts by oldest first (longest duration)
+             # Order firing alerts by newest first (shortest duration)
              # Order resolved alerts by most recent last_occurrence
              Case(
-                When(current_status='firing', then=F('current_problem_start_time')), # ASC for firing
+                When(current_status='firing', then=F('current_problem_start_time')), # DESC for firing
                 default=F('last_occurrence'), # DESC for resolved (needs '-' prefix)
-             ).asc(nulls_last=True), # Firing with oldest start time first
+             ).desc(nulls_last=True), # Firing with newest start time first
              '-last_occurrence' # Secondary sort for resolved or firing with same start time
          )
 
