@@ -1,32 +1,12 @@
 {% load static %}
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
-        <a class="navbar-brand" href="{% url 'dashboard:dashboard' %}">SentryHub</a>
+        <a class="navbar-brand" href="{% url 'alerts:alert-list' %}">SentryHub</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav">
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle {% if request.resolver_match.namespace == 'dashboard' or request.resolver_match.namespace == 'tier1_dashboard' %}active{% endif %}" 
-                       href="#" id="dashboardsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-speedometer2"></i> Dashboards
-                    </a>
-                    <ul class="dropdown-menu" aria-labelledby="dashboardsDropdown">
-                        <li>
-                            <a class="dropdown-item {% if request.resolver_match.namespace == 'dashboard' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}" 
-                               href="{% url 'dashboard:dashboard' %}">
-                               <i class="bi bi-house-door me-2"></i> Main Dashboard
-                            </a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item {% if request.resolver_match.namespace == 'tier1_dashboard' %}active{% endif %}"
-                               href="{% url 'tier1_dashboard:dashboard' %}">
-                               <i class="bi bi-person-lines-fill me-2"></i> Tier 1 Dashboard
-                            </a>
-                        </li>
-                    </ul>
-                </li>
                 <li class="nav-item">
                     <a class="nav-link {% if request.resolver_match.namespace == 'alerts' and request.resolver_match.url_name == 'alert-list' %}active{% endif %}"
                        href="{% url 'alerts:alert-list' %}"><i class="bi bi-bell me-1"></i> Alerts</a>
