@@ -24,7 +24,7 @@
                  <i class='bx bx-list-ul'></i>
                  Alert List (Unacknowledged Only)
              </h5>
-             <span class="text-muted small">Total: {{ alerts.count }}</span>
+             <span class="text-muted small" id="alert-count-display">Total: {{ alerts.count }}</span>
          </div>
         <div class="chart-card-body p-0">
             <div class="table-responsive">
@@ -40,9 +40,9 @@
                             <th class="text-center">Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="alert-table-body">
                         {% for alert in alerts %}
-                        <tr class="alert-row {% if alert.is_silenced %}silenced-row{% endif %}">
+                        <tr class="alert-row {% if alert.is_silenced %}silenced-row{% endif %}" data-fingerprint="{{ alert.fingerprint }}">
                             <td>
                                 {% if alert.current_status == 'firing' %}
                                 <span class="status-badge badge-critical"><i class='bx bxs-circle'></i> Firing</span>
@@ -161,6 +161,10 @@
         </div>
     </div>
     {% endfor %}
+
+    {# Audio element for new alert notification #}
+    <audio id="alert-notification-sound" src="{% static 'sounds/notification.wav' %}" preload="auto"></audio>
+
 {% endblock main_content %}
 
 {% block extra_js %}

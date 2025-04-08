@@ -4,8 +4,9 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.template.loader import render_to_string
 from django.utils import timezone
-from django.db.models import Case, When, Value, IntegerField
-from alerts.models import AlertGroup
+from django.db.models import Case, When, Value, IntegerField, Max, Subquery, OuterRef, F
+from django.db.models.functions import Coalesce
+from alerts.models import AlertGroup, AlertInstance
 import logging
 
 logger = logging.getLogger(__name__)
@@ -27,13 +28,26 @@ class Tier1AlertDataAPIView(APIView):
                 default=Value(4),
                 output_field=IntegerField(),
             )
+            # Subquery to get the minimum start time of active instances (for duration calculation)
+            active_instances_subquery = AlertInstance.objects.filter(
+                alert_group=OuterRef('pk'),
+                status='firing'
+            ).order_by('started_at').values('started_at')[:1]
+
             alerts = AlertGroup.objects.filter(
-                current_status='firing',
+                # Remove this filter to show both firing and resolved unacknowledged alerts
+                # current_status='firing',
                 acknowledged=False,
-                is_silenced=False # <-- Add this filter to exclude silenced alerts
+                is_silenced=False
             ).annotate(
-                severity_priority=severity_order
-            ).order_by('severity_priority', '-last_occurrence')
+                severity_priority=severity_order,
+                # Add annotations needed by the partial template to match the main view
+                current_problem_start_time=Coalesce(
+                    Subquery(active_instances_subquery),
+                    None
+                ),
+                latest_instance_start=Max('instances__started_at')
+            ).order_by('severity_priority', '-latest_instance_start') # Order by latest instance start like main view
 
             # Render the table rows using a partial template
             context = {'alerts': alerts, 'user': request.user} # Pass user for date formatting context
