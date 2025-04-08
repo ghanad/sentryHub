@@ -29,4 +29,35 @@ document.addEventListener('DOMContentLoaded', function() {
     tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
+
+    // Auto-refresh functionality
+    const refreshIntervalSeconds = 30;
+    const refreshBadge = document.getElementById('refresh-badge');
+    let countdown = refreshIntervalSeconds;
+
+    function updateCountdown() {
+        if (refreshBadge) {
+            refreshBadge.textContent = `Auto-Refresh: ${countdown}s`;
+        }
+        countdown--;
+
+        if (countdown < 0) {
+            // Check if the page is visible before reloading
+            if (document.visibilityState === 'visible') {
+                window.location.reload();
+            } else {
+                // If tab is not visible, reset countdown and check again later
+                // This prevents reloading when the tab is in the background
+                countdown = refreshIntervalSeconds;
+                setTimeout(updateCountdown, 1000);
+            }
+        } else {
+            setTimeout(updateCountdown, 1000); // Update every second
+        }
+    }
+
+    // Start the countdown only if the badge exists
+    if (refreshBadge) {
+        updateCountdown();
+    }
 });
