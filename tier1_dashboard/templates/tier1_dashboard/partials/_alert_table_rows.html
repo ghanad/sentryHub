@@ -10,7 +10,7 @@
         {% endif %}
     </td>
     <td>
-        <a href="{% url 'tier1_dashboard:tier1-alert-detail' alert.fingerprint %}" class="alert-name-link">{{ alert.name }}</a>
+        <a href="{% url 'alerts:alert-detail' alert.fingerprint %}" class="alert-name-link">{{ alert.name }}</a>
         {% if alert.is_silenced %}
             <i class='bx bxs-volume-mute silence-indicator ms-1' data-bs-toggle="tooltip" data-bs-placement="top"
                title="Silenced until {{ alert.silenced_until|format_datetime:user }}"></i>
@@ -60,7 +60,7 @@
                 data-bs-toggle="tooltip" title="Show Details">
                 <i class='bx bx-chevron-right'></i>
             </button>
-            <a href="{% url 'tier1_dashboard:tier1-alert-detail' alert.fingerprint %}" class="action-btn" data-bs-toggle="tooltip" title="View Details"><i class='bx bx-show'></i></a>
+            <a href="{% url 'alerts:alert-detail' alert.fingerprint %}" class="action-btn" data-bs-toggle="tooltip" title="View Details"><i class='bx bx-show'></i></a>
             {# Acknowledge button needs modal target specific to fingerprint #}
             <button type="button" class="action-btn" data-bs-toggle="modal" data-bs-target="#acknowledgeModal-{{ alert.fingerprint }}" title="Acknowledge Alert">
                 <i class='bx bx-check-shield'></i>

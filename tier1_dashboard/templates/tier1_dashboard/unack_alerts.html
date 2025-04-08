@@ -51,7 +51,7 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <a href="{% url 'tier1_dashboard:tier1-alert-detail' alert.fingerprint %}" class="alert-name-link">{{ alert.name }}</a>
+                                <a href="{% url 'alerts:alert-detail' alert.fingerprint %}" class="alert-name-link">{{ alert.name }}</a>
                                 {% if alert.is_silenced %}
                                     <i class='bx bxs-volume-mute silence-indicator ms-1' data-bs-toggle="tooltip" data-bs-placement="top"
                                        title="Silenced until {{ alert.silenced_until|format_datetime:user }}"></i>
@@ -101,7 +101,7 @@
                                         data-bs-toggle="tooltip" title="Show Details">
                                         <i class='bx bx-chevron-right'></i>
                                     </button>
-                                    <a href="{% url 'tier1_dashboard:tier1-alert-detail' alert.fingerprint %}" class="action-btn" data-bs-toggle="tooltip" title="View Details"><i class='bx bx-show'></i></a>
+                                    <a href="{% url 'alerts:alert-detail' alert.fingerprint %}" class="action-btn" data-bs-toggle="tooltip" title="View Details"><i class='bx bx-show'></i></a>
                                     <button type="button" class="action-btn" data-bs-toggle="modal" data-bs-target="#acknowledgeModal-{{ alert.fingerprint }}" title="Acknowledge Alert">
                                         <i class='bx bx-check-shield'></i>
                                     </button>
@@ -139,7 +139,7 @@
                     <h5 class="modal-title" id="acknowledgeModalLabel-{{ alert.fingerprint }}">Acknowledge Alert</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form method="post" action="{% url 'tier1_dashboard:tier1-alert-detail' alert.fingerprint %}">
+                <form method="post" action="{% url 'alerts:alert-detail' alert.fingerprint %}">
                     <div class="modal-body">
                         {% csrf_token %}
                         <input type="hidden" name="next" value="{% url 'tier1_dashboard:tier1-unacked-alerts' %}">
