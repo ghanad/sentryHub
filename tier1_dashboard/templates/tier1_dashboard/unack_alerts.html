@@ -168,5 +168,9 @@
 {% endblock main_content %}
 
 {% block extra_js %}
+    <script>
+        // Define API URL that respects FORCE_SCRIPT_NAME
+        window.ALERTS_API_URL = "{% url 'tier1_dashboard:api_alert_data' %}";
+    </script>
     <script src="{% static 'tier1_dashboard/js/unack_alerts.js' %}"></script>
 {% endblock %}

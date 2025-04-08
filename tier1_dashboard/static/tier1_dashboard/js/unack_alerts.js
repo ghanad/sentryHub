@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const notificationSound = document.getElementById('alert-notification-sound');
     const refreshBadge = document.getElementById('refresh-badge');
     const refreshIntervalSeconds = 15;
-    const apiURL = '/tier1/api/alerts/';
+    const apiURL = window.ALERTS_API_URL;
 
     let currentFingerprints = new Set();
     let refreshIntervalId = null;
