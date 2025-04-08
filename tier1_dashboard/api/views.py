@@ -1,4 +1,3 @@
-# Path: tier1_dashboard/api/views.py
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -47,7 +46,10 @@ class Tier1AlertDataAPIView(APIView):
                     None
                 ),
                 latest_instance_start=Max('instances__started_at')
-            ).order_by('severity_priority', '-latest_instance_start') # Order by latest instance start like main view
+            ).order_by(
+                '-latest_instance_start',  # Newest alerts first (same as AlertListView)
+                '-pk'  # Secondary sort for alerts with same start time
+            )
 
             # Render the table rows using a partial template
             context = {'alerts': alerts, 'user': request.user} # Pass user for date formatting context
