@@ -1,6 +1,6 @@
 # alerts/urls.py
 
-from django.urls import path, re_path
+from django.urls import path, include, re_path
 from .views import (
     AlertListView,
     AlertDetailView,
@@ -25,7 +25,7 @@ urlpatterns = [
     path('silences/<int:pk>/delete/', SilenceRuleDeleteView.as_view(), name='silence-rule-delete'),
     path('api/v1/', include('alerts.api.urls')),
 
-    path('', AlertListView.as_view(), name='alert-list'),
+    path("", AlertListView.as_view(), name='alert-list'),
     path('acknowledge/', acknowledge_alert_from_list, name='acknowledge-alert-from-list'), # Moved before fingerprint
     path('<str:fingerprint>/', AlertDetailView.as_view(), name='alert-detail'),
 ]
