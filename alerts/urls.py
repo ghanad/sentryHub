@@ -1,6 +1,6 @@
 # alerts/urls.py
 
-from django.urls import path, include, re_path
+from django.urls import path, re_path
 from .views import (
     AlertListView,
     AlertDetailView,
@@ -13,7 +13,7 @@ from .views import (
 from .consumers import AlertConsumer
 
 websocket_urlpatterns = [
-    re_path(r"ws/alerts/$", AlertConsumer.as_asgi()),
+    re_path(r"ws/", AlertConsumer.as_asgi()),
 ]
 
 app_name = 'alerts'
