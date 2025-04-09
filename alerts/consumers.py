@@ -16,13 +16,13 @@ class AlertConsumer(AsyncWebsocketConsumer):
 
             await self.accept()
         except Exception as e:
-            self.logger.error(f"Error in connect: {e}")
+            logger.error(f"Error in connect: {e}")
 
     async def disconnect(self, close_code):
         try:
             await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
         except Exception as e:
-            self.logger.error(f"Error in disconnect: {e}")
+            logger.error(f"Error in disconnect: {e}")
 
     async def receive(self, text_data):
         try:
@@ -33,14 +33,14 @@ class AlertConsumer(AsyncWebsocketConsumer):
                 self.room_group_name, {"type": "alert_message", "message": message}
             )
         except Exception as e:
-            self.logger.error(f"Error in receive: {e}")
+            logger.error(f"Error in receive: {e}")
 
     async def alert_message(self, event):
         try:
             message = event["message"]
             await self.send(text_data=json.dumps({"message": message}))
         except Exception as e:
-            self.logger.error(f"Error in alert_message: {e}")
+            logger.error(f"Error in alert_message: {e}")
 
     @classmethod
     def send_alert_update(cls, message):
