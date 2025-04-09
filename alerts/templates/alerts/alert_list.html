@@ -158,9 +158,8 @@
                                 {% if alert.acknowledged %}
                                 <i class='bx bx-check-shield text-success' data-bs-toggle="tooltip" data-bs-placement="top"
                                    title="Ack by {{ alert.acknowledged_by.username }} @ {{ alert.acknowledgement_time|format_datetime:user }}"></i>
-                                {% else %}
-                                <i class='bx bx-shield-x text-muted' data-bs-toggle="tooltip" data-bs-placement="top" title="Not Acknowledged"></i>
                                 {% endif %}
+
                             </td>
                             <td> {# Actions #}
                                 <div class="action-menu text-center justify-content-center">
