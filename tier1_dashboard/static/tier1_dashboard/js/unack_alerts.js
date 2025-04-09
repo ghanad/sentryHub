@@ -8,29 +8,30 @@ document.addEventListener('DOMContentLoaded', function() {
     const websocketURL = 'ws://localhost:8000/ws/alerts/';
 
     let soundEnabled = true; // Initialize sound as enabled
+    let notificationEnabled = false; // Initialize notifications as disabled
 
     let currentFingerprints = new Set();
     let refreshIntervalId = null;
     let countdownIntervalId = null;
     let countdown = refreshIntervalSeconds;
-
+    let websocket;
+    let isWebSocketConnected = false;
 
     // --- Connection Status Indicator ---
     const connectionStatus = document.getElementById('connection-status');
     function updateConnectionStatus(isConnected) {
         connectionStatus.classList.toggle('connected', isConnected);
         connectionStatus.classList.toggle('disconnected', !isConnected);
+    }
 
-    let notificationEnabled = false; // Initialize notifications as disabled
     requestNotificationPermission();
 
     // --- Sound Toggle ---
     const soundToggle = document.getElementById('sound-toggle');
-    let soundEnabled = soundToggle ? soundToggle.checked : true; // Initialize sound as enabled, based on checkbox
+    soundEnabled = soundToggle ? soundToggle.checked : true; // Initialize sound as enabled, based on checkbox
     if (soundToggle) {
         soundToggle.addEventListener('change', () => soundEnabled = soundToggle.checked);
     }
-
 
     // --- Helper Functions ---
 
@@ -54,7 +55,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         return fingerprints;
     }
-
 
     function initializeDynamicContent() {
         // Re-initialize tooltips for new content
@@ -128,13 +128,12 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log("WebSocket connected");
             updateConnectionStatus(true);
         };
-        isWebSocketConnected = true;
 
         websocket.onclose = function(event) {
+            isWebSocketConnected = false;
             console.log("WebSocket disconnected:", event);
             updateConnectionStatus(false);
             setTimeout(initializeWebSocket, 3000);
-
         };
 
         websocket.onerror = function() {
@@ -155,23 +154,11 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }
 
-
-    // --- WebSocket Management ---
-    const websocketURL = 'ws://localhost:8000/alerts/ws/';
-
-    let websocket;
-
-
-    let isWebSocketConnected = false;
-
     // --- Browser Notifications ---
-
     const notificationToggle = document.getElementById('notification-toggle');
     if (notificationToggle) notificationToggle.addEventListener('change', () => notificationEnabled = notificationToggle.checked);
 
-
     // --- Core Refresh Logic ---
-
     async function fetchAndUpdateAlerts() {
         console.log("Fetching alerts..."); // For debugging
         try {
@@ -184,7 +171,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const newHtml = data.html;
             const newAlertCount = data.alert_count;
             const newFingerprints = parseFingerprintsFromHTML(newHtml);
-
 
             // Detect new alerts
             let hasNewAlerts = false;
@@ -216,7 +202,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (notificationEnabled) {
                     sendNotification(alertMessage);
                 }
-
             }
 
             // Re-initialize tooltips and event listeners for the new content
@@ -232,7 +217,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // --- Countdown Timer Logic ---
-
     function updateCountdownDisplay() {
         if (refreshBadge) {
             refreshBadge.textContent = `Auto-Refresh: ${countdown}s`;
@@ -267,7 +251,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // --- Initialization ---
-
     // Initial population of fingerprints
     currentFingerprints = getCurrentFingerprints();
 
@@ -294,18 +277,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-        // --- Sound Toggle ---
-    if (soundToggle) {
-        soundEnabled = soundToggle.checked;
-        soundToggle.addEventListener('change', function() {
-            soundEnabled = this.checked;
-            console.log("Sound alerts toggled:", soundEnabled);
-        });
-    }
-
-
-
-
     // Initialize dynamic content listeners for initially loaded content
     initializeDynamicContent();
 
@@ -316,8 +287,6 @@ document.addEventListener('DOMContentLoaded', function() {
         console.warn("Alert table body not found. Auto-refresh disabled.");
     }
 
-
     // Optional: Add logic to pause refresh on interaction (e.g., modal open) if desired
     // Optional: Add logic to handle browser visibility changes more robustly
-
 });
