@@ -5,8 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const refreshBadge = document.getElementById('refresh-badge');
     const refreshIntervalSeconds = 15;
     const apiURL = window.ALERTS_API_URL;
-    const websocketURL = 'ws://localhost:8000/ws/alerts/';
-
+    const websocketURL = 'ws://localhost:8000/alerts/ws/';
     let soundEnabled = true; // Initialize sound as enabled
     let notificationEnabled = false; // Initialize notifications as disabled
 
