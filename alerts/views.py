@@ -14,7 +14,9 @@ from django.contrib.auth import login, authenticate
 from django.contrib.auth.forms import AuthenticationForm
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.views import View
-from django.http import HttpResponse, Http404 # Import Http404
+from django.http import HttpResponse, Http404, HttpResponseRedirect # Import Http404, HttpResponseRedirect
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 
 from .models import AlertGroup, AlertInstance, AlertComment, SilenceRule # Added SilenceRule
 from .forms import AlertAcknowledgementForm, AlertCommentForm, SilenceRuleForm # Added SilenceRuleForm
@@ -307,6 +309,58 @@ class AlertDetailView(LoginRequiredMixin, DetailView):
         # If neither acknowledge nor content was in POST, redirect (or handle as appropriate)
         logger.warning(f"POST request received for alert {alert.fingerprint} without 'acknowledge' or 'comment' data.")
         return redirect('alerts:alert-detail', fingerprint=alert.fingerprint)
+
+
+@login_required
+@require_POST # Ensure this view only accepts POST requests
+def acknowledge_alert_from_list(request):
+    """
+    Handles acknowledging an alert directly from the list view modal.
+    """
+    fingerprint = request.POST.get('fingerprint')
+    comment = request.POST.get('comment')
+
+    if not fingerprint:
+        messages.error(request, "Acknowledgement failed: Missing alert identifier.")
+        return redirect('alerts:alert-list') # Redirect back to list
+
+    if not comment:
+        messages.error(request, "Acknowledgement failed: Comment is required.")
+        # Ideally, redirect back with an error indicator for the specific modal,
+        # but for simplicity, just redirect to the list for now.
+        # Preserving query params is important here.
+        redirect_url = reverse('alerts:alert-list')
+        query_params = request.GET.urlencode() # Get original query params
+        if query_params:
+            redirect_url = f"{redirect_url}?{query_params}"
+        return HttpResponseRedirect(redirect_url)
+
+    alert = get_object_or_404(AlertGroup, fingerprint=fingerprint)
+
+    if alert.acknowledged:
+        messages.warning(request, f"Alert '{alert.name}' is already acknowledged.")
+    else:
+        try:
+            # Use the existing service function which handles comment creation and status update
+            acknowledge_alert(alert, request.user, comment)
+            messages.success(request, f"Alert '{alert.name}' acknowledged successfully.")
+            logger.info(f"Alert {fingerprint} acknowledged from list view by user {request.user.username}")
+        except Exception as e:
+            logger.error(f"Error acknowledging alert {fingerprint} from list view: {e}", exc_info=True)
+            messages.error(request, "An error occurred while acknowledging the alert.")
+
+    # Redirect back to the alert list, preserving original filters/page
+    redirect_url = reverse('alerts:alert-list')
+    query_params = request.GET.urlencode() # Get original query params from the page the modal was on
+    if query_params:
+        redirect_url = f"{redirect_url}?{query_params}"
+
+    # Note: request.POST might contain pagination/filter params if the form included them,
+    # but it's safer to reconstruct the URL from the previous page's GET params if possible.
+    # A hidden input in the modal form capturing request.GET.urlencode() could be more robust.
+    # For now, we assume the browser retains the GET params in the referer or the form action implicitly.
+
+    return HttpResponseRedirect(redirect_url)
 
 
 def login_view(request):
