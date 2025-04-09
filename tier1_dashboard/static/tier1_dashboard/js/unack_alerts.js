@@ -5,11 +5,32 @@ document.addEventListener('DOMContentLoaded', function() {
     const refreshBadge = document.getElementById('refresh-badge');
     const refreshIntervalSeconds = 15;
     const apiURL = window.ALERTS_API_URL;
+    const websocketURL = 'ws://localhost:8000/ws/alerts/';
+
+    let soundEnabled = true; // Initialize sound as enabled
 
     let currentFingerprints = new Set();
     let refreshIntervalId = null;
     let countdownIntervalId = null;
     let countdown = refreshIntervalSeconds;
+    let websocket;
+
+    // --- Connection Status Indicator ---
+    const connectionStatus = document.getElementById('connection-status');
+    function updateConnectionStatus(isConnected) {
+        connectionStatus.classList.toggle('connected', isConnected);
+        connectionStatus.classList.toggle('disconnected', !isConnected);
+
+    let notificationEnabled = false; // Initialize notifications as disabled
+    requestNotificationPermission();
+
+    // --- Sound Toggle ---
+    const soundToggle = document.getElementById('sound-toggle');
+    let soundEnabled = soundToggle ? soundToggle.checked : true; // Initialize sound as enabled, based on checkbox
+    if (soundToggle) {
+        soundToggle.addEventListener('change', () => soundEnabled = soundToggle.checked);
+    }
+
 
     // --- Helper Functions ---
 
@@ -34,15 +55,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return fingerprints;
     }
 
-    function playNotificationSound() {
-        if (notificationSound) {
-            notificationSound.play().catch(error => {
-                // Autoplay might be blocked by the browser if the user hasn't interacted yet
-                console.warn("Audio playback failed. User interaction might be required.", error);
-                // Optionally, display a visual cue instead or request interaction.
-            });
-        }
-    }
 
     function initializeDynamicContent() {
         // Re-initialize tooltips for new content
@@ -108,6 +120,50 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    function initializeWebSocket() {
+        websocket = new WebSocket(websocketURL);
+
+        websocket.onopen = function(event) {
+            console.log("WebSocket connected:", event);
+            updateConnectionStatus(true);
+        };
+        isWebSocketConnected = true;
+
+        websocket.onclose = function(event) {
+            console.log("WebSocket disconnected:", event);
+            updateConnectionStatus(false);
+            setTimeout(initializeWebSocket, 3000);
+
+        };
+
+        websocket.onerror = function(event) {
+            isWebSocketConnected = false;
+            console.error("WebSocket error:", event);
+        };
+
+        websocket.onmessage = function(event) {
+            try {
+                const data = JSON.parse(event.data);
+                console.log("Received WebSocket message:", data);
+                if (data && data.alerts) {
+                    updateAlertTable(data.alerts);
+                }
+            } catch (error) {
+                console.error("Error parsing WebSocket message:", error);
+            }
+        };
+
+        isWebSocketConnected = websocket.readyState === WebSocket.OPEN;
+
+    }
+
+    let isWebSocketConnected = false;
+
+    // --- Browser Notifications ---
+
+    const notificationToggle = document.getElementById('notification-toggle');
+    if (notificationToggle) notificationToggle.addEventListener('change', () => notificationEnabled = notificationToggle.checked);
+
 
     // --- Core Refresh Logic ---
 
@@ -148,7 +204,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Play sound if new alerts were detected
             if (hasNewAlerts) {
-                playNotificationSound();
+                if (soundEnabled) {
+                    playSound();
+                }
+                const alertMessage = `New alert received! Check the dashboard for details.`;
+                if (notificationEnabled) {
+                    sendNotification(alertMessage);
+                }
+
             }
 
             // Re-initialize tooltips and event listeners for the new content
@@ -203,6 +266,41 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initial population of fingerprints
     currentFingerprints = getCurrentFingerprints();
 
+    initializeWebSocket();
+
+    // --- Browser Notifications ---
+    function requestNotificationPermission() {
+        if (Notification.permission !== 'granted') {
+            Notification.requestPermission().then(permission => {
+                notificationEnabled = permission === 'granted';
+                console.log("Notification permission:", permission);
+            });
+        } else {
+            notificationEnabled = true;
+        }
+    }
+
+    // Call the function to request permission
+    requestNotificationPermission();
+
+    function sendNotification(message) {
+        if (notificationEnabled) {
+            new Notification('New Alert', { body: message });
+        }
+    }
+
+        // --- Sound Toggle ---
+    if (soundToggle) {
+        soundEnabled = soundToggle.checked;
+        soundToggle.addEventListener('change', function() {
+            soundEnabled = this.checked;
+            console.log("Sound alerts toggled:", soundEnabled);
+        });
+    }
+
+
+
+
     // Initialize dynamic content listeners for initially loaded content
     initializeDynamicContent();
 
@@ -212,6 +310,7 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
         console.warn("Alert table body not found. Auto-refresh disabled.");
     }
+
 
     // Optional: Add logic to pause refresh on interaction (e.g., modal open) if desired
     // Optional: Add logic to handle browser visibility changes more robustly

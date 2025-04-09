@@ -14,6 +14,15 @@
         <h1 class="page-title d-flex align-items-center">
             <i class='bx bx-bell-off me-2'></i>
             Unacknowledged Alerts
+            <div class="toggles">
+                <div class="sound-toggle-container">
+                    <input type="checkbox" id="sound-toggle">
+                    <label for="sound-toggle">Enable Sound Alerts</label>
+                    <input type="checkbox" id="notification-toggle">
+                    <label for="notification-toggle">Enable Browser Notifications</label>
+                    <div id="connection-status" class="connection-icon"></div>
+                </div>
+            </div>
             <span class="badge bg-secondary ms-3" id="refresh-badge">Auto-Refresh: 30s</span>
         </h1>
     </header>

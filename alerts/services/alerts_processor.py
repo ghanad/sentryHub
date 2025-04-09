@@ -6,7 +6,7 @@ import json
 
 from ..models import AlertGroup, AlertInstance, AlertAcknowledgementHistory, SilenceRule # SilenceRule might not be needed directly, but good for context
 from docs.services.documentation_matcher import match_documentation_to_alert
-from .silence_matcher import check_alert_silence # Import the new function
+from .silence_matcher import check_alert_silence
 
 
 logger = logging.getLogger(__name__)
@@ -41,10 +41,14 @@ def process_alert(alert_data):
         process_firing_alert(alert_group, labels, fingerprint, starts_at, annotations, generator_url)
     else:  # status is 'resolved'
         process_resolved_alert(alert_group, labels, fingerprint, starts_at, ends_at, annotations, generator_url)
-    
+
     # Try to find related documentation for this alert
     try_match_documentation(alert_group)
-    
+
+    from ..consumers import AlertConsumer  # Import here to avoid circular import
+    alert_data = get_alert_group_data(alert_group)
+    AlertConsumer.send_alert_update(alert_data)
+
     return alert_group
 
 def extract_alert_data(alert_data):
@@ -174,7 +178,7 @@ def process_firing_alert(alert_group, labels, fingerprint, starts_at, annotation
     # Save the group if any fields need updating
     if needs_group_save:
          alert_group.save(update_fields=group_update_fields)
-
+    
     
     if active_instance and active_instance.started_at != starts_at:
         # If the start times differ, close the old instance but mark it as inferred resolution
@@ -273,7 +277,7 @@ def process_resolved_alert(alert_group, labels, fingerprint, starts_at, ends_at,
     if is_duplicate_resolved(alert_group, starts_at, ends_at):
         logger.info(f"Skipping duplicate resolved instance: {labels.get('alertname')} - {fingerprint}")
         return
-    
+
     # Find matching firing instance that started at the same time
     matching_firing = get_matching_firing_instance(alert_group, starts_at)
     
@@ -451,3 +455,24 @@ def acknowledge_alert(alert_group, user, comment=None):
         logger.info(f"Acknowledgement associated with instance ID: {active_instance.id}")
     
     return alert_group
+
+def get_alert_group_data(alert_group):
+    """
+    Get all the information of an alert group to send to clients.
+
+    Args:
+        alert_group (AlertGroup): The alert group
+
+    Returns:
+        dict: A dictionary containing alert group information.
+    """
+    data = {
+        "id": alert_group.id,
+        "name": alert_group.name,
+        "fingerprint": alert_group.fingerprint,
+        "severity": alert_group.severity,
+        "current_status": alert_group.current_status,
+        "labels": alert_group.labels,
+        "acknowledged": alert_group.acknowledged,
+    }
+    return data
