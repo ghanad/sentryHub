@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let refreshIntervalId = null;
     let countdownIntervalId = null;
     let countdown = refreshIntervalSeconds;
-    let websocket;
+
 
     // --- Connection Status Indicator ---
     const connectionStatus = document.getElementById('connection-status');
@@ -124,7 +124,8 @@ document.addEventListener('DOMContentLoaded', function() {
         websocket = new WebSocket(websocketURL);
 
         websocket.onopen = function(event) {
-            console.log("WebSocket connected:", event);
+            isWebSocketConnected = true;
+            console.log("WebSocket connected");
             updateConnectionStatus(true);
         };
         isWebSocketConnected = true;
@@ -136,10 +137,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         };
 
-        websocket.onerror = function(event) {
+        websocket.onerror = function() {
             isWebSocketConnected = false;
-            console.error("WebSocket error:", event);
-        };
+            console.error("WebSocket error");
+         };
 
         websocket.onmessage = function(event) {
             try {
@@ -152,10 +153,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error("Error parsing WebSocket message:", error);
             }
         };
-
-        isWebSocketConnected = websocket.readyState === WebSocket.OPEN;
-
     }
+
+
+    // --- WebSocket Management ---
+    const websocketURL = 'ws://localhost:8000/alerts/ws/';
+
+    let websocket;
+
 
     let isWebSocketConnected = false;
 

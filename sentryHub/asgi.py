@@ -16,15 +16,14 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'sentryHub.settings')
 
 django.setup()
 
+from django.urls import re_path, path, include
 from channels.auth import AuthMiddlewareStack
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.security.websocket import AllowedHostsOriginValidator
 
-import alerts.routing
-
 application = ProtocolTypeRouter({
     "http": get_asgi_application(),
     "websocket": AllowedHostsOriginValidator(
-        AuthMiddlewareStack(URLRouter(alerts.routing.websocket_urlpatterns))
+        AuthMiddlewareStack(URLRouter([path("alerts/", include("alerts.urls"))]))
     ),
 })
