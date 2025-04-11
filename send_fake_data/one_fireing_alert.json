@@ -5,7 +5,7 @@
     {
       "status": "firing",
       "labels": {
-        "alertname": "NodeExporterNotScrape8",
+        "alertname": "NodeExporterNotScrape21",
         "category": "nodes",
         "instance": "localhost:9108",
         "job": "node",
@@ -15,10 +15,10 @@
         "peygir": "users:ali;resolve:true",
         "summary": "node exporter localhost:9100 is DOWN."
       },
-      "startsAt": "2025-04-08T03:38:00.000Z",
+      "startsAt": "2025-04-11T08:31:00.000Z",
       "endsAt": "0001-01-01T00:00:00Z",
       "generatorURL": "http://DESKTOP-JSRUK7R:9090/graph?g0.expr=up+%21%3D+1&g0.tab=1",
-      "fingerprint": "f436637d82137548"
+      "fingerprint": "f436631d82137521"
     }
   ],
   "groupLabels": {
