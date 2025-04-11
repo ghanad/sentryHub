@@ -3,5 +3,5 @@ from channels.routing import URLRouter
 from . import consumers
 
 websocket_urlpatterns = URLRouter([
-    re_path(r"ws/alerts/", consumers.AlertConsumer.as_asgi()),
+    re_path(r"alerts/ws/", consumers.AlertConsumer.as_asgi()),
 ])

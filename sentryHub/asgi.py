@@ -8,19 +8,26 @@ https://docs.djangoproject.com/en/4.0/howto/deployment/asgi/
 """
 
 import os
-import django
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "sentryHub.settings")
-django.setup()  # Add this line to initialize Django before any imports
+from django.core.asgi import get_asgi_application
+from django import setup
+
+setup()
+django_asgi_app = get_asgi_application()
 
 # Move these imports after django.setup()
-from channels.routing import ProtocolTypeRouter, URLRouter
-from django.core.asgi import get_asgi_application
-from channels.auth import AuthMiddlewareStack
 from channels.security.websocket import AllowedHostsOriginValidator
-import alerts.urls
+from channels.routing import ProtocolTypeRouter, URLRouter
+from channels.auth import AuthMiddlewareStack
+from alerts import routing
 
-application = ProtocolTypeRouter({
-    "http": get_asgi_application(),
-    "websocket": AllowedHostsOriginValidator(AuthMiddlewareStack(URLRouter(alerts.urls.websocket_urlpatterns))),
-})
+
+application = ProtocolTypeRouter(
+    {
+        "http": django_asgi_app,
+        "websocket": AllowedHostsOriginValidator(
+            AuthMiddlewareStack(URLRouter(routing.websocket_urlpatterns))
+        ),
+    }
+)
