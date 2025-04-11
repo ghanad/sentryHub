@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 
 class AlertConsumer(AsyncWebsocketConsumer):
     async def connect(self):
+        logger.info(f"connect called {self.channel_name}")
         try:
             self.room_group_name = "alerts"
 
@@ -37,6 +38,7 @@ class AlertConsumer(AsyncWebsocketConsumer):
 
     async def alert_message(self, event):
         try:
+            logger.info("alert_message called")
             message = event["message"]
             await self.send(text_data=json.dumps({"message": message}))
         except Exception as e:
@@ -44,6 +46,7 @@ class AlertConsumer(AsyncWebsocketConsumer):
 
     @classmethod
     def send_alert_update(cls, message):
+        logger.info("send_alert_update called")
         try:
             channel_layer = get_channel_layer()
             async_to_sync(channel_layer.group_send)(
