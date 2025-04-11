@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const refreshBadge = document.getElementById('refresh-badge');
     const refreshIntervalSeconds = 15;
     const apiURL = window.ALERTS_API_URL;
-    const websocketURL = 'ws://localhost:8000/alerts/ws/';
+    const websocketURL = 'ws://sentryhub_web:8000/alerts/ws/';
     const soundToggle = document.getElementById('sound-toggle');
     const notificationToggle = document.getElementById('notification-toggle');
     let soundEnabled = soundToggle ? soundToggle.checked : true; // Initialize based on default HTML state
