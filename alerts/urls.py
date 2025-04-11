@@ -13,7 +13,7 @@ from .views import (
 from .consumers import AlertConsumer
 
 websocket_urlpatterns = [
-    re_path(r"ws/", AlertConsumer.as_asgi()),
+    re_path(r"alerts/ws/", AlertConsumer.as_asgi()),
 ]
 
 app_name = 'alerts'
