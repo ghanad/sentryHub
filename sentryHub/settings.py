@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     # Third-party apps
     'rest_framework',
     'tinymce',
+    'channels',
     
     # Project apps
     'core.apps.CoreConfig',
@@ -75,6 +76,13 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'sentryHub.wsgi.application'
+ASGI_APPLICATION = 'sentryHub.asgi.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
 
 # Database
 DATABASES = {
@@ -137,6 +145,11 @@ if not os.path.exists(LOGS_DIR):
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'filters': {
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
+        },
+    },
     'formatters': {
         'verbose': {
             'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
@@ -145,17 +158,30 @@ LOGGING = {
     },
     'handlers': {
         'file': {
-            'level': 'INFO',
+            'level': 'DEBUG',
             'class': 'logging.FileHandler',
-            'filename': os.path.join(BASE_DIR, 'logs', 'sentryhub.log'),
+            'filename': os.path.join(BASE_DIR, 'logs', 'sentryhub2.log'),
             'formatter': 'verbose',
+        },
+        'console': {
+            'level': 'DEBUG',
+            'filters': ['require_debug_true'],
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose'
         },
     },
     'loggers': {
-        '': {  # Root logger
-            'handlers': ['file'],
+        'django': {
+            'handlers': ['file', 'console'],
             'level': 'INFO',
-            'propagate': True,
+        },
+        'django.channels': {
+            'handlers': ['file', 'console'],
+            'level': 'DEBUG',
+        },
+        'alerts': {
+            'handlers': ['file', 'console'],
+            'level': 'DEBUG',
         },
     },
 }
