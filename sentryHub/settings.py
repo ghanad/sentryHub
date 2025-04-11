@@ -153,10 +153,9 @@ LOGGING = {
     },
     'loggers': {
         '': {  # Root logger
-                'handlers': ['file'],
-                'level': 'INFO',
-                'propagate': True,
-            },
+            'handlers': ['file'],
+            'level': 'INFO',
+            'propagate': True,
         },
     },
 }
