@@ -162,6 +162,11 @@ LOGGING = {
             'level': 'INFO',
             'propagate': True,
         },
+        'alerts.consumers': {  # Add this logger
+            'handlers': ['file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
     },
 }
 
