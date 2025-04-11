@@ -152,20 +152,11 @@ LOGGING = {
         },
     },
     'loggers': {
-        'docs': {  # This matches the logger name in documentation_matcher.py
-            'handlers': ['file'],
-            'level': 'INFO',
-            'propagate': True,
-        },
-        'alerts': {  # This matches the logger name in alerts/views.py
-            'handlers': ['file'],
-            'level': 'INFO',
-            'propagate': True,
-        },
-        'alerts.consumers': {  # Add this logger
-            'handlers': ['file'],
-            'level': 'INFO',
-            'propagate': True,
+        '': {  # Root logger
+                'handlers': ['file'],
+                'level': 'INFO',
+                'propagate': True,
+            },
         },
     },
 }
