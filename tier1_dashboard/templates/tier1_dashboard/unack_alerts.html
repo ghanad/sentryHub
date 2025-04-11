@@ -14,14 +14,24 @@
         <h1 class="page-title d-flex align-items-center">
             <i class='bx bx-bell-off me-2'></i>
             Unacknowledged Alerts
-            <div class="toggles">
-                <div class="sound-toggle-container">
-                    <input type="checkbox" id="sound-toggle">
-                    <label for="sound-toggle">Enable Sound Alerts</label>
-                    <input type="checkbox" id="notification-toggle">
-                    <label for="notification-toggle">Enable Browser Notifications</label>
-                    <div id="connection-status" class="connection-icon"></div>
+            <div class="toggles d-flex align-items-center gap-3 ms-auto"> {# Use flexbox for layout #}
+                <div class="toggle-switch">
+                    <input type="checkbox" id="sound-toggle" class="toggle-switch-checkbox" checked>
+                    <label for="sound-toggle" class="toggle-switch-label">
+                        <span class="toggle-switch-inner"></span>
+                        <span class="toggle-switch-switch"></span>
+                    </label>
+                    <span class="toggle-switch-text ms-2">Sound</span> {# Short text label #}
                 </div>
+                <div class="toggle-switch">
+                    <input type="checkbox" id="notification-toggle" class="toggle-switch-checkbox" checked>
+                    <label for="notification-toggle" class="toggle-switch-label">
+                        <span class="toggle-switch-inner"></span>
+                        <span class="toggle-switch-switch"></span>
+                    </label>
+                    <span class="toggle-switch-text ms-2">Notify</span> {# Short text label #}
+                </div>
+                <div id="connection-status" class="connection-icon" data-bs-toggle="tooltip" title="WebSocket Connection Status"></div> {# Added tooltip #}
             </div>
             <span class="badge bg-secondary ms-3" id="refresh-badge">Auto-Refresh: 30s</span>
         </h1>

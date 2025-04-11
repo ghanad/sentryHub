@@ -12,3 +12,88 @@
 .modal-body textarea {
     min-height: 100px;
 }
+
+/* Toggle Switch Styles */
+.toggle-switch {
+    display: inline-flex; /* Use inline-flex for alignment */
+    align-items: center;
+    cursor: pointer;
+    user-select: none; /* Prevent text selection */
+}
+
+.toggle-switch-checkbox {
+    display: none; /* Hide the actual checkbox */
+}
+
+.toggle-switch-label {
+    display: block;
+    width: 40px; /* Width of the switch */
+    height: 20px; /* Height of the switch */
+    background-color: #ccc; /* Default background (off state) */
+    border-radius: 10px; /* Rounded corners */
+    position: relative;
+    transition: background-color 0.2s ease-in-out;
+    cursor: pointer;
+}
+
+.toggle-switch-label:hover {
+    background-color: #bbb; /* Slightly darker on hover */
+}
+
+.toggle-switch-checkbox:focus + .toggle-switch-label {
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.5); /* Focus outline */
+}
+
+.toggle-switch-inner {
+    /* Optional: for inner text/icons if needed */
+    display: none;
+}
+
+.toggle-switch-switch {
+    display: block;
+    width: 16px; /* Size of the thumb */
+    height: 16px;
+    background-color: white;
+    border-radius: 50%; /* Make it circular */
+    position: absolute;
+    top: 2px; /* Position inside the track */
+    left: 2px;
+    transition: left 0.2s ease-in-out;
+}
+
+.toggle-switch-checkbox:checked + .toggle-switch-label {
+    background-color: #0d6efd; /* Active color (Bootstrap primary) */
+}
+
+.toggle-switch-checkbox:checked + .toggle-switch-label:hover {
+    background-color: #0b5ed7; /* Darker active color on hover */
+}
+
+.toggle-switch-checkbox:checked + .toggle-switch-label .toggle-switch-switch {
+    left: calc(100% - 18px); /* Move thumb to the right (40px width - 16px thumb - 2px padding - 2px left offset) */
+}
+
+.toggle-switch-text {
+    font-size: 0.9em;
+    color: #6c757d; /* Muted text color */
+    vertical-align: middle;
+}
+
+/* Connection Status Icon */
+.connection-icon {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 8px; /* Space from toggles */
+    transition: background-color 0.3s ease;
+}
+
+.connection-icon.connected {
+    background-color: #198754; /* Green for connected (Bootstrap success) */
+}
+
+.connection-icon.disconnected {
+    background-color: #dc3545; /* Red for disconnected (Bootstrap danger) */
+}

@@ -49,3 +49,28 @@ Note: The `tier1_dashboard/static/tier1_dashboard/js/unack_alerts.js` and `tier1
 Note: The `tier1_dashboard/static/tier1_dashboard/js/unack_alerts.js` and `tier1_dashboard/templates/tier1_dashboard/unack_alerts.html` files were modified to enable browser notification and add toggle to turn it on/off.
 Note: The `tier1_dashboard/static/tier1_dashboard/js/unack_alerts.js` and `tier1_dashboard/templates/tier1_dashboard/unack_alerts.html` files were modified to add the connection status indicator.
 Note: The `alerts/consumers.py` file was modified to add more error handling.
+
+## Post-Implementation Fixes
+
+- [x] **Fix Sound/Notification Functionality:**
+    - [x] Investigate toggle event handlers in `unack_alerts.js`
+    - [x] Ensure sound plays when enabled (added robust error handling)
+    - [x] Validate notification permissions persistence (logic adjusted in JS)
+    - [x] Add fallback for missing sound file
+    Note: Updated `tier1_dashboard/static/tier1_dashboard/js/unack_alerts.js` with improved sound handling
+
+- [x] **Checkbox UI/UX Improvements:**
+    - [x] Redesign checkbox layout using toggle switches
+    - [x] Implement consistent hover/focus states
+    - [x] Add visual feedback on toggle
+    Note: Modified `tier1_dashboard/static/tier1_dashboard/css/unack_alerts.css` and `tier1_dashboard/templates/tier1_dashboard/unack_alerts.html`
+
+- [x] **Default Enabled States:**
+    - [x] Set `checked` attribute on checkbox inputs
+    - [x] Verify initial state consistency after page reload (logic adjusted in JS)
+    Note: Updated `tier1_dashboard/templates/tier1_dashboard/unack_alerts.html`
+
+- [ ] **Validation Testing:**
+    - [ ] Create test matrix for all toggle combinations
+    - [ ] Verify cross-browser behavior
+    - [ ] Add Cypress end-to-end tests

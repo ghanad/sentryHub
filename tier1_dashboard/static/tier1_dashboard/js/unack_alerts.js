@@ -2,12 +2,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const alertTableBody = document.getElementById('alert-table-body');
     const alertCountDisplay = document.getElementById('alert-count-display');
     const notificationSound = document.getElementById('alert-notification-sound');
+    let soundErrorLogged = false; // Track if we've logged sound errors
     const refreshBadge = document.getElementById('refresh-badge');
     const refreshIntervalSeconds = 15;
     const apiURL = window.ALERTS_API_URL;
     const websocketURL = 'ws://localhost:8000/alerts/ws/';
-    let soundEnabled = true; // Initialize sound as enabled
-    let notificationEnabled = false; // Initialize notifications as disabled
+    const soundToggle = document.getElementById('sound-toggle');
+    const notificationToggle = document.getElementById('notification-toggle');
+    let soundEnabled = soundToggle ? soundToggle.checked : true; // Initialize based on default HTML state
+    let notificationEnabled = notificationToggle ? notificationToggle.checked : true; // Initialize based on default HTML state
 
     let currentFingerprints = new Set();
     let refreshIntervalId = null;
@@ -23,14 +26,16 @@ document.addEventListener('DOMContentLoaded', function() {
         connectionStatus.classList.toggle('disconnected', !isConnected);
     }
 
-    requestNotificationPermission();
-
     // --- Sound Toggle ---
-    const soundToggle = document.getElementById('sound-toggle');
-    soundEnabled = soundToggle ? soundToggle.checked : true; // Initialize sound as enabled, based on checkbox
     if (soundToggle) {
         soundToggle.addEventListener('change', () => soundEnabled = soundToggle.checked);
     }
+
+    // --- Notification Toggle & Permissions ---
+    if (notificationToggle) {
+        notificationToggle.addEventListener('change', handleNotificationToggleChange);
+    }
+    requestNotificationPermissionAndUpdateToggle(); // Request permission on load
 
     // --- Helper Functions ---
 
@@ -154,8 +159,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // --- Browser Notifications ---
-    const notificationToggle = document.getElementById('notification-toggle');
-    if (notificationToggle) notificationToggle.addEventListener('change', () => notificationEnabled = notificationToggle.checked);
+    // Event listener moved up near initialization
 
     // --- Core Refresh Logic ---
     async function fetchAndUpdateAlerts() {
@@ -195,12 +199,17 @@ document.addEventListener('DOMContentLoaded', function() {
             // Play sound if new alerts were detected
             if (hasNewAlerts) {
                 if (soundEnabled) {
-                    playSound();
+                    try {
+                        playSound();
+                    } catch (error) {
+                        if (!soundErrorLogged) {
+                            console.error("Error playing sound:", error);
+                            soundErrorLogged = true;
+                        }
+                    }
                 }
                 const alertMessage = `New alert received! Check the dashboard for details.`;
-                if (notificationEnabled) {
-                    sendNotification(alertMessage);
-                }
+                sendNotification(alertMessage); // sendNotification now checks internally
             }
 
             // Re-initialize tooltips and event listeners for the new content
@@ -255,29 +264,76 @@ document.addEventListener('DOMContentLoaded', function() {
 
     initializeWebSocket();
 
-    // --- Browser Notifications ---
-    function requestNotificationPermission() {
-        if (Notification.permission !== 'granted') {
+    // --- Browser Notification Functions ---
+    function requestNotificationPermissionAndUpdateToggle() {
+        if (!('Notification' in window)) {
+            console.warn("This browser does not support desktop notification");
+            if (notificationToggle) notificationToggle.disabled = true; // Disable toggle if not supported
+            notificationEnabled = false;
+            return;
+        }
+
+        if (Notification.permission === 'granted') {
+            // Permission already granted, ensure toggle reflects internal state
+            if (notificationToggle) notificationEnabled = notificationToggle.checked;
+        } else if (Notification.permission !== 'denied') {
+            // Ask for permission
             Notification.requestPermission().then(permission => {
-                notificationEnabled = permission === 'granted';
                 console.log("Notification permission:", permission);
+                if (permission === 'granted') {
+                    // Update internal state based on toggle *after* getting permission
+                    if (notificationToggle) notificationEnabled = notificationToggle.checked;
+                } else {
+                    // Permission denied or dismissed
+                    notificationEnabled = false;
+                    if (notificationToggle) notificationToggle.checked = false; // Uncheck toggle if denied
+                }
             });
         } else {
-            notificationEnabled = true;
+            // Permission was explicitly denied previously
+            notificationEnabled = false;
+            if (notificationToggle) notificationToggle.checked = false; // Ensure toggle is off
+            if (notificationToggle) notificationToggle.disabled = true; // Optionally disable if permanently denied
         }
     }
 
-    // Call the function to request permission
-    requestNotificationPermission();
+    function playSound() {
+        try {
+            // Try playing the configured sound
+            notificationSound.currentTime = 0; // Rewind to start
+            notificationSound.play().catch(error => {
+                if (!soundErrorLogged) {
+                    console.error("Sound playback failed:", error);
+                    soundErrorLogged = true;
+                }
+            });
+        } catch (error) {
+            if (!soundErrorLogged) {
+                console.error("Sound error:", error);
+                soundErrorLogged = true;
+            }
+        }
+    }
 
     function sendNotification(message) {
-        if (notificationEnabled) {
+        // Send only if toggle is checked AND permission is granted
+        if (notificationEnabled && Notification.permission === 'granted') {
             new Notification('New Alert', { body: message });
         }
     }
 
     // Initialize dynamic content listeners for initially loaded content
     initializeDynamicContent();
+
+    // Handle notification toggle changes *after* initial permission check
+    function handleNotificationToggleChange() {
+        notificationEnabled = notificationToggle.checked;
+        // If user tries to enable without permission, re-request
+        if (notificationEnabled && Notification.permission !== 'granted') {
+            console.log("Requesting notification permission due to toggle change...");
+            requestNotificationPermissionAndUpdateToggle();
+        }
+    }
 
     // Start the refresh cycle
     if (alertTableBody) { // Only start if the table exists
