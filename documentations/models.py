@@ -51,5 +51,6 @@ class DocumentationAlertGroup(models.Model):
     
     class Meta:
         unique_together = ('documentation', 'alert_group')
+        app_label = 'documentations'
         verbose_name = "Documentation-Alert Link"
         verbose_name_plural = "Documentation-Alert Links"
