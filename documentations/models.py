@@ -21,6 +21,7 @@ class AlertDocumentation(models.Model):
         return self.title
     
     class Meta:
+        app_label = 'documentations'
         ordering = ['title']
         verbose_name = "Alert Documentation"
         verbose_name_plural = "Alert Documentation"
