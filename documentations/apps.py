@@ -8,4 +8,4 @@ class DocsConfig(AppConfig):
     verbose_name = 'Alert Documentation'
     
     def ready(self):
-        import docs.signals
+        import documentations.signals
