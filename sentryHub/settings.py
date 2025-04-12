@@ -32,7 +32,7 @@ INSTALLED_APPS = [
     # Project apps
     'core.apps.CoreConfig',
     'alerts',
-    'docs',
+    'documentations',
     'admin_dashboard',
     'users',
     'main_dashboard',

@@ -10,6 +10,8 @@ from .views import (
     SilenceRuleDeleteView,
     acknowledge_alert_from_list, # Import the new view
 )
+from documentations.api import views as docs_api_views  # Import API views from docs
+
 
 app_name = 'alerts'
 

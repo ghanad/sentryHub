@@ -4,7 +4,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from datetime import timedelta
-import logging
+
 import json
 from alerts.models import AlertGroup
 

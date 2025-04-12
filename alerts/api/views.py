@@ -16,7 +16,7 @@ from .serializers import (
     AlertInstanceSerializer, 
     AlertCommentSerializer,
     AlertmanagerWebhookSerializer,
-    AcknowledgeAlertSerializer
+    AcknowledgeAlertSerializer,
 )
 
 logger = logging.getLogger(__name__)

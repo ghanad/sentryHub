@@ -3,7 +3,6 @@ from .models import AlertComment, SilenceRule
 import json
 from django.core.exceptions import ValidationError
 from django.utils import timezone
-
 class AlertAcknowledgementForm(forms.Form):
     """
     Form for acknowledging alerts with a required comment.

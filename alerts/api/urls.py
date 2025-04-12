@@ -9,5 +9,5 @@ router.register(r'history', AlertHistoryViewSet)
 urlpatterns = [
     path('', include(router.urls)),
     path('webhook/', AlertWebhookView.as_view(), name='alert-webhook'),
-    path('docs/', include('docs.api.urls')),
+    path('docs/', include('documentations.api.urls')),
 ]

@@ -22,7 +22,7 @@ from .models import AlertGroup, AlertInstance, AlertComment, SilenceRule # Added
 from .forms import AlertAcknowledgementForm, AlertCommentForm, SilenceRuleForm # Added SilenceRuleForm
 from .services.alerts_processor import acknowledge_alert
 from .services.silence_matcher import check_alert_silence # Import the function
-from docs.services.documentation_matcher import match_documentation_to_alert
+from documentations.services.documentation_matcher import match_documentation_to_alert
 
 logger = logging.getLogger(__name__)
 

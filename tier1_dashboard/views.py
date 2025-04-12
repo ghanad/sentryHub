@@ -7,7 +7,6 @@ from django.urls import reverse
 from django.shortcuts import redirect
 from alerts.models import AlertGroup, AlertComment
 from alerts.views import AlertListView
-from alerts.forms import AlertAcknowledgementForm, AlertCommentForm
 from alerts.services.alerts_processor import acknowledge_alert
 import logging
 
