@@ -5,7 +5,7 @@ from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from datetime import timedelta
 
-import json
+import json, logging
 from alerts.models import AlertGroup
 
 logger = logging.getLogger(__name__)
