@@ -108,7 +108,7 @@ class AlertListViewTest(TestCase):
         self.assertEqual(response.context['alerts'][0].fingerprint, 'fp2')
 
     def test_alert_list_pagination(self):
-        # Create more alerts to trigger pagination (assuming paginate_by=20)
+        # Create more alerts to trigger pagination (paginate_by=10)
         for i in range(4, 25):
             AlertGroup.objects.create(
                 fingerprint=f'fp{i}', name=f'Test Alert {i}', labels={'job': 'test'}, severity='warning', current_status='firing'
@@ -117,30 +117,31 @@ class AlertListViewTest(TestCase):
         response = self.client.get(reverse('alerts:alert-list'))
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.context['is_paginated'])
-        self.assertEqual(len(response.context['alerts']), 20) # Default page size
+        self.assertEqual(len(response.context['alerts']), 10) # Default page size
 
         response = self.client.get(reverse('alerts:alert-list'), {'page': 2})
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.context['is_paginated'])
-        self.assertEqual(len(response.context['alerts']), 4) # Remaining alerts on page 2 (3 original + 21 new = 24 total)
+        self.assertEqual(len(response.context['alerts']), 10) # Second page of alerts (3 original + 21 new = 24 total)
 
         # Test invalid page number (should default to page 1)
         response = self.client.get(reverse('alerts:alert-list'), {'page': 'invalid'})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['page_obj'].number, 1)
-        self.assertEqual(len(response.context['alerts']), 20)
+        self.assertEqual(len(response.context['alerts']), 10)
 
         # Test page number too high (should default to last page)
         response = self.client.get(reverse('alerts:alert-list'), {'page': 999})
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context['page_obj'].number, 2) # Last page is 2
+        self.assertEqual(len(response.context['alerts']), 4) # Last page has remaining 4 alerts (24 total / 10 per page)
+        self.assertEqual(response.context['page_obj'].number, 3) # Last page is 3 (10+10+4)
         self.assertEqual(len(response.context['alerts']), 4)
 
         # Test page number less than 1 (should default to page 1)
         response = self.client.get(reverse('alerts:alert-list'), {'page': 0})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['page_obj'].number, 1)
-        self.assertEqual(len(response.context['alerts']), 20)
+        self.assertEqual(len(response.context['alerts']), 10) # Default page size
 
 
 class AlertDetailViewTest(TestCase):
