@@ -40,12 +40,12 @@ class AlertGroup(models.Model):
         blank=True,
         related_name='acknowledged_alerts'
     )
-    acknowledgement_time = models.DateTimeField(null=True, blank=True)
+    acknowledgement_time = models.DateTimeField(null=True, blank=True)   
     documentation = models.ForeignKey(
-        'documentations.AlertDocumentation',
+        'documentations.AlertDocumentation',        
         on_delete=models.SET_NULL,
         null=True,
-        blank=True,
+        blank=True,        
         related_name='directly_linked_alerts'
     )
     is_silenced = models.BooleanField(default=False, help_text="Is this alert group currently silenced by an internal rule?")
@@ -57,6 +57,7 @@ class AlertGroup(models.Model):
         return f"{self.name} ({self.fingerprint})"
     
     class Meta:
+        app_label = 'alerts'
         ordering = ['-last_occurrence']
 
 
