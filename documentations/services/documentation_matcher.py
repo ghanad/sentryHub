@@ -1,7 +1,7 @@
 from django.utils import timezone
 import logging
 
-from docs.models import AlertDocumentation, DocumentationAlertGroup
+from documentations.models import AlertDocumentation, DocumentationAlertGroup
 
 logger = logging.getLogger(__name__)
 
