@@ -42,7 +42,7 @@ class AlertGroup(models.Model):
     )
     acknowledgement_time = models.DateTimeField(null=True, blank=True)
     documentation = models.ForeignKey(
-        'docs.AlertDocumentation',
+        'documentations.AlertDocumentation',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
