@@ -5,7 +5,7 @@ import logging
 import json
 
 from ..models import AlertGroup, AlertInstance, AlertAcknowledgementHistory, SilenceRule # SilenceRule might not be needed directly, but good for context
-from docs.services.documentation_matcher import match_documentation_to_alert
+from documentations.services.documentation_matcher import match_documentation_to_alert
 from .silence_matcher import check_alert_silence # Import the new function
 
 
