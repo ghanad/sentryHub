@@ -8,7 +8,11 @@ from .views import (
     SilenceRuleCreateView,
     SilenceRuleUpdateView,
     SilenceRuleDeleteView,
-    acknowledge_alert_from_list, # Import the new view
+    acknowledge_alert_from_list,
+    JiraRuleListView,
+    JiraRuleCreateView,
+    JiraRuleUpdateView,
+    JiraRuleDeleteView,
 )
 
 app_name = 'alerts'
@@ -18,6 +22,12 @@ urlpatterns = [
     path('silences/new/', SilenceRuleCreateView.as_view(), name='silence-rule-create'),
     path('silences/<int:pk>/edit/', SilenceRuleUpdateView.as_view(), name='silence-rule-update'),
     path('silences/<int:pk>/delete/', SilenceRuleDeleteView.as_view(), name='silence-rule-delete'),
+    
+    path('jira-rules/', JiraRuleListView.as_view(), name='jira-rule-list'),
+    path('jira-rules/new/', JiraRuleCreateView.as_view(), name='jira-rule-create'),
+    path('jira-rules/<int:pk>/edit/', JiraRuleUpdateView.as_view(), name='jira-rule-update'),
+    path('jira-rules/<int:pk>/delete/', JiraRuleDeleteView.as_view(), name='jira-rule-delete'),
+    
     path('api/v1/', include('alerts.api.urls')),
 
     path('', AlertListView.as_view(), name='alert-list'),

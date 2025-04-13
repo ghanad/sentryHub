@@ -18,8 +18,14 @@ from django.http import HttpResponse, Http404, HttpResponseRedirect # Import Htt
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 
-from .models import AlertGroup, AlertInstance, AlertComment, SilenceRule # Added SilenceRule
-from .forms import AlertAcknowledgementForm, AlertCommentForm, SilenceRuleForm # Added SilenceRuleForm
+from .models import (
+    AlertGroup, AlertInstance, AlertComment,
+    SilenceRule, JiraIntegrationRule, JiraRuleMatcher
+)
+from .forms import (
+    AlertAcknowledgementForm, AlertCommentForm,
+    SilenceRuleForm, JiraIntegrationRuleForm
+)
 from .services.alerts_processor import acknowledge_alert
 from .services.silence_matcher import check_alert_silence # Import the function
 from docs.services.documentation_matcher import match_documentation_to_alert
@@ -492,6 +498,143 @@ class SilenceRuleCreateView(LoginRequiredMixin, CreateView):
 
     def form_valid(self, form):
         form.instance.created_by = self.request.user
+        # Call parent form_valid without showing default success message
+        response = super().form_valid(form)
+        
+        # Get the newly created rule
+        new_rule = self.object
+        matchers = new_rule.matchers
+        if not matchers:
+            messages.warning(self.request, f"Silence rule '{new_rule.name}' created with no matchers. It will not match any alerts.")
+        else:
+            messages.success(self.request, f"Silence rule '{new_rule.name}' created successfully.")
+        
+        return response
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['now'] = timezone.now()
+        return context
+
+
+class SilenceRuleUpdateView(LoginRequiredMixin, UpdateView):
+    model = SilenceRule
+    form_class = SilenceRuleForm
+    template_name = 'alerts/silence_rule_form.html'
+    success_url = reverse_lazy('alerts:silence-rule-list')
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, f"Silence rule '{self.object.name}' updated successfully.")
+        return response
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['now'] = timezone.now()
+        context['is_update'] = True
+        return context
+
+
+class SilenceRuleDeleteView(LoginRequiredMixin, DeleteView):
+    model = SilenceRule
+    template_name = 'alerts/silence_rule_confirm_delete.html'
+    success_url = reverse_lazy('alerts:silence-rule-list')
+
+    def form_valid(self, form):
+        rule = self.get_object()
+        rule_name = rule.name
+        
+        # Check if this rule is currently silencing any alerts
+        affected_alerts = AlertGroup.objects.filter(
+            silence_rule=rule,
+            is_silenced=True
+        ).count()
+        
+        response = super().form_valid(form)
+        
+        if affected_alerts > 0:
+            messages.warning(
+                self.request,
+                f"Silence rule '{rule_name}' was deleted but was currently silencing {affected_alerts} alerts. "
+                "Those alerts will remain silenced until their silence period expires."
+            )
+        else:
+            messages.success(self.request, f"Silence rule '{rule_name}' deleted successfully.")
+        
+        return response
+
+
+# --- Jira Integration Rule Views ---
+
+class JiraRuleListView(LoginRequiredMixin, ListView):
+    model = JiraIntegrationRule
+    template_name = 'alerts/jira_rule_list.html'
+    context_object_name = 'jira_rules'
+    paginate_by = 20
+
+    def get_queryset(self):
+        queryset = JiraIntegrationRule.objects.prefetch_related('matchers').all()
+        
+        # Filter by active status
+        status_filter = self.request.GET.get('status', '')
+        if status_filter == 'active':
+            queryset = queryset.filter(is_active=True)
+        elif status_filter == 'inactive':
+            queryset = queryset.filter(is_active=False)
+            
+        # Search by name or project key
+        search = self.request.GET.get('search', '')
+        if search:
+            queryset = queryset.filter(
+                Q(name__icontains=search) |
+                Q(jira_project_key__icontains=search) |
+                Q(description__icontains=search)
+            )
+            
+        return queryset.order_by('-priority', 'name')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['status_filter'] = self.request.GET.get('status', '')
+        context['search'] = self.request.GET.get('search', '')
+        return context
+
+
+class JiraRuleCreateView(LoginRequiredMixin, CreateView):
+    model = JiraIntegrationRule
+    form_class = JiraIntegrationRuleForm
+    template_name = 'alerts/jira_rule_form.html'
+    success_url = reverse_lazy('alerts:jira-rule-list')
+
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        response = super().form_valid(form)
+        messages.success(self.request, f"Jira rule '{self.object.name}' created successfully.")
+        return response
+
+
+class JiraRuleUpdateView(LoginRequiredMixin, UpdateView):
+    model = JiraIntegrationRule
+    form_class = JiraIntegrationRuleForm
+    template_name = 'alerts/jira_rule_form.html'
+    success_url = reverse_lazy('alerts:jira-rule-list')
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, f"Jira rule '{self.object.name}' updated successfully.")
+        return response
+
+
+class JiraRuleDeleteView(LoginRequiredMixin, DeleteView):
+    model = JiraIntegrationRule
+    template_name = 'alerts/jira_rule_confirm_delete.html'
+    success_url = reverse_lazy('alerts:jira-rule-list')
+
+    def form_valid(self, form):
+        rule_name = self.object.name
+        response = super().form_valid(form)
+        messages.success(self.request, f"Jira rule '{rule_name}' deleted successfully.")
+        return response
         # Call parent form_valid without showing default success message
         response = super().form_valid(form)
         
