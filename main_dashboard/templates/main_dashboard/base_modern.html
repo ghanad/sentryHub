@@ -61,7 +61,7 @@
             {# Determine active state based on request path or resolved URL name #}
             {% url 'alerts:alert-list' as alerts_url %}
             {% url 'alerts:silence-rule-list' as silences_url %}
-            {% url 'alerts:jira-rule-list' as jira_url %}
+            {% url 'integrations:jira-rule-list' as jira_url %}
             {% url 'docs:documentation-list' as docs_url %}
 
             <!-- Dashboards Dropdown -->
@@ -106,7 +106,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                 <a href="{{ jira_url }}" class="nav-link {% if request.resolver_match.namespace == 'alerts' and request.resolver_match.url_name == 'jira-rule-list' %}active{% endif %}">
+                 <a href="{{ jira_url }}" class="nav-link {% if request.resolver_match.namespace == 'integrations' and request.resolver_match.url_name == 'jira-rule-list' %}active{% endif %}">
                     <i class='bx bx-link-external nav-icon'></i>
                     <span class="nav-text">Jira Rules</span>
                 </a>
