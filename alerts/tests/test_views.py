@@ -206,10 +206,9 @@ class AlertDetailViewTest(TestCase):
         self.assertEqual(self.alert_group.acknowledged_by, self.user)
         self.assertIsNotNone(self.alert_group.acknowledgement_time)
 
-        # Check if comment was created
-        self.assertEqual(AlertComment.objects.filter(alert_group=self.alert_group).count(), 2)
-        new_comment = AlertComment.objects.latest('created_at')
-        self.assertEqual(new_comment.content, 'Acknowledging this alert now.')
+        # Check if acknowledgement comment was created in history
+        new_history = AlertAcknowledgementHistory.objects.latest('acknowledged_at')
+        self.assertEqual(new_history.comment, 'Acknowledging this alert now.')
         self.assertEqual(new_comment.user, self.user)
 
         # Check if history was created
@@ -235,8 +234,14 @@ class AlertDetailViewTest(TestCase):
 
         self.assertRedirects(response, self.detail_url)
         self.assertEqual(AlertComment.objects.filter(alert_group=self.alert_group).count(), 2)
-        new_comment = AlertComment.objects.latest('created_at')
-        self.assertEqual(new_comment.content, 'This is a new comment.')
+        # Retrieve the comment more specifically to avoid timestamp issues
+        new_comment = AlertComment.objects.get(
+            alert_group=self.alert_group,
+            user=self.user,
+            content='This is a new comment.'
+        )
+        # The get() call implicitly asserts the comment exists with the correct user and content.
+        # We can keep the user assertion for extra clarity if desired.
         self.assertEqual(new_comment.user, self.user)
 
     def test_alert_detail_view_post_comment_invalid_empty(self):
@@ -262,7 +267,14 @@ class AlertDetailViewTest(TestCase):
         self.assertEqual(data['content'], 'Ajax comment')
 
         self.assertEqual(AlertComment.objects.filter(alert_group=self.alert_group).count(), 2)
-        new_comment = AlertComment.objects.latest('created_at')
+        # Retrieve the comment more specifically to avoid timestamp issues
+        new_comment = AlertComment.objects.get(
+            alert_group=self.alert_group,
+            user=self.user,
+            content='Ajax comment'
+        )
+        # The get() call implicitly asserts the comment exists with the correct user and content.
+        # We can keep the content assertion for extra clarity if desired.
         self.assertEqual(new_comment.content, 'Ajax comment')
 
     def test_alert_detail_view_post_comment_ajax_invalid(self):

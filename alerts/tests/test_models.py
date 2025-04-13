@@ -701,21 +701,36 @@ class AlertProcessorServiceTests(TestCase):
         """Test updating an existing AlertGroup's status"""
         new_status = "resolved"
         
+        # Ensure the original timestamp is slightly in the past
+        # Set the timestamp back significantly and refresh
+        timestamp_before_call = self.existing_group.last_occurrence - timezone.timedelta(minutes=1)
+        self.existing_group.last_occurrence = timestamp_before_call
+        self.existing_group.save(update_fields=['last_occurrence'])
+        self.existing_group.refresh_from_db()
+        # Re-read the timestamp directly from the refreshed object before the call
+        timestamp_before_call = self.existing_group.last_occurrence
+
         # Call the function
         alert_group = get_or_create_alert_group(
-            self.existing_group.fingerprint, 
-            new_status, 
+            self.existing_group.fingerprint,
+            new_status,
             self.existing_group.labels
         )
-        
+
+        # Refresh the object after the function call
+        alert_group.refresh_from_db()
+        timestamp_after_service_call = alert_group.last_occurrence # Capture timestamp after service call/refresh
+
         # Verify it's the same group
         self.assertEqual(alert_group.pk, self.existing_group.pk)
-        
+
         # Verify status was updated
         self.assertEqual(alert_group.current_status, new_status)
-        
-        # Verify last_occurrence was updated
-        self.assertGreater(alert_group.last_occurrence, self.existing_group.last_occurrence)
+
+        # Verify last_occurrence was updated by the service call
+        self.assertGreater(timestamp_after_service_call, timestamp_before_call,
+                         "Service call failed to update last_occurrence timestamp")
+
         
         # Verify firing count wasn't incremented (only happens on firing transitions)
         self.assertEqual(alert_group.total_firing_count, self.existing_group.total_firing_count)
