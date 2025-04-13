@@ -7,8 +7,6 @@ import json
 from ..models import AlertGroup, AlertInstance, AlertAcknowledgementHistory, SilenceRule
 from docs.services.documentation_matcher import match_documentation_to_alert
 from .silence_matcher import check_alert_silence
-from .jira_matcher import JiraRuleMatcherService
-from ..tasks import process_jira_for_alert_group
 
 logger = logging.getLogger(__name__)
 
@@ -35,22 +33,14 @@ def process_alert(alert_data):
     elif not is_silenced and alert_group.is_silenced:
         logger.info(f"Alert {alert_group.name} (Group ID: {alert_group.id}) was silenced but is no longer.")
 
-    # --- Jira Integration Check (Only if NOT silenced) ---
-    if not is_silenced:
-        logger.debug(f"Checking Jira rules for non-silenced alert group {fingerprint} with status {status}")
-        jira_matcher_service = JiraRuleMatcherService()
-        matching_rule = jira_matcher_service.find_matching_rule(labels)
-
-        if matching_rule:
-            logger.info(f"Alert group {fingerprint} matched Jira rule '{matching_rule.name}'. Triggering Jira processing task.")
-            try:
-                process_jira_for_alert_group.delay(
-                    alert_group_id=alert_group.id,
-                    rule_id=matching_rule.id,
-                    alert_status=status
-                )
-            except Exception as e:
-                logger.error(f"Failed to queue Jira processing task for alert group {alert_group.id}: {e}", exc_info=True)
+    # Send signal after processing alert
+    from ..signals import alert_processed
+    alert_processed.send(
+        sender=alert_group.__class__,
+        alert_group=alert_group,
+        status=status,
+        is_silenced=is_silenced
+    )
 
     # Process the alert
     if status == 'firing':

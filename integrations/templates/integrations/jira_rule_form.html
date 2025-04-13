@@ -1,0 +1,100 @@
+{% extends "main_dashboard/base_modern.html" %}
+
+{% block title %}{% if form.instance.pk %}Edit Jira Rule{% else %}Create Jira Rule{% endif %} - SentryHub{% endblock %}
+
+{% block main_content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header pb-0">
+                    <h5>
+                        {% if form.instance.pk %}
+                            Edit Jira Rule: {{ form.instance.name }}
+                        {% else %}
+                            Create New Jira Rule
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-control-label">{{ form.name.label }}</label>
+                                    {{ form.name }}
+                                    {% if form.name.errors %}
+                                        <div class="text-danger text-xs">
+                                            {{ form.name.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-control-label">{{ form.is_active.label }}</label>
+                                    <div class="form-check form-switch">
+                                        {{ form.is_active }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-control-label">{{ form.description.label }}</label>
+                            {{ form.description }}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label class="form-control-label">{{ form.jira_project_key.label }}</label>
+                                    {{ form.jira_project_key }}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label class="form-control-label">{{ form.jira_issue_type.label }}</label>
+                                    {{ form.jira_issue_type }}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label class="form-control-label">{{ form.priority.label }}</label>
+                                    {{ form.priority }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card mt-4">
+                            <div class="card-header pb-0">
+                                <h6>Matchers</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label class="form-control-label">{{ form.matchers.label }}</label>
+                                    {{ form.matchers }}
+                                    <small class="text-xs text-secondary">
+                                        Select one or more matchers. The rule applies if ALL selected matchers match the alert's labels.
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end mt-4">
+                            <a href="{% url 'integrations:jira-rule-list' %}" class="btn btn-light me-2">
+                                Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                {% if form.instance.pk %}Update{% else %}Create{% endif %} Rule
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock main_content %}

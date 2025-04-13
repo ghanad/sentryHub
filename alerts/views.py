@@ -20,11 +20,11 @@ from django.views.decorators.http import require_POST
 
 from .models import (
     AlertGroup, AlertInstance, AlertComment,
-    SilenceRule, JiraIntegrationRule, JiraRuleMatcher
+    SilenceRule
 )
 from .forms import (
     AlertAcknowledgementForm, AlertCommentForm,
-    SilenceRuleForm, JiraIntegrationRuleForm
+    SilenceRuleForm
 )
 from .services.alerts_processor import acknowledge_alert
 from .services.silence_matcher import check_alert_silence # Import the function
@@ -566,132 +566,6 @@ class SilenceRuleDeleteView(LoginRequiredMixin, DeleteView):
 
 # --- Jira Integration Rule Views ---
 
-class JiraRuleListView(LoginRequiredMixin, ListView):
-    model = JiraIntegrationRule
-    template_name = 'alerts/jira_rule_list.html'
-    context_object_name = 'jira_rules'
-    paginate_by = 20
-
-    def get_queryset(self):
-        queryset = JiraIntegrationRule.objects.prefetch_related('matchers').all()
-        
-        # Filter by active status
-        status_filter = self.request.GET.get('status', '')
-        if status_filter == 'active':
-            queryset = queryset.filter(is_active=True)
-        elif status_filter == 'inactive':
-            queryset = queryset.filter(is_active=False)
-            
-        # Search by name or project key
-        search = self.request.GET.get('search', '')
-        if search:
-            queryset = queryset.filter(
-                Q(name__icontains=search) |
-                Q(jira_project_key__icontains=search) |
-                Q(description__icontains=search)
-            )
-            
-        return queryset.order_by('-priority', 'name')
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['status_filter'] = self.request.GET.get('status', '')
-        context['search'] = self.request.GET.get('search', '')
-        return context
-
-
-class JiraRuleCreateView(LoginRequiredMixin, CreateView):
-    model = JiraIntegrationRule
-    form_class = JiraIntegrationRuleForm
-    template_name = 'alerts/jira_rule_form.html'
-    success_url = reverse_lazy('alerts:jira-rule-list')
-
-    def form_valid(self, form):
-        form.instance.created_by = self.request.user
-        response = super().form_valid(form)
-        messages.success(self.request, f"Jira rule '{self.object.name}' created successfully.")
-        return response
-
-
-class JiraRuleUpdateView(LoginRequiredMixin, UpdateView):
-    model = JiraIntegrationRule
-    form_class = JiraIntegrationRuleForm
-    template_name = 'alerts/jira_rule_form.html'
-    success_url = reverse_lazy('alerts:jira-rule-list')
-
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        messages.success(self.request, f"Jira rule '{self.object.name}' updated successfully.")
-        return response
-
-
-class JiraRuleDeleteView(LoginRequiredMixin, DeleteView):
-    model = JiraIntegrationRule
-    template_name = 'alerts/jira_rule_confirm_delete.html'
-    success_url = reverse_lazy('alerts:jira-rule-list')
-
-    def form_valid(self, form):
-        rule_name = self.object.name
-        response = super().form_valid(form)
-        messages.success(self.request, f"Jira rule '{rule_name}' deleted successfully.")
-        return response
-        # Call parent form_valid without showing default success message
-        response = super().form_valid(form)
-        
-        # Get the newly created rule
-        new_rule = self.object
-        matchers = new_rule.matchers
-        
-        if matchers:
-            try:
-                logger.info(f"Finding alerts matching new silence rule ID {new_rule.id}")
-                
-                # Build query to find matching alerts
-                filter_q = Q()
-                for key, value in matchers.items():
-                    filter_q &= Q(**{f'labels__{key}': value})
-                
-                matching_alerts = AlertGroup.objects.filter(filter_q)
-                alert_count = matching_alerts.count()
-                logger.info(f"Found {alert_count} alerts matching new silence rule ID {new_rule.id}")
-                
-                # Re-evaluate each matching alert
-                for alert in matching_alerts:
-                    check_alert_silence(alert)
-                
-                messages.success(
-                    self.request,
-                    f"Silence rule created successfully and {alert_count} matching alerts re-evaluated."
-                )
-            except Exception as e:
-                logger.error(
-                    f"Error re-evaluating alerts after creating silence rule ID {new_rule.id}: {str(e)}",
-                    exc_info=True
-                )
-                messages.warning(
-                    self.request,
-                    "Silence rule was created, but an error occurred while re-evaluating matching alerts."
-                )
-        else:
-            messages.success(
-                self.request,
-                "Silence rule created successfully."
-            )
-        return response
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['form_title'] = "Create New Silence Rule"
-        # Ensure matchers are displayed as pretty JSON if initial data was provided
-        # Use self.initial which holds the result of the first get_initial call
-        if 'matchers' in self.initial: # Check if initial data was successfully set
-             initial_matchers_dict = self.initial['matchers']
-             if isinstance(initial_matchers_dict, dict):
-                 import json
-                 # Set the *value* for the widget rendering, not the field's initial
-                 context['form'].fields['matchers'].widget.attrs['value'] = json.dumps(initial_matchers_dict, indent=2)
-
-        return context
 
 
 class SilenceRuleUpdateView(LoginRequiredMixin, UpdateView):

@@ -40,6 +40,7 @@ urlpatterns = [
     path('admin-dashboard/', include('admin_dashboard.urls', namespace='admin_dashboard')),
     path('tier1/', include('tier1_dashboard.urls', namespace='tier1_dashboard')), # Add this line
     path('users/', include('users.urls', namespace='users')),
+    path('integrations/', include('integrations.urls', namespace='integrations')),
 ]
 
 # Change admin site header

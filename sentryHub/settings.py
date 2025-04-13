@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'users',
     'main_dashboard',
     'tier1_dashboard', # Added Tier 1 Dashboard app
+    'integrations',
 ]
 
 MIDDLEWARE = [
