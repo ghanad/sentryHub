@@ -9,8 +9,9 @@ import logging
 import requests
 
 from ..models import AlertGroup, AlertInstance, AlertComment
-from ..services.alerts_processor import process_alert, acknowledge_alert
+from ..services.alerts_processor import acknowledge_alert
 from ..services.alert_logger import save_alert_to_file
+from ..tasks import process_alert_payload_task
 from .serializers import (
     AlertGroupSerializer, 
     AlertInstanceSerializer, 
@@ -31,26 +32,8 @@ class AlertWebhookView(APIView):
         serializer = AlertmanagerWebhookSerializer(data=request.data)
         
         if serializer.is_valid():
-            # Extract all alerts
-            alerts = serializer.validated_data['alerts']
-            
-            # Group alerts by fingerprint to process related alerts together
-            alerts_by_fingerprint = {}
-            for alert in alerts:
-                fingerprint = alert.get('fingerprint')
-                if fingerprint not in alerts_by_fingerprint:
-                    alerts_by_fingerprint[fingerprint] = []
-                alerts_by_fingerprint[fingerprint].append(alert)
-            
-            # Process alerts by fingerprint
-            for fingerprint, fingerprint_alerts in alerts_by_fingerprint.items():
-                # Sort alerts: resolved first, then firing
-                sorted_alerts = sorted(fingerprint_alerts, key=lambda a: 0 if a['status'] == 'resolved' else 1)
-                
-                # Process each alert in order
-                for alert_data in sorted_alerts:
-                    process_alert(alert_data)
-            
+            # Process the entire payload asynchronously
+            process_alert_payload_task.delay(serializer.validated_data)
             return Response({'status': 'success'}, status=status.HTTP_200_OK)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

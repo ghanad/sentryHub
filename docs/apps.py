@@ -8,4 +8,5 @@ class DocsConfig(AppConfig):
     verbose_name = 'Alert Documentation'
     
     def ready(self):
-        import docs.signals
+        # Import and register signal handlers
+        from . import handlers  # noqa
