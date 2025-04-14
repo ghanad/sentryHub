@@ -142,25 +142,48 @@ LOGGING = {
             'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
             'style': '{',
         },
+        'simple': {
+            'format': '{levelname} {module} {message}',
+            'style': '{',
+        },
     },
     'handlers': {
         'file': {
-            'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': os.path.join(BASE_DIR, 'logs', 'sentryhub.log'),
+            'level': 'DEBUG', # Capture DEBUG level logs in the file
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': BASE_DIR / 'logs/sentryhub.log', # Ensure this path is correct
+            'maxBytes': 1024*1024*5, # 5 MB
+            'backupCount': 2,
             'formatter': 'verbose',
+        },
+        'console': {
+            'level': 'INFO', # Only show INFO and above in console
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
         },
     },
     'loggers': {
-        'docs': {  # This matches the logger name in documentation_matcher.py
-            'handlers': ['file'],
+        'django': {
+            'handlers': ['console', 'file'],
             'level': 'INFO',
             'propagate': True,
         },
-        'alerts': {  # This matches the logger name in alerts/views.py
-            'handlers': ['file'],
-            'level': 'INFO',
-            'propagate': True,
+        'alerts': { # Logger for the 'alerts' app including 'alerts.tasks'
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG', # Set to DEBUG to capture all logs
+            'propagate': True, # Propagate to root logger if needed
+        },
+        # You might need a specific logger for celery if the above doesn't work
+        # 'celery': {
+        #     'handlers': ['console', 'file'],
+        #     'level': 'INFO',
+        #     'propagate': True,
+        # },
+        # Root logger catches everything else
+        '': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO', # Set to DEBUG if you want all logs everywhere
+            'propagate': False,
         },
     },
 }
@@ -213,3 +236,18 @@ TINYMCE_DEFAULT_CONFIG = {
     'menubar': True,
     'statusbar': True,
 }
+
+# Celery Configuration
+CELERY_BROKER_URL = 'redis://172.20.82.3:6379/0'
+CELERY_RESULT_BACKEND = 'redis://172.20.82.3:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_TASK_DEFAULT_QUEUE = 'alerts'
+CELERY_TASK_ROUTES = {
+    'alerts.tasks.process_alert_payload_task': {'queue': 'alerts'},
+}
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE

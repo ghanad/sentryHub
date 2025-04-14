@@ -20,15 +20,22 @@ def process_alert_payload_task(self, payload: dict):
         None
     """
     try:
+        logger.info("Task started execution")  # Initial log
+        logger.info(f"Payload keys: {payload.keys()}")  # Log payload structure
+        
         with transaction.atomic():
             # Parse payload into standardized alerts
             alerts = parse_alertmanager_payload(payload)
+            logger.info(f"Parsed {len(alerts)} alerts from payload")
             
             for alert_data in alerts:
+                logger.info(f"Processing alert: {alert_data.get('labels', {}).get('alertname')}")
+                
                 # Update alert state in database
                 alert_group, alert_instance = update_alert_state(alert_data)
                 
                 if alert_group and alert_instance:
+                    logger.info(f"Successfully processed alert {alert_group.id}")
                     # Send signal after processing alert
                     alert_processed.send(
                         sender=alert_group.__class__,
@@ -36,7 +43,9 @@ def process_alert_payload_task(self, payload: dict):
                         instance=alert_instance,
                         status=alert_group.current_status
                     )
+                else:
+                    logger.error("Failed to process alert - returned None")
                     
     except Exception as e:
-        logger.error(f"Failed to process alert payload: {str(e)}")
+        logger.error(f"Task failed: {str(e)}", exc_info=True)
         raise self.retry(exc=e)
