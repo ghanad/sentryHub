@@ -160,6 +160,6 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
 
     except Exception as e:
         logger.error(f"Task {self.request.id}: An error occurred during Jira processing for AlertGroup {alert_group_id}: {e}", exc_info=True)
-        self.retry(exc=e)
+        raise e # Re-raise the exception to mark the task as failed immediately
 
     logger.info(f"Finished Jira processing task {self.request.id} for AlertGroup ID: {alert_group_id}")

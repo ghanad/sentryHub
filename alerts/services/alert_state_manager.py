@@ -65,8 +65,10 @@ def update_alert_state(parsed_alert_data: dict) -> Tuple[Optional[AlertGroup], O
             return alert_group, alert_instance
     
     except Exception as e:
-        logger.error(f"Failed to update alert state: {str(e)}")
-        return None, None
+        # Use getattr for safer access in case alert_group is None or problematic
+        group_identifier = getattr(locals().get('alert_group'), 'fingerprint', 'UNKNOWN')
+        logger.error(f"Error processing alert group {group_identifier}: {e}", exc_info=True)
+        raise e # Re-raise the exception to mark the Celery task as failed
 
 def _is_duplicate_firing(alert_group, starts_at):
     """Check if the firing alert is a duplicate."""
@@ -97,12 +99,27 @@ def _create_firing_instance(alert_group, starts_at, annotations, generator_url):
 
 def _is_duplicate_resolved(alert_group, starts_at, ends_at):
     """Check if the resolved alert is a duplicate."""
-    return AlertInstance.objects.filter(
+    logger.debug(f"Checking for duplicate resolved alert - group: {alert_group.fingerprint}, starts_at: {starts_at}, ends_at: {ends_at}")
+    
+    # Only check for exact duplicates if ends_at is provided
+    if ends_at:
+        exists = AlertInstance.objects.filter(
+            alert_group=alert_group,
+            status='resolved',
+            started_at=starts_at,
+            ended_at=ends_at
+        ).exists()
+        logger.debug(f"Exact duplicate check result: {exists}")
+        return exists
+    
+    # For alerts without explicit end time, be more lenient
+    exists = AlertInstance.objects.filter(
         alert_group=alert_group,
         status='resolved',
-        started_at=starts_at,
-        ended_at=ends_at or starts_at
+        started_at=starts_at
     ).exists()
+    logger.debug(f"Lenient duplicate check result: {exists}")
+    return exists
 
 def _update_to_resolved(instance, end_time):
     """Update a firing instance to resolved status."""

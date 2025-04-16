@@ -165,13 +165,13 @@ LOGGING = {
     'loggers': {
         'django': {
             'handlers': ['console', 'file'],
-            'level': 'INFO',
+            'level': 'INFO', # Keep Django DEBUG for file log clarity
             'propagate': True,
         },
         'alerts': { # Logger for the 'alerts' app including 'alerts.tasks'
             'handlers': ['console', 'file'],
-            'level': 'DEBUG', # Set to DEBUG to capture all logs
-            'propagate': True, # Propagate to root logger if needed
+            'level': 'DEBUG', # Keep DEBUG to capture all logs in file
+            'propagate': True,
         },
         # You might need a specific logger for celery if the above doesn't work
         # 'celery': {
@@ -182,7 +182,7 @@ LOGGING = {
         # Root logger catches everything else
         '': {
             'handlers': ['console', 'file'],
-            'level': 'INFO', # Set to DEBUG if you want all logs everywhere
+            'level': 'INFO', # Root level INFO for console
             'propagate': False,
         },
     },
@@ -238,16 +238,15 @@ TINYMCE_DEFAULT_CONFIG = {
 }
 
 # Celery Configuration
-CELERY_BROKER_URL = 'redis://172.20.82.3:6379/0'
-CELERY_RESULT_BACKEND = 'redis://172.20.82.3:6379/0'
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
+CELERY_BROKER_URL = 'redis://172.30.159.5:6379/0'
+CELERY_RESULT_BACKEND = 'redis://172.30.159.5:6379/0'
+CELERY_ACCEPT_CONTENT = ['json'] # Reverted back to json
+CELERY_TASK_SERIALIZER = 'json' # Reverted back to json
+CELERY_RESULT_SERIALIZER = 'json' # Reverted back to json
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_DEFAULT_QUEUE = 'alerts'
 CELERY_TASK_ROUTES = {
     'alerts.tasks.process_alert_payload_task': {'queue': 'alerts'},
 }
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
+# Removed redundant serializer settings
 CELERY_TIMEZONE = TIME_ZONE
