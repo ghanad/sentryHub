@@ -22,7 +22,7 @@ cd /d "%PROJECT_PATH%"
 
 rem Run the Celery worker
 echo Running Celery worker...
-celery -A sentryHub worker --loglevel=info
+celery -A sentryHub worker --loglevel=info -P solo
 
 rem Keep the window open if there's an error
 if %ERRORLEVEL% neq 0 (

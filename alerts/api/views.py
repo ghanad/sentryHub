@@ -35,12 +35,16 @@ class AlertWebhookView(APIView):
         serializer = AlertmanagerWebhookSerializer(data=request.data) 
 
         if serializer.is_valid():
-            # Pass the original request.data (JSON-like dict) to Celery
-            # The task function will handle parsing internally.
-            logger.info("Webhook serializer valid. Calling Celery task with request.data...")
-            process_alert_payload_task.delay(request.data) 
-            return Response({'status': 'success (task queued)'}, status=status.HTTP_200_OK)
-            
+            # Explicitly serialize the payload to JSON before sending
+            try:
+                payload_json = json.dumps(request.data)
+                logger.info("Webhook serializer valid. Calling Celery task with JSON payload...")
+                process_alert_payload_task.delay(payload_json)
+                return Response({'status': 'success (task queued)'}, status=status.HTTP_200_OK)
+            except TypeError as e:
+                 logger.error(f"Could not serialize payload to JSON: {e}", exc_info=True)
+                 return Response({'status': 'error serializing payload'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
             # --- Direct Call Test (Commented Out) ---
             # logger.info("Webhook serializer valid. Attempting DIRECT task function call...")
             # try:

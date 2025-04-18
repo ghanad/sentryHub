@@ -11,12 +11,20 @@ logger = logging.getLogger(__name__)
 
 # Note: The @shared_task decorator is kept, but the function will be called directly for this test.
 # The 'bind=True' and 'self' argument are ignored in a direct call.
-@shared_task(bind=True) 
-def process_alert_payload_task(self, payload: dict): # Reverted to expect dict
-    # INFO log at the start to confirm function entry
-    # In a direct call, 'self' will be None unless explicitly passed, 
+@shared_task(bind=True)
+def process_alert_payload_task(self, payload_json: str): # Expect a JSON string now
+    # --- Deserialize the incoming JSON string ---
+    try:
+        payload = json.loads(payload_json)
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to deserialize payload JSON: {e}", exc_info=True)
+        # Decide how to handle this - maybe return or raise to stop processing
+        return # Stop processing if JSON is invalid
+    # --- End deserialization ---
+
+    # In a direct call, 'self' will be None unless explicitly passed,
     # so we avoid using self.request.id here.
-    logger.info(f"ENTERING process_alert_payload_task (Direct Call Test)") 
+    logger.info(f"ENTERING process_alert_payload_task") # Removed (Direct Call Test) suffix
     
     # Removed json.loads() as we now expect a dict directly
         
@@ -43,8 +51,8 @@ def process_alert_payload_task(self, payload: dict): # Reverted to expect dict
         with transaction.atomic():
             # Parse payload into standardized alerts
             logger.debug("Attempting to parse payload...") 
-            # Pass the dictionary to the parser
-            alerts = parse_alertmanager_payload(payload) 
+            # Pass the deserialized dictionary to the parser
+            alerts = parse_alertmanager_payload(payload)
             logger.info(f"Parsed {len(alerts)} alerts from payload.")
             # Log the parsed alerts for debugging
             logger.debug(f"Parsed alerts data: {alerts}") 
