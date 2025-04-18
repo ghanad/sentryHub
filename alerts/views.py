@@ -505,9 +505,9 @@ class SilenceRuleCreateView(LoginRequiredMixin, CreateView):
         new_rule = self.object
         matchers = new_rule.matchers
         if not matchers:
-            messages.warning(self.request, f"Silence rule '{new_rule.name}' created with no matchers. It will not match any alerts.")
+            messages.warning(self.request, "Silence rule created with no matchers. It will not match any alerts.")
         else:
-            messages.success(self.request, f"Silence rule '{new_rule.name}' created successfully.")
+            messages.success(self.request, "Silence rule created successfully.")
         
         return response
 
@@ -525,7 +525,7 @@ class SilenceRuleUpdateView(LoginRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         response = super().form_valid(form)
-        messages.success(self.request, f"Silence rule '{self.object.name}' updated successfully.")
+        messages.success(self.request, "Silence rule updated successfully.")
         return response
 
     def get_context_data(self, **kwargs):
@@ -542,7 +542,6 @@ class SilenceRuleDeleteView(LoginRequiredMixin, DeleteView):
 
     def form_valid(self, form):
         rule = self.get_object()
-        rule_name = rule.name
         
         # Check if this rule is currently silencing any alerts
         affected_alerts = AlertGroup.objects.filter(
@@ -555,11 +554,11 @@ class SilenceRuleDeleteView(LoginRequiredMixin, DeleteView):
         if affected_alerts > 0:
             messages.warning(
                 self.request,
-                f"Silence rule '{rule_name}' was deleted but was currently silencing {affected_alerts} alerts. "
+                f"Silence rule was deleted but was currently silencing {affected_alerts} alerts. "
                 "Those alerts will remain silenced until their silence period expires."
             )
         else:
-            messages.success(self.request, f"Silence rule '{rule_name}' deleted successfully.")
+            messages.success(self.request, "Silence rule deleted successfully.")
         
         return response
 
