@@ -149,7 +149,7 @@ LOGGING = {
     },
     'handlers': {
         'file': {
-            'level': 'DEBUG', # Capture DEBUG level logs in the file
+            'level': 'INFO', # Capture DEBUG level logs in the file
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': BASE_DIR / 'logs/sentryhub.log', # Ensure this path is correct
             'maxBytes': 1024*1024*5, # 5 MB
@@ -166,12 +166,12 @@ LOGGING = {
         'django': {
             'handlers': ['console', 'file'],
             'level': 'INFO', # Keep Django DEBUG for file log clarity
-            'propagate': True,
+            'propagate': False,
         },
         'alerts': { # Logger for the 'alerts' app including 'alerts.tasks'
             'handlers': ['console', 'file'],
-            'level': 'DEBUG', # Keep DEBUG to capture all logs in file
-            'propagate': True,
+            'level': 'INFO', # Keep DEBUG to capture all logs in file
+            'propagate': False,
         },
         # You might need a specific logger for celery if the above doesn't work
         # 'celery': {
