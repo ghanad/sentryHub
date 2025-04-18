@@ -23,6 +23,7 @@ urlpatterns = [
     
     # Alert linking
     path('link/<str:pk>/', LinkDocumentationToAlertView.as_view(), name='link-documentation'),
-    path('unlink/<int:alert_group_id>/<int:documentation_id>/', 
+    path('link/<str:pk>/', LinkDocumentationToAlertView.as_view(), name='link-documentation-to-alert'),  # Backward compatibility
+    path('unlink/<int:alert_group_id>/<int:documentation_id>/',
          UnlinkDocumentationFromAlertView.as_view(), name='unlink-documentation'),
 ]
