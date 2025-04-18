@@ -178,10 +178,12 @@
                                         <i class='bx bx-check-shield'></i>
                                     </button>
                                     {% endif %}
+                                    {% if not alert.is_silenced %}
                                     <a href="{% url 'alerts:silence-rule-create' %}?labels={{ alert.labels|jsonify }}"
                                        class="action-btn" data-bs-toggle="tooltip" title="Create Silence Rule">
                                        <i class='bx bx-volume-mute'></i>
                                     </a>
+                                    {% endif %}
                                 </div>
                             </td>
                         </tr>
