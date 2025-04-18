@@ -30,7 +30,7 @@ class AlertWebhookView(APIView):
     """
     permission_classes = [AllowAny]
     def post(self, request, format=None):
-        logger.info(f"Received webhook data: {request.data}")
+        # logger.info(f"Received webhook data: {request.data}")
         # Validate the data structure first
         serializer = AlertmanagerWebhookSerializer(data=request.data) 
 
