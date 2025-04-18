@@ -42,20 +42,12 @@ def process_alert_payload_task(self, payload_json: str): # Expect a JSON string 
     try:
         logger.info("Task started execution (Direct Call Test)")
         logger.info(f"Received payload keys: {payload.keys()}") # Use the dict
-        # Log the full payload for detailed debugging (consider potential size/sensitivity)
-        try:
-            logger.debug(f"Full payload (dict): {json.dumps(payload, indent=2)}") 
-        except Exception:
-            logger.warning("Could not serialize payload for debug logging.")
+
         
         with transaction.atomic():
-            # Parse payload into standardized alerts
-            logger.debug("Attempting to parse payload...") 
             # Pass the deserialized dictionary to the parser
             alerts = parse_alertmanager_payload(payload)
             logger.info(f"Parsed {len(alerts)} alerts from payload.")
-            # Log the parsed alerts for debugging
-            logger.debug(f"Parsed alerts data: {alerts}") 
             
             if not alerts:
                 logger.warning("Payload parsed into zero alerts. No further processing.")
