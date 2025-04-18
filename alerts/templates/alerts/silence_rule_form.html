@@ -1,14 +1,14 @@
-{% extends "alerts/base.html" %}
+{% extends "main_dashboard/base_modern.html" %}
 {% load core_tags static %} {# Add necessary tags #}
 
-{% block title %}{{ form_title }} - SentryHub{% endblock %}
+{% block title %}{{ form_title }}{% endblock %}
 
 {% block extra_css %}
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'core/css/standard-form.css' %}">
 {% endblock %}
 
-{% block content %}
+{% block main_content %}
 <div class="row justify-content-center">
     <div class="col-lg-10 col-xl-9">
 
