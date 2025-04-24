@@ -50,4 +50,321 @@
  .card-link { text-decoration: none; }
  .card-link .stat-card:hover { /* Apply hover to card inside link */
     transform: translateY(-5px);
+    box-shadow: var(--box-shadow);
+ }
+
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 0; /* Ensure no bottom margin */
+    flex-shrink: 0; /* Prevent icon from shrinking */
+}
+
+.stat-danger {
+    background: rgba(239, 71, 111, 0.1);
+    color: var(--danger);
+}
+
+.stat-warning {
+    background: rgba(255, 159, 28, 0.1);
+    color: var(--warning);
+}
+
+.stat-info {
+    background: rgba(58, 134, 255, 0.1);
+    color: var(--info);
+}
+ /* Added for Silenced/Secondary */
+ .stat-secondary {
+     background: rgba(108, 117, 125, 0.1); /* Based on Bootstrap secondary */
+     color: var(--gray-600);
+ }
+
+.stat-success {
+    background: rgba(46, 196, 182, 0.1);
+    color: var(--success);
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0;
+    color: var(--gray-900);
+    line-height: 1.2; /* Adjust line height for baseline alignment */
+    order: 3; /* Ensure value comes last */
+}
+
+.stat-label {
+    color: var(--gray-600);
+    font-weight: 500;
+    margin: 0;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    line-height: 1.2; /* Adjust line height for baseline alignment */
+    order: 2; /* Ensure label comes after icon */
+}
+
+/* Ensure icon comes first */
+.stat-icon {
+    order: 1;
+}
+
+.stat-trend {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: 1rem;
+}
+
+.trend-up {
+    background: rgba(46, 196, 182, 0.1);
+    color: var(--success);
+}
+
+.trend-down {
+    background: rgba(239, 71, 111, 0.1);
+    color: var(--danger);
+}
+
+/* Chart cards */
+.chart-card {
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow-sm);
+    overflow: hidden;
+    border: none;
+    height: 100%;
+    display: flex; /* Added for consistent structure */
+    flex-direction: column; /* Added */
+}
+
+.chart-card-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--gray-200);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0; /* Prevent header shrinking */
+}
+
+.chart-title {
+    font-weight: 600;
+    font-size: 1.125rem; /* Match h5 */
+    color: var(--gray-900);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+ .chart-title i { /* Ensure icon color applies */
+     color: var(--primary); /* Default, can be overridden inline */
+     font-size: 1.2em; /* Make icon slightly larger */
+ }
+
+.chart-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.chart-action-btn {
+    background: var(--gray-100);
+    border: none;
+    color: var(--gray-700);
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: inline-flex; /* Use inline-flex */
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition);
+    color: var(--gray-700);
+    padding: 0; /* Remove padding */
+    font-size: 1rem; /* Adjust icon size */
+    text-decoration: none; /* For links styled as buttons */
+}
+
+.chart-action-btn:hover {
+    background: var(--gray-200);
+    color: var(--gray-900);
+    border-color: var(--gray-300);
+}
+
+.chart-menu {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end; /* Align actions to the right */
+}
+
+/* Persian/RTL support */
+.rtl-text {
+    direction: rtl;
+    text-align: right;
+    font-family: 'IranSansX', 'Inter', sans-serif; /* Include IranSansX */
+}
+
+/* --- Dark Mode Styles --- */
+[data-bs-theme="dark"] {
+    /* Define chart-specific colors as variables */
+    --chart-grid-color: #444444;
+    --chart-label-color: #adb5bd;
+
+    /* Body background is handled in base.css */
+
+    /* Page Header */
+    .page-title {
+        color: #e0e0e0; /* User specified main text */
+    }
+    .date-display {
+        color: #adb5bd; /* User specified secondary text */
+    }
+
+    /* Stat Cards */
+    .stat-card {
+        background: #1e1e1e; /* User specified section background */
+        box-shadow: none;
+        border: 1px solid rgba(255, 255, 255, 0.08); /* Adjusted border */
+    }
+    .stat-card:hover {
+        background: #2a2a2a; /* Slightly lighter hover */
+        transform: none;
+        box-shadow: none;
+    }
+    .card-link .stat-card:hover {
+        background: #2a2a2a;
+        transform: none;
+        box-shadow: none;
+    }
+    .stat-value {
+        color: #e0e0e0; /* User specified main text */
+    }
+    .stat-label {
+        color: #adb5bd; /* User specified secondary text */
+    }
+    /* Icon backgrounds need adjustment */
+    .stat-danger {
+        background: rgba(239, 71, 111, 0.2); /* Slightly more opaque */
+        color: var(--bs-danger-text-emphasis);
+    }
+    .stat-warning {
+        background: rgba(255, 159, 28, 0.2); /* Slightly more opaque */
+        color: var(--bs-warning-text-emphasis);
+    }
+    .stat-info {
+        background: rgba(58, 134, 255, 0.2); /* Slightly more opaque */
+        color: var(--bs-info-text-emphasis);
+    }
+     .stat-secondary {
+         background: rgba(108, 117, 125, 0.2); /* Slightly more opaque */
+         color: var(--bs-secondary-text-emphasis);
+     }
+     .stat-success {
+         background: rgba(46, 196, 182, 0.2); /* Slightly more opaque */
+         color: var(--bs-success-text-emphasis);
+     }
+
+
+    /* Chart Cards */
+    .chart-card {
+        background: #1e1e1e; /* User specified section background */
+        box-shadow: none;
+        border: 1px solid rgba(255, 255, 255, 0.08); /* Adjusted border */
+    }
+    .chart-card-header {
+        border-bottom-color: rgba(255, 255, 255, 0.1); /* Adjusted border color */
+    }
+    .chart-title {
+        color: #e0e0e0; /* User specified main text */
+    }
+    .chart-action-btn {
+        background: rgba(255, 255, 255, 0.08); /* Adjusted background */
+        border-color: rgba(255, 255, 255, 0.1); /* Adjusted border */
+        color: #adb5bd; /* User specified secondary text */
+    }
+    .chart-action-btn:hover {
+        background: rgba(255, 255, 255, 0.15); /* Adjusted hover background */
+        color: #e0e0e0; /* User specified main text */
+        border-color: rgba(255, 255, 255, 0.2); /* Adjusted hover border */
+    }
+
+
+    /* Alert Table */
+    .alert-table th {
+        background-color: #2a2a2a; /* Adjusted background */
+        color: #e0e0e0; /* User specified main text */
+        border-bottom-color: rgba(255, 255, 255, 0.1); /* Adjusted border color */
+    }
+    .alert-table td {
+        border-bottom-color: rgba(255, 255, 255, 0.1); /* Adjusted border color */
+        color: #adb5bd; /* User specified secondary text */
+    }
+     .alert-table td a {
+         color: var(--bs-primary-text-emphasis); /* Use Bootstrap variable */
+     }
+     .alert-table tbody tr {
+         background-color: #1e1e1e; /* User specified section background */
+     }
+     .alert-table tbody tr:hover {
+         background-color: #2a2a2a; /* Slightly lighter hover */
+     }
+     .alert-table thead tr th:first-child {
+         border-top-left-radius: var(--border-radius);
+     }
+     .alert-table tbody tr:last-child td:first-child {
+         border-bottom-left-radius: var(--border-radius);
+     }
+     .alert-table thead tr th:last-child {
+         border-top-right-radius: var(--border-radius);
+     }
+     .alert-table tbody tr:last-child td:last-child {
+         border-bottom-right-radius: var(--border-radius);
+     }
+
+    /* Status Badges in Table */
+    .badge-critical {
+        background: rgba(239, 71, 111, 0.2); /* Slightly more opaque */
+        color: var(--bs-danger-text-emphasis);
+    }
+    .badge-warning {
+        background: rgba(255, 159, 28, 0.2); /* Slightly more opaque */
+        color: var(--bs-warning-text-emphasis);
+    }
+    .badge-info {
+        background: rgba(58, 134, 255, 0.2); /* Slightly more opaque */
+        color: var(--bs-info-text-emphasis);
+    }
+     .badge-success {
+         background: rgba(46, 196, 182, 0.2); /* Slightly more opaque */
+         color: var(--bs-success-text-emphasis);
+     }
+
+    .alert-host {
+        color: #adb5bd; /* User specified secondary text */
+    }
+    .alert-time {
+        color: #adb5bd; /* User specified secondary text */
+    }
+
+    .action-btn {
+        background: rgba(255, 255, 255, 0.08); /* Adjusted background */
+        border-color: rgba(255, 255, 255, 0.1); /* Adjusted border */
+        color: #adb5bd; /* User specified secondary text */
+    }
+    .action-btn:hover {
+        background: rgba(255, 255, 255, 0.15); /* Adjusted hover background */
+        color: #e0e0e0; /* User specified main text */
+        border-color: rgba(255, 255, 255, 0.2); /* Adjusted hover border */
+    }
 }
