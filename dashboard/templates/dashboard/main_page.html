@@ -1,0 +1,384 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+{% load date_format_tags core_tags %} {# Load custom tags #}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block extra_css %}
+    {# Link the dashboard-specific CSS #}
+    <link rel="stylesheet" href="{% static 'dashboard/css/modern_dashboard.css' %}">
+{% endblock %}
+
+
+{% block main_content %}
+<!-- Page header -->
+<header class="page-header">
+    <div>
+        <h1 class="page-title">Dashboard</h1>
+        {# Use JS to update date/time #}
+        <p class="date-display">Last updated: <span id="currentDate">...</span> • <span id="currentTime">...</span></p>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+    </div>
+</header>
+
+<!-- Stats row -->
+<div class="row g-4 mb-4">
+    {# Changed col classes to fit 3 cards evenly on large screens #}
+    <div class="col-lg-4 col-md-6">
+        {# Link points to filtered alert list #}
+        <a href="{% url 'alerts:alert-list' %}?status=firing" class="card-link">
+            <div class="stat-card">
+                <div class="stat-icon stat-danger">
+                    <i class='bx bxs-error'></i>
+                </div>
+                {# Removed inner div wrapper, icon, label, value are direct children #}
+                <p class="stat-label">Total Firing Alerts</p>
+                <div class="stat-value">{{ total_firing_alerts|default:"0" }}</div>
+                {# Removed trend data placeholder #}
+            </div>
+        </a>
+    </div>
+
+{# Changed col classes to fit 3 cards evenly on large screens #}
+    <div class="col-lg-4 col-md-6">
+         <a href="{% url 'alerts:alert-list' %}?status=firing&acknowledged=false&silenced=no" class="card-link">
+            <div class="stat-card">
+                <div class="stat-icon stat-warning">
+                    <i class='bx bxs-bell'></i>
+                </div>
+                {# Removed inner div wrapper, icon, label, value are direct children #}
+                <p class="stat-label">Unacknowledged</p>
+                <div class="stat-value">{{ unacknowledged_alerts|default:"0" }}</div>
+                 {# Removed trend data placeholder #}
+            </div>
+         </a>
+    </div>
+    {# Changed col classes to fit 3 cards evenly on large screens #}
+    <div class="col-lg-4 col-md-6">
+         <a href="{% url 'alerts:alert-list' %}?silenced=yes" class="card-link">
+            <div class="stat-card">
+                <div class="stat-icon stat-secondary"> {# Adjusted class for silenced #}
+                    <i class='bx bxs-volume-mute'></i>
+                </div>
+                {# Removed inner div wrapper, icon, label, value are direct children #}
+                <p class="stat-label">Silenced Alerts</p>
+                <div class="stat-value">{{ silenced_alerts|default:"0" }}</div>
+                 {# Removed trend data placeholder #}
+            </div>
+         </a>
+    </div>
+     {# System Health card removed #}
+</div>
+
+<!-- Charts Row 1: Daily Trend (Full Width) -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-12"> {# Changed to full width #}
+        <div class="chart-card h-100">
+            <div class="chart-card-header">
+                <h5 class="chart-title">
+                    <i class='bx bx-bar-chart-alt-2' style="color: var(--primary)"></i> {# Changed icon #}
+                    Daily Alert Volume (Last 7 Days) {# Changed Title #}
+                </h5>
+            </div>
+            <div class="chart-card-body">
+                {# Use different container ID for bar chart #}
+                <div class="daily-chart-container">
+                    <canvas id="dailyTrendChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row 2: Severity and Instance Donuts (Side-by-side) -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-6"> {# Changed to half width #}
+        <div class="chart-card h-100">
+            <div class="chart-card-header">
+                <h5 class="chart-title">
+                    <i class='bx bx-pie-chart-alt-2' style="color: var(--warning)"></i>
+                    Active Alerts by Severity
+                </h5>
+            </div>
+            <div class="chart-card-body">
+                {# Use container ID for donut chart #}
+                <div class="chart-container">
+                    <canvas id="severityDonutChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<div class="col-lg-6">
+        <div class="chart-card h-100">
+            <div class="chart-card-header">
+                <h5 class="chart-title">
+                    <i class='bx bx-server' style="color: var(--info)"></i>
+                    Alerts by Instance (Top 10) 
+                </h5>
+            </div>
+            <div class="chart-card-body">
+                {# Use container ID for donut chart #}
+                <div class="chart-container">
+                    <canvas id="instanceDonutChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    {# Additional Info card removed #}
+</div>
+
+<!-- Recent alerts table (Full Width) -->
+<div class="row g-4 mb-4"> {# Added row wrapper #}
+    <div class="col-12"> {# Added col-12 wrapper #}
+        <div class="chart-card"> {# Removed mb-4 from here, added to row if needed #}
+            <div class="chart-card-header">
+                <h5 class="chart-title">
+            <i class='bx bx-history' style="color: var(--danger)"></i> {# Changed icon #}
+            Recent Active Alerts (Top 5) {# Changed Title #}
+        </h5>
+        <div class="chart-actions">
+            {# Link to view all firing alerts #}
+            <a href="{% url 'alerts:alert-list' %}?status=firing" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1">
+                <i class='bx bx-list-ul'></i> View All Firing
+            </a>
+        </div>
+    </div>
+    <div class="chart-card-body p-0"> {# Remove padding for table #}
+        {# Removed table-responsive wrapper #}
+            <table class="alert-table mb-0 w-100"> {# Added w-100 class #}
+                <thead>
+                    <tr>
+                        <th>Severity</th> {# Added Severity #}
+                        <th>Alert Name</th>
+                        <th>Instance</th> {# Changed from Host #}
+                        <th>Last Seen</th> {# Changed from Time #}
+                        <th class="text-end">Actions</th> {# Align actions right #}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for alert in recent_alerts %}
+                    <tr>
+                        <td>
+                            {# Use status badge component #}
+                            {% if alert.severity == 'critical' %}
+                                <span class="status-badge badge-critical"><i class='bx bxs-circle'></i> Critical</span>
+                            {% elif alert.severity == 'warning' %}
+                                <span class="status-badge badge-warning"><i class='bx bxs-circle'></i> Warning</span>
+                            {% else %}
+                                <span class="status-badge badge-info"><i class='bx bxs-circle'></i> Info</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'alerts:alert-detail' alert.fingerprint %}">{{ alert.name }}</a>
+                             {% if alert.is_silenced %}
+                                 <i class='bx bxs-volume-mute text-secondary ms-1'
+                                    data-bs-toggle="tooltip" data-bs-placement="top"
+                                    title="Silenced until {{ alert.silenced_until|format_datetime:user }}"></i>
+                             {% endif %}
+                             {% if alert.acknowledged %}
+                                <i class='bx bxs-check-shield text-success ms-1'
+                                    data-bs-toggle="tooltip" data-bs-placement="top"
+                                    title="Acknowledged by {{ alert.acknowledged_by.username }} at {{ alert.acknowledgement_time|format_datetime:user }}"></i>
+                             {% endif %}
+                        </td>
+
+<td><span class="alert-host">{{ alert.instance|default:"-" }}</span></td>
+                        <td>
+                            <span class="alert-time" data-bs-toggle="tooltip" data-bs-placement="top"
+                                  title="{{ alert.last_occurrence|format_datetime:user }}">
+                                {{ alert.last_occurrence|time_ago }} {# Use time_ago filter #}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="action-menu">
+                                <a href="{% url 'alerts:alert-detail' alert.fingerprint %}" class="action-btn" data-bs-toggle="tooltip" data-bs-placement="top" title="View Details">
+                                    <i class='bx bx-show'></i>
+                                </a>
+                                 {# Silence Link - Opens Create Form with Labels #}
+                                <a href="{% url 'alerts:silence-rule-create' %}?labels={{ alert.labels|jsonify }}"
+                                   class="action-btn" data-bs-toggle="tooltip" data-bs-placement="top" title="Silence">
+                                    <i class='bx bx-volume-mute'></i>
+                                </a>
+                                {# Acknowledge - Could trigger modal or go to detail page #}
+                                {% if not alert.acknowledged and not alert.is_silenced %}
+                                <a href="{% url 'alerts:alert-detail' alert.fingerprint %}?action=ack" {# Link to detail page, JS could handle modal #}
+                                   class="action-btn" data-bs-toggle="tooltip" data-bs-placement="top" title="Acknowledge">
+                                    <i class='bx bx-check'></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                     <tr>
+                         <td colspan="5" class="text-center p-4 text-muted">
+                             <i class='bx bx-check-circle fs-4'></i>
+                             <p class="mb-0 mt-2">No active alerts found.</p>
+                         </td>
+                     </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {# Removed closing div for table-responsive #}
+    </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block extra_js %}
+{# Chart.js library #}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Data from Django context
+    const severityData = {{ severity_distribution_json|safe|default:'{\"labels\": [], \"data\": []}' }};
+    const instanceData = {{ instance_distribution_json|safe|default:'{\"labels\": [], \"data\": []}' }};
+    const dailyTrendData = {{ daily_trend_json|safe|default:'{\"labels\": [], \"datasets\": []}' }};
+
+    // --- Chart Colors (from CSS variables if possible, or defined here) ---
+    const dangerColor = '#ef476f';   // var(--danger)
+    const warningColor = '#ff9f1c';  // var(--warning)
+    const infoColor = '#3a86ff';     // var(--info)
+    const successColor = '#2ec4b6';  // var(--success)
+    const primaryColor = '#4361ee';  // var(--primary)
+    // Determine theme for chart colors
+    const isDarkMode = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+    const chartGridColor = isDarkMode ? '#444444' : '#e9ecef'; // User specified dark grid, default light grid
+    const chartLabelColor = isDarkMode ? '#adb5bd' : '#6c757d'; // User specified dark label, default light label
+    const chartBorderColor = isDarkMode ? '#2a2a2a' : '#f8f9fa'; // Adjusted dark border, default light border
+
+    const colorPalette = [ // For instance chart or others
+        '#4361ee', '#4895ef', '#3f37c9', '#56cfe1', '#7400b8',
+        '#f77f00', '#fcbf49', '#eae2b7' // Add more as needed
+    ];
+
+    const defaultChartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    color: chartLabelColor, // Use dynamic label color
+                    font: { family: 'Inter', size: 12 },
+                    padding: 15,
+                    boxWidth: 12,
+                    usePointStyle: true,
+                }
+            },
+            tooltip: {
+                backgroundColor: isDarkMode ? 'rgba(42, 42, 42, 0.9)' : 'rgba(30, 42, 56, 0.9)', // Adjusted dark tooltip
+                titleColor: isDarkMode ? '#e0e0e0' : '#ffffff',
+                bodyColor: isDarkMode ? '#e0e0e0' : '#ffffff',
+                titleFont: { family: 'Inter', size: 13, weight: '600' },
+                bodyFont: { family: 'Inter', size: 12 },
+                padding: 10,
+                cornerRadius: 6,
+                boxPadding: 4,
+                usePointStyle: true,
+            }
+        }
+    };
+
+// --- 1. Severity Donut Chart ---
+    const severityCtx = document.getElementById('severityDonutChart');
+    if (severityCtx && severityData.data.some(d => d > 0)) {
+        new Chart(severityCtx.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: severityData.labels,
+                datasets: [{
+                    label: 'Active Alerts',
+                    data: severityData.data,
+                    backgroundColor: [ dangerColor, warningColor, infoColor ], // Order matches labels: Critical, Warning, Info
+                    borderColor: chartBorderColor, // Use dynamic border color
+                    borderWidth: 2,
+                    hoverOffset: 8
+                }]
+            },
+            options: { ...defaultChartOptions, plugins: { ...defaultChartOptions.plugins, legend: { position: 'right' } }, scales: {} } // No scales for doughnut
+        });
+    } else if (severityCtx) {
+        severityCtx.parentNode.innerHTML = '<p class=\"text-center text-muted p-5\">No active alerts by severity.</p>';
+    }
+
+    // --- 2. Instance Donut Chart ---
+    const instanceCtx = document.getElementById('instanceDonutChart');
+    if (instanceCtx && instanceData.data.length > 0) {
+        new Chart(instanceCtx.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: instanceData.labels,
+                datasets: [{
+                    label: 'Active Alerts',
+                    data: instanceData.data,
+                    backgroundColor: colorPalette.slice(0, instanceData.data.length),
+                    borderColor: chartBorderColor, // Use dynamic border color
+                    borderWidth: 2,
+                    hoverOffset: 8
+                }]
+            },
+             options: { ...defaultChartOptions, plugins: { ...defaultChartOptions.plugins, legend: { position: 'right' } }, scales: {} } // No scales for doughnut
+        });
+     } else if (instanceCtx) {
+        instanceCtx.parentNode.innerHTML = '<p class=\"text-center text-muted p-5\">No instance data for active alerts.</p>';
+    }
+
+    // --- 3. Daily Trend Stacked Bar Chart ---
+    const dailyCtx = document.getElementById('dailyTrendChart');
+     if (dailyCtx && dailyTrendData.labels.length > 0) {
+        // Assign colors based on label
+        dailyTrendData.datasets.forEach(ds => {
+            if (ds.label === 'Critical') ds.backgroundColor = dangerColor;
+            else if (ds.label === 'Warning') ds.backgroundColor = warningColor;
+            else if (ds.label === 'Info') ds.backgroundColor = infoColor;
+            else ds.backgroundColor = primaryColor; // Default
+        });
+
+        new Chart(dailyCtx.getContext('2d'), {
+            type: 'bar',
+            data: dailyTrendData,
+            options: {
+                ...defaultChartOptions,
+                plugins: {
+                    ...defaultChartOptions.plugins,
+                    tooltip: { mode: 'index', intersect: false } // Show all stacks on hover
+                },
+                scales: {
+                    x: {
+                        stacked: true,
+                        grid: { display: false },
+                        ticks: {
+                            color: chartLabelColor, // Use dynamic label color
+                            font: { family: 'Inter' }
+                        }
+                    },
+                    y: {
+                        stacked: true,
+                        beginAtZero: true,
+                        grid: {
+                            color: chartGridColor, // Use dynamic grid color
+                            borderDash: [3, 3]
+                        },
+                        ticks: {
+                            color: chartLabelColor, // Use dynamic label color
+                            font: { family: 'Inter' },
+                            precision: 0
+                        }
+                    }
+                },
+                interaction: { mode: 'index', intersect: false }, // Ensure hover works across stacks
+                barPercentage: 0.8, // Adjust bar width
+                categoryPercentage: 0.7 // Adjust spacing between categories
+            }
+        });
+    } else if (dailyCtx) {
+         dailyCtx.parentNode.innerHTML = '<p class=\"text-center text-muted p-5\">Not enough historical data.</p>';
+    }
+});
+</script>
+{% endblock %}
