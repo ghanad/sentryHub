@@ -1,0 +1,14 @@
+/* CSS for unacknowledged alerts page */
+.page-header .badge {
+    font-size: 0.8em;
+    vertical-align: middle;
+}
+
+/* Modal form elements styling */
+.modal-body .form-label {
+    margin-bottom: 0.5rem;
+}
+
+.modal-body textarea {
+    min-height: 100px;
+}

@@ -21,20 +21,20 @@
                 </li>
                 {% if user.is_authenticated and user.is_staff %}
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle {% if request.resolver_match.namespace == 'admin_dashboard' or request.resolver_match.namespace == 'users' or request.path == '/admin/' %}active{% endif %}" href="#" id="adminDropdown" role="button" 
+                    <a class="nav-link dropdown-toggle {% if request.resolver_match.namespace == 'dashboard' and request.resolver_match.url_name == 'admin' or request.resolver_match.namespace == 'users' or request.path == '/admin/' %}active{% endif %}" href="#" id="adminDropdown" role="button"
                        data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="bi bi-shield-lock"></i> Admin
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="adminDropdown">
-                        <li><a class="dropdown-item" href="{% url 'admin_dashboard:dashboard' %}">
+                        <li><a class="dropdown-item" href="{% url 'dashboard:admin' %}">
                             <i class="bi bi-speedometer2"></i> Admin Dashboard
                         </a></li>
-                        <li><a class="dropdown-item" href="{% url 'admin_dashboard:comments' %}">
-                            <i class="bi bi-chat-dots"></i> Manage Comments
-                        </a></li>
-                        <li><a class="dropdown-item" href="{% url 'admin_dashboard:acknowledgements' %}">
-                            <i class="bi bi-check-circle"></i> Manage Acknowledgements
-                        </a></li>
+                        {# <li><a class="dropdown-item" href="{% url 'admin_dashboard:comments' %}"> #}
+                        {#     <i class="bi bi-chat-dots"></i> Manage Comments #}
+                        {# </a></li> #}
+                        {# <li><a class="dropdown-item" href="{% url 'admin_dashboard:acknowledgements' %}"> #}
+                        {#     <i class="bi bi-check-circle"></i> Manage Acknowledgements #}
+                        {# </a></li> #}
                         <li><a class="dropdown-item {% if request.resolver_match.namespace == 'users' %}active{% endif %}" href="{% url 'users:user_list' %}">
                             <i class="bi bi-people"></i> Manage Users
                         </a></li>
@@ -49,7 +49,7 @@
             <ul class="navbar-nav ms-auto">
                 {% if user.is_authenticated %}
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" 
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
                            data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-person-circle"></i> {{ user.username }}
                         </a>
@@ -80,11 +80,11 @@
                 {% else %}
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'login' %}">
-                            <i class="bi bi-box-arrow-in-right"></i> Login
-                        </a>
-                    </li>
-                {% endif %}
-            </ul>
-        </div>
-    </div>
-</nav>
+                             <i class="bi bi-box-arrow-in-right"></i> Login
+                         </a>
+                     </li>
+                 {% endif %}
+             </ul>
+         </div>
+     </div>
+ </nav>

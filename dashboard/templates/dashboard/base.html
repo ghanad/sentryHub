@@ -1,0 +1,220 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SentryHub{% endblock %} - Dashboard</title>
+
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- BoxIcons -->
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <!-- IranSansX (assuming core/fonts.css includes it) -->
+    <link rel="stylesheet" href="{% static 'core/css/fonts.css' %}">
+    <!-- Toastr CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+
+    <!-- Base Dashboard CSS -->
+    <link rel="stylesheet" href="{% static 'dashboard/css/modern_dashboard_base.css' %}">
+
+    {# Include base dashboard CSS if needed, or rely on main_dashboard/css/modern_dashboard.css #}
+    {# <link rel="stylesheet" href="{% static 'dashboard/css/dashboard_base.css' %}"> #}
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <script>
+        // Apply sidebar state immediately to prevent flicker
+        (function() {
+            try {
+                const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+                if (isCollapsed) {
+                    // Add classes directly, assuming sidebar and mainContent IDs exist
+                    // Note: This runs before full DOM parsing, so direct element finding might fail
+                    // if IDs are not directly available. A common practice is to add a class
+                    // to the <body> or <html> element instead. Let's try that.
+                    document.documentElement.classList.add('sidebar-is-initially-collapsed');
+                }
+            } catch (e) {
+                console.error("Error reading sidebar state from localStorage", e);
+            }
+        })();
+    </script>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <a href="{% url 'dashboard:main' %}" class="sidebar-logo">
+                <i class='bx bx-shield-quarter'></i>
+                <span>SentryHub</span>
+            </a>
+            <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+                <i class='bx bx-chevron-left'></i>
+            </button>
+        </div>
+
+        <ul class="sidebar-nav">
+            {# Determine active state based on request path or resolved URL name #}
+            {% url 'alerts:alert-list' as alerts_url %}
+            {% url 'alerts:silence-rule-list' as silences_url %}
+            {% url 'integrations:jira-rule-list' as jira_url %}
+            {% url 'docs:documentation-list' as docs_url %}
+
+            <!-- Dashboards Dropdown -->
+            <li class="nav-item">
+                <a class="nav-link collapsed {% if request.resolver_match.namespace == 'dashboard' or request.resolver_match.namespace == 'tier1_dashboard' %}active{% endif %}"
+                   href="#dashboardsSubmenu" data-bs-toggle="collapse" role="button"
+                   aria-expanded="{% if request.resolver_match.namespace == 'dashboard' or request.resolver_match.namespace == 'tier1_dashboard' %}true{% else %}false{% endif %}"
+                   aria-controls="dashboardsSubmenu">
+                    <i class='bx bxs-dashboard nav-icon'></i>
+                    <span class="nav-text">Dashboards</span>
+                    <i class='bx bx-chevron-down ms-auto sidebar-arrow'></i>
+                </a>
+                <ul class="nav-submenu collapse {% if request.resolver_match.namespace == 'dashboard' or request.resolver_match.namespace == 'tier1_dashboard' %}show{% endif %}"
+                    id="dashboardsSubmenu" data-bs-parent=".sidebar-nav">
+                    <li class="nav-item">
+                        <a href="{% url 'dashboard:main' %}" class="nav-link {% if request.resolver_match.namespace == 'dashboard' and request.resolver_match.url_name == 'main' %}active{% endif %}">
+                            <i class='bx bx-radio-circle nav-icon-sub'></i>
+                            <span class="nav-text">Main Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        {# Updated link to point to the new unacknowledged alerts view #}
+                        <a href="{% url 'dashboard:tier1' %}" class="nav-link {% if request.resolver_match.namespace == 'dashboard' and request.resolver_match.url_name == 'tier1' %}active{% endif %}">
+                            <i class='bx bx-bell-off nav-icon-sub'></i> {# Changed icon #}
+                            <span class="nav-text">Tier 1 Unacked</span> {# Changed text #}
+                        </a>
+                    </li>
+                </ul>
+            </li>
+            <!-- End Dashboards Dropdown -->
+
+            <li class="nav-item">
+                 <a href="{{ alerts_url }}" class="nav-link {% if request.resolver_match.namespace == 'alerts' and request.resolver_match.url_name == 'alert-list' %}active{% endif %}">
+                    <i class='bx bxs-bell nav-icon'></i>
+                    <span class="nav-text">Alerts</span>
+                </a>
+            </li>
+             <li class="nav-item">
+                 <a href="{{ silences_url }}" class="nav-link {% if request.resolver_match.namespace == 'alerts' and request.resolver_match.url_name == 'silence-rule-list' %}active{% endif %}">
+                    <i class='bx bxs-volume-mute nav-icon'></i>
+                    <span class="nav-text">Silence Rules</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                 <a href="{{ jira_url }}" class="nav-link {% if request.resolver_match.namespace == 'integrations' and request.resolver_match.url_name == 'jira-rule-list' %}active{% endif %}">
+                    <i class='bx bx-link-external nav-icon'></i>
+                    <span class="nav-text">Jira Rules</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                 <a href="{{ docs_url }}" class="nav-link {% if request.resolver_match.namespace == 'docs' and request.resolver_match.url_name == 'documentation-list' %}active{% endif %}">
+                    <i class='bx bxs-book-content nav-icon'></i>
+                    <span class="nav-text">Documentation</span>
+                </a>
+            </li>
+             {% if user.is_authenticated and user.is_staff %}
+             <li class="nav-item">
+                 <a href="{% url 'dashboard:admin' %}" class="nav-link {% if request.resolver_match.namespace == 'dashboard' and request.resolver_match.url_name == 'admin' %}active{% endif %}">
+                    <i class='bx bxs-cog nav-icon'></i>
+                    <span class="nav-text">Admin</span>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+
+        <div class="sidebar-footer mt-auto">
+            {# Expanded Theme Toggle Button #}
+            <div class="d-flex align-items-center justify-content-between mb-3 px-3 theme-toggle-wrapper expanded-toggle">
+                <span class="small theme-toggle-label">Theme</span>
+                <button class="custom-theme-toggle" id="themeToggleExpanded" type="button" aria-label="Toggle theme">
+                    <span class="toggle-thumb"></span>
+                    <span class="icon-sun"><i class='bx bx-sun'></i></span>
+                    <span class="icon-moon"><i class='bx bx-moon'></i></span>
+                </button>
+            </div>
+             {# Collapsed Theme Toggle Button (Initially Hidden) #}
+            <div class="text-center mb-3 collapsed-toggle d-none">
+                 <button class="custom-theme-toggle" id="themeToggleCollapsed" type="button" aria-label="Toggle theme">
+                    <span class="toggle-thumb"></span>
+                    <span class="icon-sun"><i class='bx bx-sun'></i></span>
+                    <span class="icon-moon"><i class='bx bx-moon'></i></span>
+                </button>
+            </div>
+            {# Account Management Section #}
+            <div class="account-management mb-2">
+                <div class="d-flex align-items-center justify-content-between px-3 account-header">
+                    <div class="d-flex align-items-center">
+                        <i class='bx bxs-user-circle fs-4 me-2'></i>
+                        <span class="profile-text">Account</span>
+                    </div>
+                    <i class='bx bx-chevron-down account-toggle'></i>
+                </div>
+                <div class="account-menu mt-2">
+                    <a href="{% url 'users:profile' %}" class="nav-link d-flex align-items-center px-3 py-1">
+                        <i class='bx bxs-user me-2'></i>
+                        <span>Profile</span>
+                    </a>
+                    <a href="{% url 'logout' %}" class="nav-link d-flex align-items-center px-3 py-1">
+                        <i class='bx bx-log-out me-2'></i>
+                        <span>Logout</span>
+                    </a>
+                </div>
+            </div>
+            <div class="collapsed-account">
+                <a href="#" class="nav-link d-flex justify-content-center py-2 account-collapsed-icon" title="Account">
+                    <i class='bx bxs-user-circle fs-4'></i>
+                </a>
+                <div class="account-menu-collapsed">
+                    <a href="{% url 'users:profile' %}" class="nav-link d-flex justify-content-center py-1" title="Profile">
+                        <i class='bx bxs-user fs-4'></i>
+                    </a>
+                    <a href="{% url 'logout' %}" class="nav-link d-flex justify-content-center py-1" title="Logout">
+                        <i class='bx bx-log-out fs-4'></i>
+                    </a>
+                </div>
+            </div>
+            <span class="small px-3 version-text">Version 1.0.1</span>
+        </div>
+    </aside>
+
+    <!-- Main content Area -->
+    <main class="main-content" id="mainContent">
+        <!-- Mobile header -->
+        <div class="mobile-header d-lg-none">
+            <button class="mobile-toggle" id="mobileToggle">
+                <i class='bx bx-menu'></i>
+            </button>
+            <h5 class="mb-0 ms-2">SentryHub</h5>
+        </div>
+
+        {% block main_content %}
+        {# Content from child templates will go here #}
+        {% endblock %}
+    </main>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+     <!-- jQuery (if needed by other scripts, like Toastr) -->
+     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+     <!-- Toastr JS -->
+     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+     <!-- Custom Core Notifications JS -->
+     <script src="{% static 'core/js/notifications.js' %}"></script>
+     <!-- Modern Base JS -->
+     <script src="{% static 'dashboard/js/modern_dashboard.js' %}"></script>
+     <script src="{% static 'core/js/rtl-text.js' %}"></script>
+
+     <!-- Include notifications partial -->
+     {% include 'core/partials/notifications.html' %}
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -30,15 +30,13 @@ urlpatterns = [
     path('accounts/password_reset/done/', auth_views.PasswordResetDoneView.as_view(), name='password_reset_done'),
     path('accounts/reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
     path('accounts/reset/done/', auth_views.PasswordResetCompleteView.as_view(), name='password_reset_complete'),
-    path('', include('core.urls', namespace='core')),  # Include core URLs first
+    path('', include('core.urls', namespace='core')),  
     path('alerts/', include('alerts.urls', namespace='alerts')),
-    path('dashboard/', include('main_dashboard.urls', namespace='dashboard')),
     # path('api/v1/', include('alerts.api.urls')), # Removed redundant include; already in alerts.urls
     path('api-auth/', include('rest_framework.urls')),
     path('docs/', include('docs.urls', namespace='docs')),
     path('tinymce/', include('tinymce.urls')),
-    path('admin-dashboard/', include('admin_dashboard.urls', namespace='admin_dashboard')),
-    path('tier1/', include('tier1_dashboard.urls', namespace='tier1_dashboard')), # Add this line
+    path('dashboard/', include('dashboard.urls')),
     path('users/', include('users.urls', namespace='users')),
     path('integrations/', include('integrations.urls', namespace='integrations')),
 ]

@@ -1,0 +1,53 @@
+/* main_dashboard/static/main_dashboard/css/modern_dashboard.css */
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap; /* Allow wrapping on smaller screens */
+    gap: 1rem; /* Add gap for wrapped items */
+}
+
+.page-title {
+    font-weight: 600;
+    color: var(--gray-900);
+    margin: 0;
+    font-size: 1.75rem; /* Match h1 size */
+}
+
+.date-display {
+    color: var(--gray-600);
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+/* Modern card design */
+.stat-card {
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow-sm);
+    padding: 0.75rem 1.25rem; /* Further reduced top/bottom padding */
+    transition: var(--transition);
+    height: 100%;
+    border: none;
+    overflow: hidden;
+    position: relative;
+    display: flex; /* Added */
+    align-items: center; /* Added */
+    gap: 0.5rem; /* Adjust gap between icon, label, value */
+    flex-wrap: wrap; /* Allow wrapping if needed */
+}
+
+/* Remove the style for the inner div as it no longer exists */
+
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--box-shadow);
+}
+
+ .card-link { text-decoration: none; }
+ .card-link .stat-card:hover { /* Apply hover to card inside link */
+    transform: translateY(-5px);
+}

@@ -33,11 +33,9 @@ INSTALLED_APPS = [
     'core.apps.CoreConfig',
     'alerts',
     'docs',
-    'admin_dashboard',
     'users',
-    'main_dashboard',
-    'tier1_dashboard', # Added Tier 1 Dashboard app
     'integrations',
+    'dashboard', # Consolidated dashboard app
 ]
 
 MIDDLEWARE = [
