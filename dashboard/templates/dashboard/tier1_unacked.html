@@ -6,7 +6,7 @@
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'dashboard/css/modern_dashboard.css' %}">
     <link rel="stylesheet" href="{% static 'alerts/css/alerts_list.css' %}">
-    <link rel="stylesheet" href="{% static 'tier1_dashboard/css/unack_alerts.css' %}">
+    <link rel="stylesheet" href="{% static 'dashboard/css/unack_alerts.css' %}">
 {% endblock %}
 
 {% block main_content %}
@@ -142,7 +142,7 @@
                 <form method="post" action="{% url 'alerts:alert-detail' alert.fingerprint %}">
                     <div class="modal-body">
                         {% csrf_token %}
-                        <input type="hidden" name="next" value="{% url 'tier1_dashboard:tier1-unacked-alerts' %}">
+                        <input type="hidden" name="next" value="{% url 'dashboard:tier1_dashboard_new' %}">
                         <p>You are acknowledging the alert: <strong>{{ alert.name }}</strong></p>
                         <p>Please provide a comment explaining the reason for acknowledgement or any actions being taken:</p>
 
@@ -170,7 +170,7 @@
 {% block extra_js %}
     <script>
         // Define API URL that respects FORCE_SCRIPT_NAME
-        window.ALERTS_API_URL = "{% url 'tier1_dashboard:api_alert_data' %}";
+        window.ALERTS_API_URL = "{% url 'dashboard:tier1_dashboard_new' %}";
     </script>
-    <script src="{% static 'tier1_dashboard/js/unack_alerts.js' %}"></script>
+    <script src="{% static 'dashboard/js/unack_alerts.js' %}"></script>
 {% endblock %}

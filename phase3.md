@@ -140,6 +140,9 @@
     3.  Verify rendering, static files, and functionality. Test with appropriate user roles.
     4.  Run/fix relevant tests.
 
+
+** ‌Note: remove views from task 1
+
 ---
 **Part D: Migrate `admin_dashboard`**
 ---

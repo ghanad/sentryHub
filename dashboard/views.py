@@ -8,6 +8,8 @@ from datetime import timedelta
 import logging
 import json
 from alerts.models import AlertGroup
+from alerts.views import AlertListView
+from alerts.forms import AlertAcknowledgementForm
 
 logger = logging.getLogger(__name__)
 
@@ -91,4 +93,30 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         # --- 5. Data for Recent Alerts Table (Top 5 Firing) ---
         context['recent_alerts'] = active_alerts_qs.order_by('-last_occurrence')[:5]
 
+        return context
+
+
+class Tier1AlertListView(AlertListView):
+    """List view of unacknowledged alerts for Tier 1 users"""
+    paginate_by = None  # Disable pagination
+    template_name = 'dashboard/tier1_unacked.html'
+
+    def get_queryset(self):
+        """Return only unacknowledged alerts"""
+        base_queryset = super().get_queryset()
+        return base_queryset.filter(acknowledged=False)
+
+    def get_context_data(self, **kwargs):
+        """Remove filter parameters and add acknowledgement form"""
+        context = super().get_context_data(**kwargs)
+        # Remove filter parameters
+        filter_keys = ['status', 'severity', 'instance', 'acknowledged', 'silenced_filter', 'search']
+        for key in filter_keys:
+            context.pop(key, None)
+        # Remove pagination context
+        context.pop('paginator', None)
+        context.pop('page_obj', None)
+        context.pop('is_paginated', None)
+        # Add the acknowledgement form
+        context['acknowledge_form'] = AlertAcknowledgementForm()
         return context
