@@ -26,14 +26,14 @@
                         <i class="bi bi-shield-lock"></i> Admin
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="adminDropdown">
-                        <li><a class="dropdown-item" href="{% url 'admin_dashboard:dashboard' %}">
+                        <li><a class="dropdown-item" href="{% url 'dashboard:admin_dashboard_summary' %}">
                             <i class="bi bi-speedometer2"></i> Admin Dashboard
                         </a></li>
-                        <li><a class="dropdown-item" href="{% url 'admin_dashboard:comments' %}">
-                            <i class="bi bi-chat-dots"></i> Manage Comments
+                        <li><a class="dropdown-item" href="#">
+                            <i class="bi bi-chat-dots"></i> Manage Comments (Coming Soon)
                         </a></li>
-                        <li><a class="dropdown-item" href="{% url 'admin_dashboard:acknowledgements' %}">
-                            <i class="bi bi-check-circle"></i> Manage Acknowledgements
+                        <li><a class="dropdown-item" href="#">
+                            <i class="bi bi-check-circle"></i> Manage Acknowledgements (Coming Soon)
                         </a></li>
                         <li><a class="dropdown-item {% if request.resolver_match.namespace == 'users' %}active{% endif %}" href="{% url 'users:user_list' %}">
                             <i class="bi bi-people"></i> Manage Users

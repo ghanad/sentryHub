@@ -1,0 +1,170 @@
+{% extends "dashboard/base.html" %}
+{% load static date_format_tags core_tags %}
+
+{% block title %}Admin Comments - SentryHub{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dashboard/css/modern_dashboard.css' %}">
+<style>
+    .col-id { width: 5%; }
+    .col-alert { width: 20%; }
+    .col-user { width: 10%; }
+    .col-comment-text { width: 30%; }
+    .col-comment-date { width: 15%; }
+    .col-alert-start { width: 15%; }
+    .col-actions { width: 5%; }
+</style>
+{% endblock %}
+
+{% block main_content %}
+<header class="page-header">
+    <h1 class="page-title">Manage Comments</h1>
+</header>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="chart-card filter-card">
+            <div class="chart-card-header">
+                <h5 class="chart-title"><i class='bx bx-filter-alt'></i> Filter Comments</h5>
+            </div>
+            <div class="chart-card-body">
+                <form method="get" class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label for="user" class="form-label">User</label>
+                        <input type="text" class="form-control form-control-sm" id="user" name="user" value="{{ user_filter }}" placeholder="Username">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="alert" class="form-label">Alert</label>
+                        <input type="text" class="form-control form-control-sm" id="alert" name="alert" value="{{ alert_filter }}" placeholder="Alert name">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="date_from" class="form-label">From Date</label>
+                        <input type="date" class="form-control form-control-sm" id="date_from" name="date_from" value="{{ date_from }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="date_to" class="form-label">To Date</label>
+                        <input type="date" class="form-control form-control-sm" id="date_to" name="date_to" value="{{ date_to }}">
+                    </div>
+                    <div class="col-12 d-flex justify-content-end gap-2">
+                        <button type="submit" class="btn btn-primary btn-sm"><i class='bx bx-filter-alt'></i> Apply Filters</button>
+                        <a href="{% url 'dashboard:admin_dashboard_comments' %}" class="btn btn-outline-secondary btn-sm"><i class='bx bx-x'></i> Reset</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="chart-card">
+    <div class="chart-card-header">
+        <h5 class="chart-title d-flex align-items-center gap-2">
+            <i class='bx bx-list-ul'></i> Comment List
+            <span class="ms-auto text-muted">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+            <span class="text-muted">Total: {{ page_obj.paginator.count }}</span>
+        </h5>
+    </div>
+    <div class="chart-card-body p-0">
+        <div class="table-responsive">
+            <table class="alert-table">
+                <thead>
+                    <tr>
+                        <th class="col-id">ID</th>
+                        <th class="col-alert">Alert</th>
+                        <th class="col-user">User</th>
+                        <th class="col-comment-text">Comment</th>
+                        <th class="col-comment-date">Comment Date</th>
+                        <th class="col-alert-start">Alert Start Date</th>
+                        <th class="col-actions text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for comment in comments %}
+                    <tr>
+                        <td>{{ comment.id }}</td>
+                        <td>
+                            <a href="{% url 'alerts:alert-detail' comment.alert_group.fingerprint %}" class="alert-name-link">
+                                {{ comment.alert_group.name }}
+                            </a>
+                        </td>
+                        <td>{{ comment.user.username }}</td>
+                        <td>{{ comment.content|truncatechars:100 }}</td>
+                        <td>
+                            <span data-bs-toggle="tooltip" title="{{ comment.created_at|format_datetime:user }}">
+                                {{ comment.created_at|time_ago }}
+                            </span>
+                        </td>
+                        <td>
+                            <span data-bs-toggle="tooltip" title="{{ comment.alert_group.first_occurrence|format_datetime:user }}">
+                                {{ comment.alert_group.first_occurrence|time_ago }}
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <div class="action-menu">
+                                <a href="{% url 'alerts:alert-detail' comment.alert_group.fingerprint %}?tab=comments" 
+                                   class="action-btn" 
+                                   data-bs-toggle="tooltip" 
+                                   title="View">
+                                    <i class='bx bx-show'></i>
+                                </a>
+                                <button type="button" 
+                                        class="action-btn" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#deleteCommentModal{{ comment.id }}"
+                                        data-bs-toggle="tooltip" 
+                                        title="Delete">
+                                    <i class='bx bx-trash'></i>
+                                </button>
+                            </div>
+                            
+                            <!-- Delete Modal -->
+                            <div class="modal fade" id="deleteCommentModal{{ comment.id }}" tabindex="-1" aria-labelledby="deleteCommentModalLabel{{ comment.id }}" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title"><i class='bx bx-trash'></i> Confirm Delete</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p>Are you sure you want to delete this comment?</p>
+                                            <div class="alert alert-warning">
+                                                <strong>Comment:</strong> {{ comment.content|truncatechars:150 }}
+                                            </div>
+                                            <p><strong>Alert:</strong> {{ comment.alert_group.name }}</p>
+                                            <p><strong>User:</strong> {{ comment.user.username }}</p>
+                                            <p><strong>Date:</strong> 
+                                                <span data-bs-toggle="tooltip" title="{{ comment.created_at|format_datetime:user }}">
+                                                    {{ comment.created_at|time_ago }}
+                                                </span>
+                                            </p>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                            <form method="post" action="#">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="comment_id" value="{{ comment.id }}">
+                                                <button type="submit" class="btn btn-danger"><i class='bx bx-trash'></i> Delete Comment</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <i class='bx bx-comment-x fs-1 text-muted'></i>
+                            <p class="mt-2 mb-0">No comments found</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if is_paginated %}
+            {% include 'core/partials/_pagination.html' with page_obj=page_obj %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

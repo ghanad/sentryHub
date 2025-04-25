@@ -113,7 +113,7 @@
             </li>
              {% if user.is_authenticated and user.is_staff %}
              <li class="nav-item">
-                 <a href="{% url 'admin_dashboard:dashboard' %}" class="nav-link {% if request.resolver_match.namespace == 'admin_dashboard' %}active{% endif %}">
+                 <a href="{% url 'dashboard:admin_dashboard_summary' %}" class="nav-link {% if request.resolver_match.url_name == 'admin_dashboard_summary' %}active{% endif %}">
                     <i class='bx bxs-cog nav-icon'></i>
                     <span class="nav-text">Admin</span>
                 </a>

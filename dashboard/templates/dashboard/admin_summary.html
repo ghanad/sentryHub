@@ -1,0 +1,195 @@
+{% extends "dashboard/base.html" %}
+{% load static date_format_tags core_tags %}
+
+{% block title %}Admin Dashboard - SentryHub{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'dashboard/css/modern_dashboard.css' %}">
+    <style>
+        .alert-table th.col-alert, .alert-table td.col-alert { width: 25%; }
+        .alert-table th.col-user, .alert-table td.col-user { width: 15%; }
+        .alert-table th.col-comment, .alert-table td.col-comment { width: 30%; }
+        .alert-table th.col-date, .alert-table td.col-date { width: 15%; }
+        .alert-table th.col-actions, .alert-table td.col-actions { width: 15%; text-align: end; }
+    </style>
+{% endblock %}
+
+{% block main_content %}
+<header class="page-header">
+    <h1 class="page-title">Admin Dashboard</h1>
+    <div class="d-flex align-items-center gap-2">
+         <span class="text-muted small">System Overview & Recent Activity</span>
+    </div>
+</header>
+
+<div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <h5 class="card-title">Total Comments</h5>
+                <div class="display-4">{{ total_comments }}</div>
+                <a href="#" class="btn btn-sm btn-primary mt-3">View All Comments</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <h5 class="card-title">Total Acknowledgements</h5>
+                <div class="display-4">{{ total_acknowledgements }}</div>
+                <a href="#" class="btn btn-sm btn-primary mt-3">View All Acknowledgements</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <h5 class="card-title">Admin Actions</h5>
+                <ul class="list-group mt-3">
+                    <!-- <li class="list-group-item"><a href="#">Manage Comments</a></li> -->
+                    <li class="list-group-item"><a href="{% url 'dashboard:admin_dashboard_comments' %}">Manage Comments</a></li>
+                    <li class="list-group-item"><a href="{% url 'dashboard:admin_dashboard_acks' %}">Manage Acknowledgements</a></li>
+                    <li class="list-group-item"><a href="{% url 'users:user_list'%}">User Management</a></li>
+                    <li class="list-group-item"><a href="#">System Settings</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <h5 class="chart-title d-flex align-items-center gap-2">
+                    <i class='bx bx-comment-dots'></i>
+                    Recent Comments
+                </h5>
+                <a href="#" class="btn btn-sm btn-outline-secondary">View All</a>
+            </div>
+            <div class="chart-card-body p-0">
+                {% if recent_comments %}
+                <div class="table-responsive">
+                    <table class="alert-table">
+                        <thead>
+                            <tr>
+                                <th class="col-alert">Alert</th>
+                                <th class="col-user">User</th>
+                                <th class="col-comment">Comment</th>
+                                <th class="col-date">Date</th>
+                                <th class="col-actions">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for comment in recent_comments %}
+                            <tr>
+                                <td class="col-alert">
+                                    <a href="#" class="alert-name-link">
+                                        {{ comment.alert_group.name }}
+                                    </a>
+                                </td>
+                                <td class="col-user">{{ comment.user.username }}</td>
+                                <td class="col-comment">{{ comment.content|truncatechars:50 }}</td>
+                                <td class="col-date">
+                                    <span data-bs-toggle="tooltip" title="{{ comment.created_at|format_datetime:user }}">
+                                        {{ comment.created_at|time_ago }}
+                                    </span>
+                                </td>
+                                <td class="col-actions">
+                                    <div class="action-menu">
+                                        <a href="#" class="action-btn" data-bs-toggle="tooltip" title="View Comment on Alert">
+                                            <i class='bx bx-show'></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <table class="alert-table">
+                    <tbody>
+                        <tr>
+                            <td colspan="5" class="text-center p-5">
+                                <i class='bx bx-comment-x fs-1 text-muted mb-3 d-block'></i>
+                                <p class="text-muted mb-0">No recent comments found.</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <h5 class="chart-title d-flex align-items-center gap-2">
+                   <i class='bx bx-check-shield'></i>
+                   Recent Acknowledgements
+                </h5>
+                <a href="#" class="btn btn-sm btn-outline-secondary">View All</a>
+            </div>
+            <div class="chart-card-body p-0">
+                {% if recent_acknowledgements %}
+                <div class="table-responsive">
+                    <table class="alert-table">
+                        <thead>
+                            <tr>
+                                <th class="col-alert">Alert</th>
+                                <th class="col-user">User</th>
+                                <th class="col-comment">Comment</th>
+                                <th class="col-date">Date</th>
+                                <th class="col-actions">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ack in recent_acknowledgements %}
+                            <tr>
+                                <td class="col-alert">
+                                    <a href="#" class="alert-name-link">
+                                        {{ ack.alert_group.name }}
+                                    </a>
+                                </td>
+                                <td class="col-user">{{ ack.acknowledged_by.username }}</td>
+                                <td class="col-comment">{{ ack.comment|default:"-"|truncatechars:50 }}</td>
+                                <td class="col-date">
+                                    <span data-bs-toggle="tooltip" title="{{ ack.acknowledged_at|format_datetime:user }}">
+                                        {{ ack.acknowledged_at|time_ago }}
+                                    </span>
+                                </td>
+                                <td class="col-actions">
+                                    <div class="action-menu">
+                                        <a href="#" class="action-btn" data-bs-toggle="tooltip" title="View Acknowledgement on Alert">
+                                            <i class='bx bx-show'></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                 <table class="alert-table">
+                    <tbody>
+                        <tr>
+                            <td colspan="5" class="text-center p-5">
+                                <i class='bx bx-shield-quarter fs-1 text-muted mb-3 d-block'></i>
+                                <p class="text-muted mb-0">No recent acknowledgements found.</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock main_content %}

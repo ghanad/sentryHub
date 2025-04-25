@@ -33,7 +33,6 @@ INSTALLED_APPS = [
     'core.apps.CoreConfig',
     'alerts',
     'docs',
-    'admin_dashboard',
     'users',
     'main_dashboard',
     'integrations',

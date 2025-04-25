@@ -14,7 +14,7 @@ class AdminRequiredMixin(UserPassesTestMixin):
     def test_func(self):
         return self.request.user.is_authenticated and self.request.user.is_staff
 
-class AdminDashboardView(AdminRequiredMixin, TemplateView):
+# class AdminDashboardView(AdminRequiredMixin, TemplateView):
     """
     Main admin dashboard view. Will display admin statistics and links to admin sections.
     """
@@ -32,7 +32,7 @@ class AdminDashboardView(AdminRequiredMixin, TemplateView):
         
         return context
 
-class AdminCommentsView(AdminRequiredMixin, ListView):
+# class AdminCommentsView(AdminRequiredMixin, ListView):
     """
     View to display all comments for admin review.
     """
@@ -74,7 +74,7 @@ class AdminCommentsView(AdminRequiredMixin, ListView):
         
         return context
 
-class AdminAcknowledgementsView(AdminRequiredMixin, ListView):
+# class AdminAcknowledgementsView(AdminRequiredMixin, ListView):
     """
     View to display all acknowledgements for admin review.
     """

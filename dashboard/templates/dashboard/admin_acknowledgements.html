@@ -1,0 +1,187 @@
+{% extends "dashboard/base.html" %}
+{% load static date_format_tags core_tags %}
+
+{% block title %}Manage Acknowledgements - SentryHub{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dashboard/css/modern_dashboard.css' %}">
+<style>
+    .col-id { width: 5%; }
+    .col-alert { width: 20%; }
+    .col-user { width: 15%; }
+    .col-ack-date { width: 15%; }
+    .col-alert-start { width: 15%; }
+    .col-comment { width: 20%; }
+    .col-actions { width: 10%; text-align: end; }
+</style>
+{% endblock %}
+
+{% block main_content %}
+<header class="page-header">
+    <h1 class="page-title">Manage Acknowledgements</h1>
+</header>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="chart-card filter-card">
+            <div class="chart-card-header">
+                <h5 class="chart-title"><i class='bx bx-filter-alt'></i> Filter Acknowledgements</h5>
+            </div>
+            <div class="chart-card-body">
+                <form method="get" class="row g-3 align-items-end">
+                    <div class="col-lg-3 col-md-6">
+                        <label for="user" class="form-label">User</label>
+                        <input type="text" class="form-control form-control-sm" id="user" name="user" value="{{ user_filter }}" placeholder="Username">
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <label for="alert" class="form-label">Alert</label>
+                        <input type="text" class="form-control form-control-sm" id="alert" name="alert" value="{{ alert_filter }}" placeholder="Alert name">
+                    </div>
+                    <div class="col-lg-2 col-md-6">
+                        <label for="date_from" class="form-label">From Date</label>
+                        <input type="date" class="form-control form-control-sm" id="date_from" name="date_from" value="{{ date_from }}">
+                    </div>
+                    <div class="col-lg-2 col-md-6">
+                        <label for="date_to" class="form-label">To Date</label>
+                        <input type="date" class="form-control form-control-sm" id="date_to" name="date_to" value="{{ date_to }}">
+                    </div>
+                    <div class="col-lg-2 col-md-12">
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="submit" class="btn btn-primary btn-sm d-flex align-items-center gap-1">
+                                <i class='bx bx-filter-alt'></i> Filter
+                            </button>
+                            <a href="{% url 'dashboard:admin_dashboard_acks' %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
+                                <i class='bx bx-x'></i> Reset
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <h5 class="chart-title d-flex align-items-center gap-2">
+                    <i class='bx bx-list-ul'></i> Acknowledgement List
+                    {% if is_paginated %}
+                       <span class="badge bg-secondary rounded-pill fw-normal ms-2">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                    {% endif %}
+                </h5>
+                <span class="text-muted small">Total: {{ page_obj.paginator.count }}</span>
+            </div>
+            <div class="chart-card-body p-0">
+                <div class="table-responsive">
+                    <table class="alert-table">
+                        <thead>
+                            <tr>
+                                <th class="col-id">ID</th>
+                                <th class="col-alert">Alert</th>
+                                <th class="col-user">User</th>
+                                <th class="col-ack-date">Ack Date</th>
+                                <th class="col-alert-start">Alert Start</th>
+                                <th class="col-comment">Comment</th>
+                                <th class="col-actions">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ack in acknowledgements %}
+                            <tr>
+                                <td class="col-id">{{ ack.id }}</td>
+                                <td class="col-alert">
+                                    <a href="{% url 'alerts:alert-detail' ack.alert_group.fingerprint %}" class="alert-name-link">
+                                        {{ ack.alert_group.name }}
+                                    </a>
+                                </td>
+                                <td class="col-user">{{ ack.acknowledged_by.username }}</td>
+                                <td class="col-ack-date">
+                                    <span data-bs-toggle="tooltip" title="{{ ack.acknowledged_at|format_datetime:user }}">
+                                        {{ ack.acknowledged_at|time_ago }}
+                                    </span>
+                                </td>
+                                <td class="col-alert-start">
+                                     <span data-bs-toggle="tooltip" title="{{ ack.alert_group.first_occurrence|format_datetime:user }}">
+                                        {{ ack.alert_group.first_occurrence|time_ago }}
+                                    </span>
+                                </td>
+                                <td class="col-comment">{{ ack.comment|default:"-"|truncatechars:100 }}</td>
+                                <td class="col-actions">
+                                    <div class="action-menu">
+                                        <a href="{% url 'alerts:alert-detail' ack.alert_group.fingerprint %}?tab=ack_history" class="action-btn" data-bs-toggle="tooltip" title="View Acknowledgement on Alert">
+                                            <i class='bx bx-show'></i>
+                                        </a>
+                                        <button type="button" class="action-btn" data-bs-toggle="modal" data-bs-target="#deleteAckModal{{ ack.id }}" title="Delete Acknowledgement">
+                                             <i class='bx bx-trash'></i>
+                                         </button>
+                                    </div>
+                                    <!-- Delete Modal -->
+                                    <div class="modal fade" id="deleteAckModal{{ ack.id }}" tabindex="-1" aria-labelledby="deleteAckModalLabel{{ ack.id }}" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title" id="deleteAckModalLabel{{ ack.id }}">
+                                                        <i class='bx bx-error-circle text-danger me-2'></i>Confirm Delete
+                                                    </h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <p>Are you sure you want to delete this acknowledgement record?</p>
+                                                    <div class="alert alert-warning">
+                                                        <p><strong>Alert:</strong> {{ ack.alert_group.name }}</p>
+                                                        <p><strong>User:</strong> {{ ack.acknowledged_by.username }}</p>
+                                                        <p><strong>Date:</strong> {{ ack.acknowledged_at|format_datetime:user }}</p>
+                                                        {% if ack.comment %}
+                                                        <p><strong>Comment:</strong> {{ ack.comment|truncatechars:150 }}</p>
+                                                        {% endif %}
+                                                    </div>
+                                                    <p class="text-danger">Warning: Deleting this record will remove the acknowledgement history, but will not change the current acknowledgement status of the alert.</p>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                    <form method="post" action="#">
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="ack_id" value="{{ ack.id }}">
+                                                        <button type="submit" class="btn btn-primary d-flex align-items-center gap-1">
+                                                            <i class='bx bx-trash'></i> Delete
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center p-5">
+                                    <i class='bx bx-shield-quarter fs-1 text-muted mb-3 d-block'></i>
+                                    <p class="text-muted mb-0">No acknowledgements found matching your criteria.</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% if is_paginated %}
+                   {% include 'core/partials/_pagination.html' with page_obj=page_obj %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock main_content %}
+
+{% block extra_js %}
+<script>
+   document.addEventListener('DOMContentLoaded', function () {
+       const deleteButtons = document.querySelectorAll('.action-menu button[data-bs-toggle="modal"][title]');
+       deleteButtons.forEach(function(button) {
+           new bootstrap.Tooltip(button);
+       });
+   });
+</script>
+{% endblock extra_js %}

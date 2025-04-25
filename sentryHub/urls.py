@@ -37,7 +37,7 @@ urlpatterns = [
     path('api-auth/', include('rest_framework.urls')),
     path('docs/', include('docs.urls', namespace='docs')),
     path('tinymce/', include('tinymce.urls')),
-    path('admin-dashboard/', include('admin_dashboard.urls', namespace='admin_dashboard')),
+    # path('admin-dashboard/', include('admin_dashboard.urls', namespace='admin_dashboard')),  # Disabled old admin dashboard URLs
     path('users/', include('users.urls', namespace='users')),
     path('integrations/', include('integrations.urls', namespace='integrations')),
 ]
