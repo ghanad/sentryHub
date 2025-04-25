@@ -152,6 +152,7 @@
 * **Instructions:**
     1.  Locate the Admin view (e.g., `AdminDashboardView` in `admin_dashboard/views.py`).
     2.  Copy its definition to `dashboard/views.py`.
+    3.  Comment these views in `admin_dashboard/views.py` to remove them in final stage
 
 **Task 3.D.2: Move `admin_dashboard` Template**
 * **Objective:** Move the main template file from `admin_dashboard` to `dashboard`.
@@ -182,19 +183,62 @@
     2.  Focus *only* on the view moved from `admin_dashboard`.
     3.  Review and correct its import statements.
 
-**Task 3.D.6: Update References to `admin_dashboard`**
-* **Objective:** Find and update references pointing to the *old* `admin_dashboard`.
+**Task 3.D.6: Move `admin_dashboard` Acknowledgements Template**
+* **Objective:** Move the template file for displaying acknowledgements (corresponding to the view moved in 3.D.5).
 * **Instructions:**
-    1.  Search the codebase (including sidebar) for `{% url %}` tags referencing old `admin_dashboard` URL names. Update them to use the new name (e.g., `{% url 'dashboard:admin_dashboard_new' %}`).
-    2.  Search for Python imports like `from admin_dashboard...`. Remove or update.
+    1.  Locate the acknowledgements template (`admin_dashboard/templates/admin_dashboard/acknowledgements.html`).
+    2.  Move it to `dashboard/templates/dashboard/admin_acknowledgements.html`.
+    3.  Open `dashboard/views.py` and find the `AdminAcknowledgementsView` (moved in 3.D.5). Update its `template_name` attribute or `render()` call to use `'dashboard/admin_acknowledgements.html'`.
 
-**Task 3.D.7: Test `admin_dashboard` Migration**
-* **Objective:** Verify the migrated Admin dashboard works.
+**Task 3.D.7: Move `admin_dashboard` Specific Static Assets**
+* **Objective:** Move static files specific to *any* part of the old `admin_dashboard` (main, comments, or acks).
 * **Instructions:**
-    1.  Run the server.
-    2.  Navigate to the new URL (e.g., `/dashboard/admin-summary/`).
-    3.  Verify rendering, static files, and functionality. Test as a staff user.
-    4.  Run/fix relevant tests.
+    1.  Check `admin_dashboard/static/admin_dashboard/`.
+    2.  Move any *specific* CSS/JS files to `dashboard/static/dashboard/css/` or `dashboard/static/dashboard/js/`.
+    3.  Update `{% static %}` tags in the moved templates (`admin_summary.html`, `admin_comments.html`, `admin_acknowledgements.html`) accordingly to reference the new paths (e.g., `{% static 'dashboard/css/admin.css' %}`).
+
+**Task 3.D.8: Configure URLs for All Moved `admin_dashboard` Views**
+* **Objective:** Add URL patterns in `dashboard/urls.py` for *all* views moved from `admin_dashboard` (main, comments, acknowledgements).
+* **Instructions:**
+    1.  Open `dashboard/urls.py`.
+    2.  Ensure the views `AdminDashboardView`, `AdminCommentsView`, and `AdminAcknowledgementsView` are imported from `dashboard.views`.
+    3.  Add paths to the `urlpatterns` list for each of these three views. Assign unique, descriptive names.
+        ```python
+        # Example additions/updates to dashboard/urls.py urlpatterns
+        # Make sure app_name = 'dashboard' exists at the top
+
+        urlpatterns = [
+            # ... paths for main_dashboard_new and tier1_dashboard_new should already exist ...
+            path('admin-summary/', views.AdminDashboardView.as_view(), name='admin_dashboard_summary'), # Add/Confirm this
+            path('admin-comments/', views.AdminCommentsView.as_view(), name='admin_dashboard_comments'), # Add/Confirm this
+            path('admin-acks/', views.AdminAcknowledgementsView.as_view(), name='admin_dashboard_acks'), # Add/Confirm this
+        ]
+        ```
+    4.  Open the main project `urls.py`. Ensure the *old* include for `admin_dashboard.urls` has been removed. Ensure `path('dashboard/', include('dashboard.urls'))` exists.
+
+**Task 3.D.9: Fix Imports for All Moved `admin_dashboard` Views**
+* **Objective:** Correct imports within *all three* views (`AdminDashboardView`, `AdminCommentsView`, `AdminAcknowledgementsView`) now located in `dashboard/views.py`.
+* **Instructions:**
+    1.  Open `dashboard/views.py`.
+    2.  Carefully review the import statements for *all three* views moved from `admin_dashboard`.
+    3.  Correct any imports referencing other project apps (`alerts`, `core`, `users`, etc.) to use the proper, current paths. Ensure all necessary models and utilities are imported correctly for each view.
+
+**Task 3.D.10: Update All References to `admin_dashboard`**
+* **Objective:** Find and update all references (URL tags, Python imports) pointing to the *old* `admin_dashboard` app or its contents.
+* **Instructions:**
+    1.  Search the *entire codebase* (including the sidebar `core/templates/core/navbar.html` and other templates) for `{% url %}` tags referencing old `admin_dashboard` URL names. Update them to use the new names defined in `dashboard.urls` (e.g., `{% url 'dashboard:admin_dashboard_summary' %}`, `{% url 'dashboard:admin_dashboard_comments' %}`, `{% url 'dashboard:admin_dashboard_acks' %}`).
+    2.  Search the *entire codebase* for Python imports like `from admin_dashboard...`. Remove these imports or update them if the imported functionality is still needed from a different location (though most should be removed as the app is being deleted).
+
+**Task 3.D.11: Test Complete `admin_dashboard` Migration**
+* **Objective:** Verify that the migrated Admin dashboard *and* its comments/acknowledgements sections work correctly.
+* **Instructions:**
+    1.  Run the development server.
+    2.  Navigate to the new URLs for the admin sections (e.g., `/dashboard/admin-summary/`, `/dashboard/admin-comments/`, `/dashboard/admin-acks/`).
+    3.  Verify rendering, static files load correctly, data is displayed as expected, and functionality works for all three pages. Test thoroughly as a staff user.
+    4.  Run any relevant automated tests. Fix any errors related to the `admin_dashboard` migration.
+
+
+Note: Remove views form admin_dashboard/views.py
 
 ---
 **Part E: Consolidation and Cleanup**
