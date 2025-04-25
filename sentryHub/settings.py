@@ -34,7 +34,6 @@ INSTALLED_APPS = [
     'alerts',
     'docs',
     'users',
-    'main_dashboard',
     'integrations',
     'dashboard',
 ]

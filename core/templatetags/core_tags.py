@@ -1,6 +1,7 @@
 import json
 from django import template
 from django.utils import timezone
+from django.contrib.auth.models import Group
 from datetime import timedelta, datetime
 from django.utils.safestring import mark_safe
 
@@ -92,6 +93,15 @@ def format_datetime(value, user=None, format_string="%Y-%m-%d %H:%M:%S"):
             return value.strftime(format_string)
         except:
             return str(value) # Raw string representation as last resort
+
+@register.filter
+def has_group(user, group_name):
+    """Check if user belongs to specified group"""
+    if not user or not user.is_authenticated:
+        return False
+    if isinstance(group_name, Group):
+        return group_name in user.groups.all()
+    return user.groups.filter(name=group_name).exists()
 
 @register.filter
 def calculate_duration(start_time):

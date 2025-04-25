@@ -10,7 +10,7 @@ import json
 from alerts.models import AlertGroup, AlertComment, AlertAcknowledgementHistory
 from alerts.views import AlertListView
 from alerts.forms import AlertAcknowledgementForm
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 
 logger = logging.getLogger(__name__)
 
@@ -106,6 +106,11 @@ class Tier1AlertListView(AlertListView):
         """Return only unacknowledged alerts"""
         base_queryset = super().get_queryset()
         return base_queryset.filter(acknowledged=False)
+
+    def test_func(self):
+        """Only allow Tier1 group members or staff"""
+        user = self.request.user
+        return user.is_staff or user.groups.filter(name='Tier1').exists()
 
     def get_context_data(self, **kwargs):
         """Remove filter parameters and add acknowledgement form"""
