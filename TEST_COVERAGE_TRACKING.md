@@ -18,55 +18,64 @@ This document tracks the testing progress for different parts of the SentryHub a
 | :---------------- | :---------------------------------------- | :----: | :----------------------------------------------------------- |
 | **Models**        |                                           |        |                                                              |
 |                   | `SilenceRule` (`models.py`)               |   🟢   | Basic creation, `is_active()`, `__str__()`                    |
-|                   | `AlertGroup` (`models.py`)                |   🟢   | Creation, relations, default values, `__str__()`             |
-|                   | `AlertInstance` (`models.py`)             |   🟢   | Creation, relations, `__str__()`                             |
-|                   | `AlertComment` (`models.py`)              |   🟢   | Creation, relations, `__str__()`                             |
-|                   | `AlertAcknowledgementHistory` (`models.py`) |   🟢   | Creation, relations, `__str__()`, ordering, FK behavior      |
-
+|                   | `AlertGroup` (`models.py`)                |   🟢   | Creation, relations, defaults, `__str__`, ordering           |
+|                   | `AlertInstance` (`models.py`)             |   🟢   | Creation, relations, `__str__`, ordering                     |
+|                   | `AlertComment` (`models.py`)              |   🟢   | Creation, relations, `__str__`, ordering                     |
+|                   | `AlertAcknowledgementHistory` (`models.py`) |   🟢   | Creation, relations, `__str__`, ordering, FK behavior      |
 | **Forms**         |                                           |        |                                                              |
-| ------------------ | ----------------------------------------- | :----: | ------------------------------------------------------------ |
 |                   | `SilenceRuleForm` (`forms.py`)            |   🟢   | Validation (JSON, dates, required), clean methods, saving     |
 |                   | `AlertAcknowledgementForm` (`forms.py`)   |   🟢   | Validation (required comment)                                |
 |                   | `AlertCommentForm` (`forms.py`)           |   🟢   | Validation (required), saving (commit=False), widget attrs   |
 | **Services**      |                                           |        |                                                              |
-|                   | `check_alert_silence` (`silence_matcher.py`)|   🟢   | Matching logic (exact, subset, no match), DB updates (`is_silenced`, `silenced_until`), multiple rules, expiry |
-|                   | `process_alert` (`alerts_processor.py`)   |   🟢   | Firing/Resolved logic, instance creation/update (incl. inferred), ack reset, silence check, duplicate handling, count increment |
-|                   | `extract_alert_data` (`alerts_processor.py`)|   🟢   | Data extraction (all fields, missing optional, zero endsAt), date parsing |
-|                   | `get_or_create_alert_group` (`alerts_processor.py`)| 🟢 | Create/Update logic - tests cover creation, updates, status transitions, instance changes |
-|                   | ... (other helpers in `alerts_processor.py`) | ⚪️   | Specific logic for firing/resolved                           |
+|                   | `check_alert_silence` (`silence_matcher.py`)|   🟢   | Matching logic, DB updates, multiple rules, expiry         |
 |                   | `acknowledge_alert` (`alerts_processor.py`)|   🟢   | AlertGroup update, History creation                          |
+|                   | `get_active_firing_instance` (`alerts_processor.py`) | ⚪️ | Logic for finding active instance                        |
+|                   | `update_alert_state` (`alert_state_manager.py`) | ⚪️ | Main logic for group/instance creation/update, status transitions |
+|                   | `parse_alertmanager_payload` (`payload_parser.py`) | ⚪️ | Parsing different payload versions, date handling          |
+|                   | `jira_service.py`                         |   ⚪️   | (Also in integrations) API calls, connection handling         |
+|                   | `jira_matcher.py`                         |   ⚪️   | (Also in integrations) Rule matching logic                   |
 |                   | `alert_logger.py`                         |   ⚫️   | File writing (might need integration test or mock `open`) |
 | **Views**         |                                           |        |                                                              |
-|                   | `AlertListView` (`views.py`)              |   🟢   | GET (status 200, template), filters, context, pagination    |
-|                   | `AlertDetailView` (`views.py`)            |   🟢   | GET (status 200, template), context (tabs, forms, pagination), POST (ack, comment - valid/invalid), AJAX response |
-|                   | `SilenceRuleListView` (`views.py`)        |   🟢   | GET (auth, status 200, template), filters (status, search), context, pagination (valid/invalid pages) |
-|                   | `SilenceRuleCreateView` (`views.py`)      |   🟢   | GET (auth, initial data from query param - valid/invalid JSON/dict), POST (valid/invalid form, `check_alert_silence` call mock) |
-|                   | `SilenceRuleUpdateView` (`views.py`)      |   ⚪️   | GET, POST (valid/invalid), permissions, `check_alert_silence` call |
-|                   | `SilenceRuleDeleteView` (`views.py`)      |   ⚪️   | GET (confirmation page), POST (deletion), permissions, `check_alert_silence` call |
-|                   | `login_view` (`views.py`)                 |   ⚪️   | GET (show form), POST (valid/invalid login)                  |
+|                   | `AlertListView` (`views.py`)              |   🟢   | GET (status, template), filters, context, pagination        |
+|                   | `AlertDetailView` (`views.py`)            |   🟢   | GET (status, template), context, POST (ack, comment), AJAX  |
+|                   | `acknowledge_alert_from_list` (`views.py`)|   ⚪️   | POST handling, form validation, messages, redirects        |
+|                   | `SilenceRuleListView` (`views.py`)        |   🟢   | GET (auth, status, template), filters, context, pagination |
+|                   | `SilenceRuleCreateView` (`views.py`)      |   🟢   | GET (auth, initial data), POST (valid/invalid form), service calls |
+|                   | `SilenceRuleUpdateView` (`views.py`)      |   ⚪️   | GET, POST (valid/invalid), permissions, service calls      |
+|                   | `SilenceRuleDeleteView` (`views.py`)      |   ⚪️   | GET (confirmation), POST (deletion), permissions, service calls |
 | **API Views**     |                                           |        |                                                              |
-|                   | `AlertWebhookView` (`api/views.py`)       |   ⚪️   | POST (valid/invalid serializer), calls `process_alert`, status codes |
-|                   | `AlertGroupViewSet` (`api/views.py`)      |   ⚪️   | List/Retrieve (GET), filters, search, pagination, `acknowledge` action (PUT), `history` action (GET), `comments` action (GET/POST) |
+|                   | `AlertWebhookView` (`api/views.py`)       |   ⚪️   | POST (valid/invalid serializer), calls task, status codes    |
+|                   | `AlertGroupViewSet` (`api/views.py`)      |   ⚪️   | List/Retrieve (GET), filters, actions (ack, history, comments) |
 |                   | `AlertHistoryViewSet` (`api/views.py`)    |   ⚪️   | List (GET), filters (fingerprint, dates)                     |
 | **API Serializers**|                                          |        |                                                              |
+|                   | `AlertInstanceSerializer` (`api/serializers.py`) | ⚪️ | Serialization structure                                      |
+|                   | `AlertAcknowledgementHistorySerializer` (`api/serializers.py`) | ⚪️ | Serialization, MethodFields                        |
+|                   | `AlertGroupSerializer` (`api/serializers.py`) | ⚪️ | Serialization, MethodFields                        |
+|                   | `AlertCommentSerializer` (`api/serializers.py`) | ⚪️ | Serialization, MethodFields                        |
 |                   | `AlertmanagerWebhookSerializer` (`api/serializers.py`) | ⚪️ | Validation (required fields)                             |
 |                   | `AcknowledgeAlertSerializer` (`api/serializers.py`) | ⚪️ | Validation                                                   |
-|                   | ... (other serializers)                   |   ⚪️   | `SerializerMethodField` logic (if complex)                 |
 | **Admin**         |                                           |        |                                                              |
-|                   | `SilenceRuleAdmin` (`admin.py`)           |   ⚪️   | Custom methods (`display_matchers_short`, etc.), `save_model` |
-|                   | ... (other ModelAdmins)                   |   ⚫️   | Basic registration checks (low priority)                     |
+|                   | `AlertGroupAdmin` (`admin.py`)            |   ⚪️   | `jira_issue_key_link` method                              |
+|                   | `AlertInstanceAdmin` (`admin.py`)         |   ⚫️   | Basic registration checks                                    |
+|                   | `AlertCommentAdmin` (`admin.py`)          |   ⚫️   | Basic registration checks                                    |
+|                   | `AlertAcknowledgementHistoryAdmin` (`admin.py`) | ⚫️ | Basic registration checks                                    |
+|                   | `SilenceRuleAdmin` (`admin.py`)           |   ⚪️   | Custom methods, `save_model`                               |
+| **Signals**       | `signals.py`                              |   ⚪️   | Test `handle_silence_rule_save/delete` trigger `_rescan_alerts_for_silence` |
+| **Handlers**      | `handlers.py`                             |   ⚪️   | Test `handle_silence_check` receiver logic                 |
+| **Tasks**         | `process_alert_payload_task` (`tasks.py`) |   ⚪️   | Task logic, exception handling, signal sending             |
 
 ### `core` App
 
 | Component            | File / Functionality                 | Status | Notes                                       |
 | :------------------- | :----------------------------------- | :----: | :------------------------------------------ |
+| **Models**           | `models.py`                          |   ⚫️   | Empty file                                  |
 | **Views**            | `HomeView` (`views.py`)              |   ⚪️   | GET (check redirect)                        |
 |                      | `AboutView` (`views.py`)             |   ⚪️   | GET (status 200, template)                  |
 | **Middleware**       | `AdminAccessMiddleware` (`middleware.py`) |   ⚪️   | Staff/non-staff access, redirects           |
 | **Context Processors**| `notifications` (`context_processors.py`) |   ⚪️   | Message extraction into context             |
 | **Template Tags**    |                                      |        |                                             |
-|                      | `core_tags.py`                       |   ⚪️   | `time_ago`, `status_badge`, `jsonify`, `format_datetime` filters |
-|                      | `date_format_tags.py`                |   ⚪️   | `force_jalali`, `force_gregorian` filters (with timezone handling) |
+|                      | `core_tags.py`                       |   ⚪️   | `time_ago`, `status_badge`, `jsonify`, `format_datetime`, `has_group`, `calculate_duration` |
+|                      | `date_format_tags.py`                |   ⚪️   | `to_jalali`, `to_jalali_datetime`, `force_jalali`, `force_gregorian` |
 
 ### `docs` App
 
@@ -77,17 +86,22 @@ This document tracks the testing progress for different parts of the SentryHub a
 | **Forms**         | `AlertDocumentationForm` (`forms.py`)     |   ⚪️   | Validation, saving (TinyMCE might need specific handling) |
 |                   | `DocumentationSearchForm` (`forms.py`)    |   ⚪️   | Basic validation (optional field)                            |
 | **Services**      | `match_documentation_to_alert` (`documentation_matcher.py`) | ⚪️ | Matching logic (match/no match), Link creation          |
+|                   | `get_documentation_for_alert` (`documentation_matcher.py`) | ⚪️ | Query logic                                                |
 | **Views**         | `DocumentationListView` (`views.py`)      |   ⚪️   | GET, search, context, pagination                             |
 |                   | `DocumentationDetailView` (`views.py`)    |   ⚪️   | GET, context (linked alerts)                                 |
-|                   | `DocumentationCreateView` (`views.py`)    |   ⚪️   | GET, POST (valid/invalid), permissions                       |
+|                   | `DocumentationCreateView` (`views.py`)    |   ⚪️   | GET (initial), POST (valid/invalid), permissions                       |
 |                   | `DocumentationUpdateView` (`views.py`)    |   ⚪️   | GET, POST (valid/invalid), permissions                       |
 |                   | `DocumentationDeleteView` (`views.py`)    |   ⚪️   | GET, POST, permissions                                       |
 |                   | `LinkDocumentationToAlertView` (`views.py`)|   ⚪️   | GET (context), POST (link creation/check existing)         |
-|                   | `UnlinkDocumentationFromAlertView` (`views.py`)| ⚪️ | GET (not allowed), POST (deletion), AJAX response            |
-| **API Views**     | `DocumentationViewSet` (`api/views.py`)   |   ⚪️   | CRUD (GET, POST, PUT, DELETE), search, filters, actions (link/unlink) |
+|                   | `UnlinkDocumentationFromAlertView` (`views.py`)| ⚪️ | POST (deletion), AJAX response                               |
+| **API Views**     | `DocumentationViewSet` (`api/views.py`)   |   ⚪️   | CRUD, search, filters, actions (link/unlink)               |
 |                   | `AlertDocumentationLinkViewSet` (`api/views.py`)| ⚪️ | List (GET), filters                                          |
-| **Signals**       | `match_documentation_to_existing_alerts` (`signals.py`) | ⚪️ | Check if `match_documentation_to_alert` is called on save |
+| **API Serializers**| `AlertDocumentationSerializer` (`api/serializers.py`) | ⚪️ | Serialization, MethodFields                        |
+|                   | `DocumentationAlertGroupSerializer` (`api/serializers.py`) | ⚪️ | Serialization, MethodFields                        |
+| **Signals**       | `handle_documentation_save` (`signals.py`)|   ⚪️   | Check if `match_documentation_to_alert` is called logic on save |
+| **Handlers**      | `handle_documentation_matching` (`handlers.py`) | ⚪️ | Test receiver logic for `match_documentation_to_alert` call |
 | **Admin**         | `AlertDocumentationAdmin` (`admin.py`)    |   ⚪️   | `save_model`, Inline checks (if needed)                      |
+|                   | `DocumentationAlertGroupAdmin` (`admin.py`) | ⚫️   | Basic registration checks                                    |
 
 ### `users` App
 
@@ -104,27 +118,37 @@ This document tracks the testing progress for different parts of the SentryHub a
 |                   | `PreferencesView` (`views.py`)            |   ⚪️   | GET, context                                                 |
 |                   | `update_preferences` (`views.py`)         |   ⚪️   | POST (valid/invalid data), profile update                    |
 | **Signals**       | `create_user_profile`, `save_user_profile` (`signals.py`) | ⚪️ | Check if `UserProfile` exists after `User` save            |
+| **Admin**         | `admin.py`                                |   ⚫️   | Empty file                                                   |
 
-### `admin_dashboard` App
+### `dashboard` App
 
 | Component         | File / Functionality                      | Status | Notes                                                        |
 | :---------------- | :---------------------------------------- | :----: | :----------------------------------------------------------- |
-| **Views**         | `AdminDashboardView` (`views.py`)         |   ⚪️   | GET, permissions, context data aggregation                   |
+| **Models**        | `models.py`                               |   ⚫️   | Empty file                                                   |
+| **Views**         | `DashboardView` (`views.py`)              |   ⚪️   | GET, context data aggregation (counts, queries, charts)     |
+|                   | `Tier1AlertListView` (`views.py`)         |   ⚪️   | GET, queryset logic (unacked filter), permissions          |
+|                   | `AdminDashboardView` (`views.py`)         |   ⚪️   | GET, permissions, context data aggregation                   |
 |                   | `AdminCommentsView` (`views.py`)          |   ⚪️   | GET, permissions, filters, context, pagination             |
 |                   | `AdminAcknowledgementsView` (`views.py`)  |   ⚪️   | GET, permissions, filters, context, pagination             |
+| **Admin**         | `admin.py`                                |   ⚫️   | Empty file                                                   |
 
-### `main_dashboard` App
-
-| Component         | File / Functionality                      | Status | Notes                                                        |
-| :---------------- | :---------------------------------------- | :----: | :----------------------------------------------------------- |
-| **Views**         | `DashboardView` (`views.py`)              |   ⚪️   | GET, context data aggregation (counts, queries)              |
-
-### `tier1_dashboard` App
+### `integrations` App
 
 | Component         | File / Functionality                      | Status | Notes                                                        |
 | :---------------- | :---------------------------------------- | :----: | :----------------------------------------------------------- |
-| **Views**         | `Tier1DashboardView` (`views.py`)         |   ⚪️   | GET, queryset logic (filtering, ordering)                    |
-| **API Views**     | `Tier1AlertDataAPIView` (`api/views.py`)  |   ⚪️   | GET, permissions, queryset logic, context for template render |
+| **Models**        | `JiraRuleMatcher` (`models.py`)           |   ⚪️   | Creation, validation (`clean`), `__str__`                   |
+|                   | `JiraIntegrationRule` (`models.py`)       |   ⚪️   | Creation, relations, `__str__`, ordering                   |
+| **Forms**         | `JiraIntegrationRuleForm` (`forms.py`)    |   ⚪️   | Validation, saving, queryset for matchers                  |
+| **Services**      | `JiraService` (`jira_service.py`)         |   ⚪️   | Initialization, API methods (create, comment, status), error handling |
+|                   | `JiraRuleMatcherService` (`jira_matcher.py`) | ⚪️ | `find_matching_rule`, `_does_rule_match`, `_does_matcher_match` logic |
+| **Views**         | `JiraRuleListView` (`views.py`)           |   ⚪️   | GET, filters, context, pagination                            |
+|                   | `JiraRuleCreateView` (`views.py`)         |   ⚪️   | GET, POST (valid/invalid), permissions                       |
+|                   | `JiraRuleUpdateView` (`views.py`)         |   ⚪️   | GET, POST (valid/invalid), permissions                       |
+|                   | `JiraRuleDeleteView` (`views.py`)         |   ⚪️   | GET, POST, permissions, check for referenced alerts        |
+| **Handlers**      | `handle_alert_processed` (`handlers.py`)  |   ⚪️   | Receiver logic, conditions (status, silence), task call     |
+| **Tasks**         | `process_jira_for_alert_group` (`tasks.py`)|   ⚪️   | Task logic, error handling, retry logic, API calls         |
+| **Admin**         | `JiraRuleMatcherAdmin` (`admin.py`)       |   ⚪️   | Custom methods (`get_criteria_preview`)                     |
+|                   | `JiraIntegrationRuleAdmin` (`admin.py`)   |   ⚪️   | Custom methods (`matcher_count`), fieldsets                |
 
 ---
 
@@ -132,12 +156,13 @@ This document tracks the testing progress for different parts of the SentryHub a
 
 ### `alerts` App JS
 
-| File                | Functionality                               | Status | Notes                              |
-| :------------------ | :------------------------------------------ | :----: | :--------------------------------- |
-| `alert_detail.js`   | Duration calculation, Tab URL handling      |   ⚪️   | Unit test for `formatDuration`       |
-| `comments.js`       | Form submit, char count, AJAX, Edit/Delete stubs, RTL |   ⚪️   | Integration tests (Testing Library) |
-| `alert_history.js`  | Duration calculation                        |   ⚪️   | Unit test for `formatDuration`       |
-| `notifications.js`  | Wrapper around Toastr                       |   ⚫️   | Low priority, simple wrapper      |
+| File                  | Functionality                               | Status | Notes                              |
+| :-------------------- | :------------------------------------------ | :----: | :--------------------------------- |
+| `alert_detail.js`     | Duration calculation, Tab URL handling      |   ⚪️   | Unit test for `formatDuration`       |
+| `comments.js`         | Form submit, char count, AJAX, Edit/Delete stubs, RTL |   ⚪️   | Integration tests (Testing Library) |
+| `alert_history.js`    | Duration calculation                        |   ⚪️   | Unit test for `formatDuration`       |
+| `notifications.js`    | Wrapper around Toastr                       |   ⚫️   | Low priority, simple wrapper      |
+| `silence_rule_list.js`| Tooltip init, potentially delete confirmation |   ⚪️   | Basic DOM/event tests              |
 
 ### `core` App JS
 
@@ -149,20 +174,26 @@ This document tracks the testing progress for different parts of the SentryHub a
 
 ### `docs` App JS
 
-| File                      | Functionality                               | Status | Notes                              |
-| :------------------------ | :------------------------------------------ | :----: | :--------------------------------- |
-| `documentation_detail.js` | `isPersianText`, `setTextDirection`         |   ⚪️   | Unit tests, DOM manipulation tests |
+| File                           | Functionality                               | Status | Notes                              |
+| :----------------------------- | :------------------------------------------ | :----: | :--------------------------------- |
+| `documentation_list.js`        | Tooltip init, potentially delete confirmation |   ⚪️   | Basic DOM/event tests              |
+| `documentation_detail.js`      | Tooltip init, RTL detection, unlink confirm |   ⚪️   | Unit tests, DOM tests              |
+| `documentation_confirm_delete.js`| Tooltip init (if any)                       |   ⚪️   | Basic DOM tests                    |
+| `documentation_form.js`        | Tooltip init, potential TinyMCE interaction |   ⚪️   | Basic DOM tests                    |
 
-### `tier1_dashboard` App JS
+### `dashboard` App JS
 
-| File                      | Functionality                               | Status | Notes                              |
-| :------------------------ | :------------------------------------------ | :----: | :--------------------------------- |
-| `tier1_dashboard.js`      | Auto-refresh `fetch`, Table update, Status update, Modal handling, Ack submit (`fetch`) | ⚪️ | Requires mocking `fetch`           |
+| File                   | Functionality                               | Status | Notes                              |
+| :--------------------- | :------------------------------------------ | :----: | :--------------------------------- |
+| `modern_dashboard.js`  | Sidebar toggle/pin, Theme toggle, DateTime update, Tooltips | ⚪️ | DOM manipulation, localStorage tests |
+| `unack_alerts.js`      | Auto-refresh `fetch`, Table update, Notification sound, Countdown, Tooltips | ⚪️ | Requires mocking `fetch`, timers |
+| `admin.js`             | Tooltip init, Date range logic, Delete confirm stub | ⚪️ | Basic DOM/event tests              |
 
 ### `users` App JS
 
-| File                      | Functionality                               | Status | Notes                              |
-| :------------------------ | :------------------------------------------ | :----: | :--------------------------------- |
-| `preferences.js`          | (Currently empty)                           |   ⚫️   |                                    |
-| `user_list.html` (JS in template) | Delete confirmation (`fetch`)         |   ⚪️   | Test via E2E or extract to JS file |
-| `user_form.html` (JS in template) | AJAX form submit (`fetch`), error handling | ⚪️ | Test via E2E or extract to JS file |
+| File                | Functionality                               | Status | Notes                              |
+| :------------------ | :------------------------------------------ | :----: | :--------------------------------- |
+| `preferences.js`    | (Currently empty)                           |   ⚫️   |                                    |
+| `user_list.html` (JS)| Delete confirmation (`fetch`), Modal handling | ⚪️ | Test via E2E or extract to JS file |
+| `user_form.html` (JS)| AJAX form submit (`fetch`), error handling | ⚪️ | Test via E2E or extract to JS file |
+| **Integrations JS** |                                             |   ⚫️   | No JS files listed                 |
