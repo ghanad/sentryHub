@@ -67,3 +67,4 @@ staticfiles/
 
 
 codeBase.json
+*.rdb
