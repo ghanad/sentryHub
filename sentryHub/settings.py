@@ -236,8 +236,8 @@ TINYMCE_DEFAULT_CONFIG = {
 }
 
 # Celery Configuration
-CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
-CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/0'
+CELERY_BROKER_URL = 'redis://172.20.82.3:6379/0'
+CELERY_RESULT_BACKEND = 'redis://172.20.82.3:6379/0'
 CELERY_ACCEPT_CONTENT = ['json'] # Reverted back to json
 CELERY_TASK_SERIALIZER = 'json' # Reverted back to json
 CELERY_RESULT_SERIALIZER = 'json' # Reverted back to json
