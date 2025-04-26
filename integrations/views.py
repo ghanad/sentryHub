@@ -1,12 +1,16 @@
+# integrations/views.py (Modified Code)
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from django.contrib import messages
-from django.shortcuts import redirect
+from django.shortcuts import redirect, get_object_or_404 # Added get_object_or_404
+from django.db.models import Q # Import Q for search if needed
 
 from integrations.models import JiraIntegrationRule
 from integrations.forms import JiraIntegrationRuleForm
-from alerts.models import AlertGroup  # Import AlertGroup
+# Keep AlertGroup import only if needed for other parts of the view,
+# otherwise it can be removed if solely used for the incorrect delete check.
+from alerts.models import AlertGroup
 import logging
 
 logger = logging.getLogger(__name__)
@@ -18,26 +22,27 @@ class JiraRuleListView(LoginRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
+        # Keep existing queryset logic for filtering/searching
         queryset = JiraIntegrationRule.objects.all().order_by('-priority', 'name')
-        
-        # Filter by active status
+
         active_filter = self.request.GET.get('active', '')
         if active_filter == 'true':
             queryset = queryset.filter(is_active=True)
         elif active_filter == 'false':
             queryset = queryset.filter(is_active=False)
-            
-        # Search by name or description
+
         search = self.request.GET.get('search', '')
         if search:
+            # Ensure Q is imported if using it
             queryset = queryset.filter(
                 Q(name__icontains=search) |
                 Q(description__icontains=search)
             )
-            
+
         return queryset
 
     def get_context_data(self, **kwargs):
+        # Keep existing context data logic
         context = super().get_context_data(**kwargs)
         context['active_filter'] = self.request.GET.get('active', '')
         context['search'] = self.request.GET.get('search', '')
@@ -71,28 +76,21 @@ class JiraRuleDeleteView(LoginRequiredMixin, DeleteView):
     template_name = 'integrations/jira_rule_confirm_delete.html'
     success_url = reverse_lazy('integrations:jira-rule-list')
 
-    def form_valid(self, form):
-        rule = self.get_object()
-        
-        # Check if this rule is referenced by any alerts
-        affected_alerts = AlertGroup.objects.filter(
-            jira_issue_key__isnull=False
-        ).count()
-        
-        if affected_alerts > 0:
-            messages.warning(
-                self.request,
-                f"Cannot delete rule '{rule.name}' - it's referenced by {affected_alerts} alerts."
-            )
-            return redirect('integrations:jira-rule-list')
-            
-        messages.success(self.request, "Jira integration rule deleted successfully.")
-        super().form_valid(form) # Perform the deletion
-        return redirect(self.success_url) # Explicitly redirect
+    # Overriding delete() is often cleaner than form_valid for DeleteView
+    # if you just need to add messages before deletion.
+    def delete(self, request, *args, **kwargs):
+        # Get the object before deleting it to use its details in the message
+        self.object = self.get_object()
+        rule_name = self.object.name
+        logger.info(f"User {request.user.username} requested deletion of Jira rule '{rule_name}' (ID: {self.object.pk})")
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['affected_alerts'] = AlertGroup.objects.filter(
-            jira_issue_key__isnull=False
-        ).count()
-        return context
+        # Add the success message *before* calling the superclass delete
+        # Using f-string for better readability
+        messages.success(self.request, f"Jira integration rule '{rule_name}' deleted successfully.")
+
+        # Call the standard delete method from the parent class (DeleteView)
+        # This handles the actual deletion from the database.
+        return super().delete(request, *args, **kwargs)
+
+    # No need for form_valid override anymore as delete() handles the message.
+    # No need for get_context_data as the incorrect check is removed.
