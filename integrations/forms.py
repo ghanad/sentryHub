@@ -1,5 +1,7 @@
 from django import forms
-from integrations.models import JiraIntegrationRule, JiraRuleMatcher
+import json
+from django.core.exceptions import ValidationError
+from .models import JiraIntegrationRule
 
 class JiraIntegrationRuleForm(forms.ModelForm):
     """
@@ -8,20 +10,39 @@ class JiraIntegrationRuleForm(forms.ModelForm):
     class Meta:
         model = JiraIntegrationRule
         fields = ['name', 'description', 'is_active', 'priority',
-                 'jira_project_key', 'jira_issue_type', 'matchers']
+                 'jira_project_key', 'jira_issue_type', 'match_criteria']
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
-            'matchers': forms.SelectMultiple(attrs={'class': 'form-control'}),
+            'match_criteria': forms.Textarea(attrs={
+                'rows': 4,
+                'class': 'form-control font-monospace',
+                'placeholder': 'Enter JSON object, e.g. {"job": "node", "severity": "critical"}'
+            }),
         }
         help_texts = {
             'jira_project_key': 'Jira project key where issues will be created (e.g. OPS)',
             'jira_issue_type': 'Type of Jira issue to create (e.g. Task, Bug)',
-            'matchers': 'Select one or more matchers. The rule applies if ALL selected matchers match the alert\'s labels.',
+            'match_criteria': 'JSON object defining label match criteria. E.g. {"job": "node", "severity": "critical"}',
         }
+
+    def clean_match_criteria(self):
+        """
+        Validate that match_criteria is a valid JSON dictionary.
+        """
+        match_criteria = self.cleaned_data.get('match_criteria', '{}')
+        
+        if isinstance(match_criteria, dict):
+            return match_criteria
+            
+        try:
+            parsed = json.loads(match_criteria)
+            if not isinstance(parsed, dict):
+                raise ValidationError('Match criteria must be a valid JSON object (dictionary)')
+            return parsed
+        except json.JSONDecodeError:
+            raise ValidationError('Invalid JSON format for match criteria')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Improve matchers selection with better queryset
-        self.fields['matchers'].queryset = JiraRuleMatcher.objects.all().order_by('name')
         # Set priority default
         self.fields['priority'].initial = 0

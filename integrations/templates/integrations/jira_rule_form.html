@@ -70,14 +70,14 @@
 
                         <div class="card mt-4">
                             <div class="card-header pb-0">
-                                <h6>Matchers</h6>
+                                <h6>Match Criteria</h6>
                             </div>
                             <div class="card-body">
                                 <div class="form-group">
-                                    <label class="form-control-label">{{ form.matchers.label }}</label>
-                                    {{ form.matchers }}
+                                    <label class="form-control-label">{{ form.match_criteria.label }}</label>
+                                    {{ form.match_criteria }}
                                     <small class="text-xs text-secondary">
-                                        Select one or more matchers. The rule applies if ALL selected matchers match the alert's labels.
+                                        Enter JSON object defining label match criteria. Example: {"job": "node", "severity": "critical"}
                                     </small>
                                 </div>
                             </div>
