@@ -67,14 +67,18 @@
                                 {% endfor %}
                             </td>
                             <td class="align-middle">
-                                <a href="{% url 'integrations:jira-rule-update' rule.pk %}"
-                                   class="btn btn-link text-dark px-3 mb-0">
-                                    <i class="fas fa-pencil-alt text-dark me-2"></i>
-                                </a>
-                                <a href="{% url 'integrations:jira-rule-delete' rule.pk %}"
-                                   class="btn btn-link text-danger px-3 mb-0">
-                                    <i class="far fa-trash-alt me-2"></i>
-                                </a>
+                                <div class="action-menu d-flex gap-2">
+                                    <a href="{% url 'integrations:jira-rule-update' rule.pk %}"
+                                       class="action-btn"
+                                       data-bs-toggle="tooltip" title="Edit">
+                                        <i class='bx bx-pencil'></i>
+                                    </a>
+                                    <a href="{% url 'integrations:jira-rule-delete' rule.pk %}"
+                                       class="action-btn text-danger"
+                                       data-bs-toggle="tooltip" title="Delete">
+                                        <i class='bx bx-trash'></i>
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                         {% empty %}
