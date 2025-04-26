@@ -37,7 +37,7 @@
                             <th>Project</th>
                             <th>Issue Type</th>
                             <th>Priority</th>
-                            <th>Matchers</th>
+                            <th class="match-criteria-column">Match Criteria</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -59,11 +59,11 @@
                             <td class="text-sm">{{ rule.jira_project_key }}</td>
                             <td class="text-sm">{{ rule.jira_issue_type }}</td>
                             <td class="text-sm">{{ rule.priority }}</td>
-                            <td>
-                                {% for matcher in rule.matchers.all %}
-                                    <span class="badge badge-sm bg-gradient-info">{{ matcher.name }}</span>
+                            <td class="match-criteria-column">
+                                {% for key, value in rule.match_criteria.items %}
+                                    <span class="badge bg-secondary fw-normal me-1 mb-1">{{ key }}: {{ value }}</span>
                                 {% empty %}
-                                    <span class="text-xs text-secondary">No matchers</span>
+                                    <span class="text-muted small">No criteria</span>
                                 {% endfor %}
                             </td>
                             <td class="align-middle">
