@@ -103,6 +103,17 @@ def has_group(user, group_name):
         return group_name in user.groups.all()
     return user.groups.filter(name=group_name).exists()
 
+@register.filter(name='add_class')
+def add_class(field, css_classes):
+    """Adds CSS classes to a form field's widget."""
+    attrs = field.field.widget.attrs
+    defined_classes = attrs.get('class', '')
+    # Ensure spaces between existing and new classes
+    if defined_classes:
+        attrs['class'] = f'{defined_classes} {css_classes}'
+    else:
+        attrs['class'] = css_classes
+    return field.as_widget(attrs=attrs)
 @register.filter
 def calculate_duration(start_time):
     """

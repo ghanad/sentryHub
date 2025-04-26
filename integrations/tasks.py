@@ -8,6 +8,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.urls import reverse
 from django.core.exceptions import ObjectDoesNotExist
+from django.template import Context, Template, TemplateSyntaxError # Added for template rendering
 
 from integrations.services.jira_service import JiraService
 from integrations.models import JiraIntegrationRule
@@ -20,6 +21,21 @@ class JiraTaskBase(Task):
     retry_kwargs = {'max_retries': 3, 'countdown': 15}
     retry_backoff = True
     retry_jitter = True
+
+def render_template_safe(template_string: str, context_dict: Dict[str, Any]) -> str:
+    """Safely renders a Django template string with given context."""
+    if not template_string:
+        return "" # Return empty string if template is empty
+    try:
+        template = Template(template_string)
+        context = Context(context_dict)
+        return template.render(context)
+    except TemplateSyntaxError as e:
+        logger.error(f"Template syntax error during rendering: {e}", exc_info=True)
+        return f"Error rendering template: {e}" # Return error message
+    except Exception as e:
+        logger.error(f"Unexpected error during template rendering: {e}", exc_info=True)
+        return f"Unexpected error rendering template: {e}"
 
 @shared_task(bind=True, base=JiraTaskBase)
 def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_status: str):
@@ -72,57 +88,91 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
     open_categories = settings.JIRA_CONFIG.get('open_status_categories', ['To Do', 'In Progress'])
     closed_categories = settings.JIRA_CONFIG.get('closed_status_categories', ['Done'])
 
+    # --- Prepare context for template rendering ---
+    try:
+        sentryhub_url_path = reverse('alerts:alert_detail', args=[alert_group.fingerprint])
+        full_sentryhub_url = f"{settings.SITE_URL.strip('/')}{sentryhub_url_path}"
+    except Exception:
+        full_sentryhub_url = "N/A (Check SITE_URL setting and URL config)"
+
+    template_context = {
+        'alert_group': alert_group,
+        'labels': alert_group.labels,
+        'annotations': latest_instance.annotations if latest_instance else {},
+        'status': alert_status,
+        'fingerprint': alert_group.fingerprint,
+        'alertname': alert_group.get_common_label('alertname', 'N/A'),
+        'severity': alert_group.get_common_label('severity', 'default'),
+        'instance_summary': latest_instance.summary if latest_instance else 'N/A',
+        'instance_description': latest_instance.description if latest_instance else 'N/A',
+        'rule': rule,
+        'sentryhub_url': full_sentryhub_url,
+        'now': timezone.now(),
+        # Add any other relevant context variables here
+    }
+    # --- End context preparation ---
+
     try:
         if alert_status == 'firing':
             if existing_issue_key:
                 if issue_status_category in open_categories:
-                    comment = f"Alert group '{alert_group.fingerprint}' is firing again at {timezone.now().isoformat()}."
-                    if latest_instance:
-                        comment += f"\nLatest details summary: {latest_instance.summary or 'N/A'}"
-                    logger.info(f"Task {self.request.id}: Adding 'firing again' comment to open Jira issue: {existing_issue_key}")
-                    success = jira_service.add_comment(existing_issue_key, comment)
-                    if not success: raise Exception(f"Failed to add comment to {existing_issue_key}")
+                    # Render update comment template
+                    comment_body = render_template_safe(rule.jira_update_comment_template, template_context)
+                    if comment_body: # Only add comment if template rendered something
+                        logger.info(f"Task {self.request.id}: Adding 'firing again' comment (rendered) to open Jira issue: {existing_issue_key}")
+                        success = jira_service.add_comment(existing_issue_key, comment_body)
+                        if not success: raise Exception(f"Failed to add comment to {existing_issue_key}")
+                    else:
+                        logger.info(f"Task {self.request.id}: Jira update comment template for rule {rule.id} is empty or failed to render. Skipping comment.")
                 elif issue_status_category in closed_categories:
                     logger.info(f"Task {self.request.id}: Existing Jira issue {existing_issue_key} is closed. Creating new issue.")
                     alert_group.jira_issue_key = None
                     alert_group.save(update_fields=['jira_issue_key'])
-                else:
-                    logger.warning(f"Task {self.request.id}: Jira issue {existing_issue_key} has status category '{issue_status_category}'. Adding comment anyway.")
-                    comment = f"Alert firing again (status category '{issue_status_category}') for group '{alert_group.fingerprint}' at {timezone.now().isoformat()}."
-                    success = jira_service.add_comment(existing_issue_key, comment)
-                    if not success: raise Exception(f"Failed to add comment to {existing_issue_key}")
+                else: # Issue exists but status is neither open nor closed (e.g., 'Undefined')
+                    logger.warning(f"Task {self.request.id}: Jira issue {existing_issue_key} has status category '{issue_status_category}'. Adding comment based on template.")
+                    # Render update comment template
+                    comment_body = render_template_safe(rule.jira_update_comment_template, template_context)
+                    if comment_body:
+                        success = jira_service.add_comment(existing_issue_key, comment_body)
+                        if not success: raise Exception(f"Failed to add comment to {existing_issue_key}")
+                    else:
+                         logger.info(f"Task {self.request.id}: Jira update comment template for rule {rule.id} is empty or failed to render. Skipping comment.")
 
+            # --- Create new issue if needed ---
             if not alert_group.jira_issue_key:
-                alert_name = alert_group.get_common_label('alertname', 'N/A')
-                severity = alert_group.get_common_label('severity', 'default').capitalize()
-                summary = f"[{severity}] SentryHub Alert: {latest_instance.summary if latest_instance else alert_name}"[:250]
+                # Render title and description from templates
+                rendered_summary = render_template_safe(rule.jira_title_template, template_context)
+                rendered_description = render_template_safe(rule.jira_description_template, template_context)
 
-                try:
-                    sentryhub_url_path = reverse('alerts:alert_detail', args=[alert_group.fingerprint])
-                    full_sentryhub_url = f"{settings.SITE_URL}{sentryhub_url_path}"
-                except Exception:
-                    full_sentryhub_url = "N/A (Check SITE_URL setting and URL config)"
+                # Fallback if templates are empty or fail
+                if not rendered_summary:
+                    severity = alert_group.get_common_label('severity', 'default').capitalize()
+                    rendered_summary = f"[{severity}] SentryHub Alert: {template_context['instance_summary']}"[:250]
+                    logger.warning(f"Task {self.request.id}: Jira title template for rule {rule.id} was empty or failed to render. Using default summary.")
+                if not rendered_description:
+                    # Use original logic as fallback for description
+                    description_parts = [
+                        f"*Alert Group Fingerprint:* {alert_group.fingerprint}",
+                        f"*Status:* Firing",
+                        f"*First Seen:* {alert_group.first_seen.isoformat()}",
+                        f"*Last Seen:* {alert_group.last_seen.isoformat()}",
+                        "\n*Labels:*",
+                        "{code:json}",
+                        json.dumps(alert_group.labels, indent=2),
+                        "{code}",
+                        "\n*Annotations:*",
+                        "{code:json}",
+                        json.dumps(template_context['annotations'], indent=2),
+                        "{code}",
+                        f"\n*Latest Alert Summary:* {template_context['instance_summary']}",
+                        f"*Latest Alert Description:* {template_context['instance_description']}",
+                        f"\n[Link to SentryHub|{full_sentryhub_url}]"
+                    ]
+                    rendered_description = "\n".join(description_parts)
+                    logger.warning(f"Task {self.request.id}: Jira description template for rule {rule.id} was empty or failed to render. Using default description.")
 
-                description_parts = [
-                    f"*Alert Group Fingerprint:* {alert_group.fingerprint}",
-                    f"*Status:* Firing",
-                    f"*First Seen:* {alert_group.first_seen.isoformat()}",
-                    f"*Last Seen:* {alert_group.last_seen.isoformat()}",
-                    "\n*Labels:*",
-                    "{code:json}",
-                    json.dumps(alert_group.labels, indent=2),
-                    "{code}",
-                    "\n*Annotations:*",
-                    "{code:json}",
-                    json.dumps(alert_group.annotations, indent=2),
-                    "{code}",
-                    f"\n*Latest Alert Summary:* {latest_instance.summary if latest_instance else 'N/A'}",
-                    f"*Latest Alert Description:* {latest_instance.description if latest_instance else 'N/A'}",
-                    f"\n[Link to SentryHub|{full_sentryhub_url}]"
-                ]
-                description = "\n".join(description_parts)
-
-                logger.info(f"Task {self.request.id}: Creating new Jira issue for alert group {alert_group_id} in project {rule.jira_project_key}")
+                logger.info(f"Task {self.request.id}: Creating new Jira issue for alert group {alert_group_id} in project {rule.jira_project_key} using rendered templates.")
+                # Prepare Jira labels (keep existing logic)
                 jira_labels = ['sentryhub', alert_group.get_common_label('severity', 'default')]
                 for key, value in alert_group.labels.items():
                     sanitized_label = re.sub(r'[^\w-]+', '_', f"{key}_{value}")[:255]
@@ -134,8 +184,8 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
                 new_issue_key = jira_service.create_issue(
                     project_key=rule.jira_project_key,
                     issue_type=rule.jira_issue_type,
-                    summary=summary,
-                    description=description.strip(),
+                    summary=rendered_summary.strip()[:255], # Ensure summary length limit
+                    description=rendered_description.strip(),
                     **extra_fields
                 )
                 if new_issue_key:
@@ -148,11 +198,14 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
 
         elif alert_status == 'resolved':
             if existing_issue_key and issue_status_category in open_categories:
-                resolved_time = timezone.now().isoformat()
-                comment = f"Alert group '{alert_group.fingerprint}' was resolved at {resolved_time}."
-                logger.info(f"Task {self.request.id}: Adding 'resolved' comment to open Jira issue: {existing_issue_key}")
-                success = jira_service.add_comment(existing_issue_key, comment)
-                if not success: raise Exception(f"Failed to add resolved comment to {existing_issue_key}")
+                # Render update comment template for resolved status
+                comment_body = render_template_safe(rule.jira_update_comment_template, template_context)
+                if comment_body:
+                    logger.info(f"Task {self.request.id}: Adding 'resolved' comment (rendered) to open Jira issue: {existing_issue_key}")
+                    success = jira_service.add_comment(existing_issue_key, comment_body)
+                    if not success: raise Exception(f"Failed to add resolved comment to {existing_issue_key}")
+                else:
+                    logger.info(f"Task {self.request.id}: Jira update comment template for rule {rule.id} is empty or failed to render. Skipping resolved comment.")
             elif existing_issue_key:
                 logger.info(f"Task {self.request.id}: Alert group {alert_group_id} resolved, but Jira issue {existing_issue_key} has status '{issue_status_category}'. No comment added.")
             else:

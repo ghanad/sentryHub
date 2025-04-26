@@ -10,12 +10,19 @@ class JiraIntegrationRuleForm(forms.ModelForm):
     """
     class Meta:
         model = JiraIntegrationRule
-        fields = ['name', 'description', 'is_active', 'priority',
-                 'jira_project_key', 'jira_issue_type', 'match_criteria']
+        fields = [
+            'name', 'is_active', 'priority', # Removed 'description'
+            'jira_project_key', 'jira_issue_type',
+            'jira_title_template', 'jira_description_template', 'jira_update_comment_template',
+            'match_criteria'
+        ]
         widgets = {
-            'description': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
+            # Removed 'description' widget
+            'jira_title_template': forms.Textarea(attrs={'rows': 2, 'class': 'form-control font-monospace'}),
+            'jira_description_template': forms.Textarea(attrs={'rows': 5, 'class': 'form-control font-monospace'}),
+            'jira_update_comment_template': forms.Textarea(attrs={'rows': 3, 'class': 'form-control font-monospace'}),
             'match_criteria': forms.Textarea(attrs={
-                'rows': 4,
+                'rows': 5, # Increased rows for better visibility
                 'class': 'form-control font-monospace',
                 'placeholder': 'Enter JSON object, e.g. {"job": "node", "severity": "critical"}'
             }),
@@ -23,6 +30,9 @@ class JiraIntegrationRuleForm(forms.ModelForm):
         help_texts = {
             'jira_project_key': 'Jira project key where issues will be created (e.g. OPS)',
             'jira_issue_type': 'Type of Jira issue to create (e.g. Task, Bug)',
+            'jira_title_template': 'Template for Jira issue title. Use {{ label_name }} or {{ annotation_name }}. Example: "Alert: {{ alertname }} on {{ instance }}"',
+            'jira_description_template': 'Template for Jira issue description. Uses Django template syntax. Available context: labels, annotations, alertname, status, etc.',
+            'jira_update_comment_template': 'Template for comment added when updating an issue (e.g., alert resolved/re-fired). Uses Django template syntax.',
             'match_criteria': 'JSON object defining label match criteria. E.g. {"job": "node", "severity": "critical"}',
         }
 

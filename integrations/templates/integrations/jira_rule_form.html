@@ -1,100 +1,159 @@
 {% extends "dashboard/base.html" %}
+{% load static core_tags %}
 
 {% block title %}{% if form.instance.pk %}Edit Jira Rule{% else %}Create Jira Rule{% endif %} - SentryHub{% endblock %}
 
+{% block extra_css %}
+    {{ block.super }}
+    {# Use the modern dashboard styles which likely include card styles #}
+    <link rel="stylesheet" href="{% static 'dashboard/css/modern_dashboard.css' %}">
+    {# Remove standard-form.css as we are using a card layout now #}
+    {# <link rel="stylesheet" href="{% static 'core/css/standard-form.css' %}"> #}
+    <style>
+        /* Optional: Add minor adjustments if needed */
+        .chart-card-body .form-label {
+            font-weight: 600;
+        }
+        .form-text {
+            font-size: 0.85rem;
+        }
+        .form-control-monospace {
+             font-family: var(--bs-font-monospace);
+             font-size: 0.9rem;
+        }
+    </style>
+{% endblock %}
+
 {% block main_content %}
-<div class="container-fluid py-4">
-    <div class="row">
-        <div class="col-12">
-            <div class="card mb-4">
-                <div class="card-header pb-0">
-                    <h5>
-                        {% if form.instance.pk %}
-                            Edit Jira Rule: {{ form.instance.name }}
-                        {% else %}
-                            Create New Jira Rule
-                        {% endif %}
-                    </h5>
+    <!-- Page header -->
+    <header class="page-header mb-4">
+        <h1 class="page-title">{% if form.instance.pk %}Edit Jira Rule: {{ form.instance.name }}{% else %}Create New Jira Rule{% endif %}</h1>
+        {# Optional: Add breadcrumbs or back link if desired #}
+    </header>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-10 col-xl-9">
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <h5 class="chart-title">Rule Configuration</h5>
                 </div>
-                <div class="card-body">
+                <div class="chart-card-body">
+                    {# Display Non-field errors first #}
+                    {% if form.non_field_errors %}
+                         {% for error in form.non_field_errors %}
+                             <div class="alert alert-danger" role="alert">{{ error }}</div>
+                         {% endfor %}
+                    {% endif %}
+
                     <form method="post">
                         {% csrf_token %}
-                        
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label class="form-control-label">{{ form.name.label }}</label>
-                                    {{ form.name }}
-                                    {% if form.name.errors %}
-                                        <div class="text-danger text-xs">
-                                            {{ form.name.errors }}
-                                        </div>
-                                    {% endif %}
-                                </div>
+
+                        {# General Settings Section #}
+                        <div class="mb-4">
+                            <h6>General Settings</h6>
+                            <hr class="mt-1 mb-3">
+                            {# Name Field #}
+                            <div class="mb-3">
+                                <label for="{{ form.name.id_for_label }}" class="form-label">{{ form.name.label }}{% if form.name.field.required %} <span class="text-danger">*</span>{% endif %}</label>
+                                {{ form.name|add_class:"form-control" }}
+                                {% if form.name.help_text %}<div class="form-text">{{ form.name.help_text|safe }}</div>{% endif %}
+                                {% for error in form.name.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                             </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label class="form-control-label">{{ form.is_active.label }}</label>
-                                    <div class="form-check form-switch">
-                                        {{ form.is_active }}
-                                    </div>
+
+                            {# Active & Priority Row #}
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                     <label for="{{ form.is_active.id_for_label }}" class="form-label">{{ form.is_active.label }}</label>
+                                     <div class="form-check form-switch pt-1">
+                                         {{ form.is_active|add_class:"form-check-input" }}
+                                     </div>
+                                     {% if form.is_active.help_text %}<div class="form-text">{{ form.is_active.help_text|safe }}</div>{% endif %}
+                                     {% for error in form.is_active.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.priority.id_for_label }}" class="form-label">{{ form.priority.label }}</label>
+                                    {{ form.priority|add_class:"form-control" }}
+                                    {% if form.priority.help_text %}<div class="form-text">{{ form.priority.help_text|safe }}</div>{% endif %}
+                                    {% for error in form.priority.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                                 </div>
                             </div>
                         </div>
 
-                        <div class="form-group">
-                            <label class="form-control-label">{{ form.description.label }}</label>
-                            {{ form.description }}
+                        {# Jira Configuration Section #}
+                        <div class="mb-4">
+                            <h6>Jira Configuration</h6>
+                            <hr class="mt-1 mb-3">
+                             <div class="row">
+                                 <div class="col-md-6 mb-3">
+                                     <label for="{{ form.jira_project_key.id_for_label }}" class="form-label">{{ form.jira_project_key.label }}</label>
+                                     {{ form.jira_project_key|add_class:"form-control" }}
+                                     {% if form.jira_project_key.help_text %}<div class="form-text">{{ form.jira_project_key.help_text|safe }}</div>{% endif %}
+                                     {% for error in form.jira_project_key.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                                 </div>
+                                 <div class="col-md-6 mb-3">
+                                     <label for="{{ form.jira_issue_type.id_for_label }}" class="form-label">{{ form.jira_issue_type.label }}</label>
+                                     {{ form.jira_issue_type|add_class:"form-control" }}
+                                     {% if form.jira_issue_type.help_text %}<div class="form-text">{{ form.jira_issue_type.help_text|safe }}</div>{% endif %}
+                                     {% for error in form.jira_issue_type.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                                 </div>
+                             </div>
                         </div>
 
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label class="form-control-label">{{ form.jira_project_key.label }}</label>
-                                    {{ form.jira_project_key }}
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label class="form-control-label">{{ form.jira_issue_type.label }}</label>
-                                    {{ form.jira_issue_type }}
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label class="form-control-label">{{ form.priority.label }}</label>
-                                    {{ form.priority }}
-                                </div>
+                        {# Jira Issue Templates Section #}
+                        <div class="mb-4">
+                             <h6>Jira Issue Templates <span class="text-muted fw-normal">(Optional)</span></h6>
+                             <hr class="mt-1 mb-3">
+                             <p class="form-text mb-3">Define how Jira issues are created and updated. Use Django template syntax with double curly braces for variables (e.g., <code>{{ alertname }}</code>, <code>{{ labels.instance }}</code>, <code>{{ annotations.summary }}</code>). Leave blank to use defaults.</p>
+
+                             <div class="mb-3">
+                                 <label for="{{ form.jira_title_template.id_for_label }}" class="form-label">{{ form.jira_title_template.label }}</label>
+                                 {{ form.jira_title_template|add_class:"form-control form-control-monospace" }}
+                                 {% if form.jira_title_template.help_text %}<div class="form-text">{{ form.jira_title_template.help_text|safe }}</div>{% endif %}
+                                 {% for error in form.jira_title_template.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                             </div>
+                             <div class="mb-3">
+                                 <label for="{{ form.jira_description_template.id_for_label }}" class="form-label">{{ form.jira_description_template.label }}</label>
+                                 {{ form.jira_description_template|add_class:"form-control form-control-monospace" }}
+                                 {% if form.jira_description_template.help_text %}<div class="form-text">{{ form.jira_description_template.help_text|safe }}</div>{% endif %}
+                                 {% for error in form.jira_description_template.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                             </div>
+                             <div class="mb-3">
+                                 <label for="{{ form.jira_update_comment_template.id_for_label }}" class="form-label">{{ form.jira_update_comment_template.label }}</label>
+                                 {{ form.jira_update_comment_template|add_class:"form-control form-control-monospace" }}
+                                 {% if form.jira_update_comment_template.help_text %}<div class="form-text">{{ form.jira_update_comment_template.help_text|safe }}</div>{% endif %}
+                                 {% for error in form.jira_update_comment_template.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                             </div>
+                        </div>
+
+                        {# Match Criteria Section #}
+                        <div class="mb-4">
+                            <h6>Match Criteria <span class="text-danger">*</span></h6>
+                            <hr class="mt-1 mb-3">
+                            <div class="mb-3">
+                                <label for="{{ form.match_criteria.id_for_label }}" class="form-label">{{ form.match_criteria.label }}</label>
+                                {{ form.match_criteria|add_class:"form-control form-control-monospace" }}
+                                {% if form.match_criteria.help_text %}<div class="form-text">{{ form.match_criteria.help_text|safe }}</div>{% endif %}
+                                {% for error in form.match_criteria.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                             </div>
                         </div>
 
-                        <div class="card mt-4">
-                            <div class="card-header pb-0">
-                                <h6>Match Criteria</h6>
-                            </div>
-                            <div class="card-body">
-                                <div class="form-group">
-                                    <label class="form-control-label">{{ form.match_criteria.label }}</label>
-                                    {{ form.match_criteria }}
-                                    <small class="text-xs text-secondary">
-                                        Enter JSON object defining label match criteria. Example: {"job": "node", "severity": "critical"}
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="d-flex justify-content-end mt-4">
-                            <a href="{% url 'integrations:jira-rule-list' %}" class="btn btn-light me-2">
-                                Cancel
-                            </a>
-                            <button type="submit" class="btn btn-primary">
-                                {% if form.instance.pk %}Update{% else %}Create{% endif %} Rule
+                        {# Action Buttons #}
+                        <div class="d-flex justify-content-end pt-3 border-top">
+                             <a href="{% url 'integrations:jira-rule-list' %}" class="btn btn-secondary me-2">
+                                 <i class="bx bx-x me-1"></i> Cancel
+                             </a>
+                            <button type="submit" class="btn btn-primary"> {# Use btn-primary like docs list create button #}
+                                 <i class="bx bx-check me-1"></i> {% if form.instance.pk %}Update{% else %}Create{% endif %} Rule
                             </button>
                         </div>
                     </form>
-                </div>
-            </div>
+                </div> {# End chart-card-body #}
+            </div> {# End chart-card #}
         </div>
-    </div>
-</div>
-{% endblock main_content %}
+    </div> {# End row #}
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+{# Add any specific JS needed for the form, if any #}
+{% endblock %}
