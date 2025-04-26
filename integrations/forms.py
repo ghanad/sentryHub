@@ -1,6 +1,7 @@
 from django import forms
 import json
 from django.core.exceptions import ValidationError
+from django.conf import settings
 from .models import JiraIntegrationRule
 
 class JiraIntegrationRuleForm(forms.ModelForm):
@@ -44,5 +45,16 @@ class JiraIntegrationRuleForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        
+        # Get single allowed project key from settings
+        allowed_key = settings.JIRA_CONFIG.get('allowed_project_keys', [''])[0]
+        
+        # Set single value and make field read-only
+        self.fields['jira_project_key'].initial = allowed_key
+        self.fields['jira_project_key'].widget = forms.TextInput(attrs={
+            'class': 'form-control',
+            'readonly': 'readonly'
+        })
+        
         # Set priority default
         self.fields['priority'].initial = 0

@@ -6,6 +6,7 @@ from django.shortcuts import redirect
 
 from integrations.models import JiraIntegrationRule
 from integrations.forms import JiraIntegrationRuleForm
+from alerts.models import AlertGroup  # Import AlertGroup
 import logging
 
 logger = logging.getLogger(__name__)
@@ -86,7 +87,8 @@ class JiraRuleDeleteView(LoginRequiredMixin, DeleteView):
             return redirect('integrations:jira-rule-list')
             
         messages.success(self.request, "Jira integration rule deleted successfully.")
-        return super().form_valid(form)
+        super().form_valid(form) # Perform the deletion
+        return redirect(self.success_url) # Explicitly redirect
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
