@@ -16,16 +16,16 @@ class JiraService:
         self.is_configured: bool = False
         config = settings.JIRA_CONFIG
         server_url = config.get('server_url')
-        api_user = config.get('api_user')
-        api_token = config.get('api_token')
+        username = config.get('username') # Changed from api_user
+        password = config.get('password') # Changed from api_token
 
-        if server_url and api_user and api_token:
+        if server_url and username and password: # Check for username and password
             try:
                 # Reduce default timeout (optional, default is high)
-                options = {'server': server_url, 'rest_api_version': '3'} # Specify API v3
+                options = {'server': server_url, 'rest_api_version': '2'} # Try API v2
                 self.client = JIRA(
                     options=options,
-                    basic_auth=(api_user, api_token),
+                    basic_auth=(username, password), # Use username and password
                     timeout=10, # Set timeout in seconds
                     max_retries=1 # Limit retries
                 )
@@ -40,7 +40,7 @@ class JiraService:
             except Exception as e:
                 logger.error(f"An unexpected error occurred during Jira client initialization", exc_info=True)
         else:
-            logger.warning("Jira integration is not configured in settings.")
+            logger.warning("Jira integration is not configured with server_url, username, and password in settings.")
 
     def check_connection(self) -> bool:
         """Checks if the Jira client is configured and potentially tests the connection."""
@@ -50,7 +50,7 @@ class JiraService:
         try:
             # A lightweight check, like getting server info (can sometimes fail on permissions)
             # Or try fetching projects the user can see
-            self.client.projects(maxResults=1)
+            self.client.projects() # Removed maxResults=1 for compatibility with older library versions
             logger.info("Jira connection check successful.")
             return True
         except (JIRAError, ConnectionError, Exception) as e:

@@ -94,3 +94,28 @@ class JiraRuleDeleteView(LoginRequiredMixin, DeleteView):
 
     # No need for form_valid override anymore as delete() handles the message.
     # No need for get_context_data as the incorrect check is removed.
+from django.shortcuts import render # Add render
+from django.contrib.auth.decorators import login_required # Add login_required
+from .services.jira_service import JiraService # Import the service
+
+@login_required
+def jira_admin_view(request):
+    """
+    Admin view for Jira integration, including connection testing.
+    """
+    context = {'connection_tested': False, 'connection_successful': False}
+    if request.method == 'POST':
+        if 'test_connection' in request.POST:
+            jira_service = JiraService()
+            is_connected = jira_service.check_connection()
+            context['connection_tested'] = True
+            context['connection_successful'] = is_connected
+            if is_connected:
+                messages.success(request, "Successfully connected to Jira.")
+            else:
+                messages.error(request, "Failed to connect to Jira. Check configuration and network.")
+            # No redirect needed, just re-render the page with results
+            return render(request, 'integrations/jira_admin.html', context)
+
+    # For GET request or initial page load
+    return render(request, 'integrations/jira_admin.html', context)

@@ -1,0 +1,93 @@
+{% extends "dashboard/base.html" %}
+{% load static core_tags %}
+
+{% block title %}Jira Admin - SentryHub{% endblock %}
+
+{% block extra_css %}
+    {# Include base dashboard CSS for consistent styling #}
+    <link rel="stylesheet" href="{% static 'dashboard/css/modern_dashboard.css' %}">
+    {# Add specific CSS for this page if needed later #}
+    {# <link rel="stylesheet" href="{% static 'integrations/css/jira_admin.css' %}"> #}
+    <style>
+        /* Keep connection status styles */
+        .connection-status {
+            padding: 10px;
+            margin-top: 15px;
+            border-radius: 4px;
+            font-size: 0.9rem; /* Slightly smaller font */
+        }
+        .connection-success {
+            background-color: #d1e7dd; /* Bootstrap success background */
+            color: #0f5132;      /* Bootstrap success text */
+            border: 1px solid #badbcc; /* Bootstrap success border */
+        }
+        .connection-error {
+            background-color: #f8d7da; /* Bootstrap danger background */
+            color: #842029;      /* Bootstrap danger text */
+            border: 1px solid #f5c2c7; /* Bootstrap danger border */
+        }
+        .chart-card-body .btn { /* Ensure button has some margin */
+            margin-bottom: 1rem;
+        }
+    </style>
+{% endblock %}
+
+{% block main_content %}
+    <!-- Page header -->
+    <header class="page-header">
+        <h1 class="page-title">Jira Integration Admin</h1>
+        {# Add buttons here if needed in the future, e.g., link to settings #}
+        <div class="d-flex align-items-center gap-2">
+             {# Example: <a href="#" class="btn btn-secondary">Settings</a> #}
+        </div>
+    </header>
+
+    {# Display Django messages - Placed outside the card for general page messages #}
+    {% include 'core/partials/_messages.html' %}
+
+    <!-- Jira Connection Test Card -->
+    <div class="row">
+        <div class="col-lg-6"> {# Limit width for better layout #}
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <h5 class="chart-title d-flex align-items-center gap-2">
+                        <i class='bx bx-plug'></i> {# Icon for connection #}
+                        Test Jira Connection
+                    </h5>
+                </div>
+                <div class="chart-card-body">
+                    <p>Click the button below to test the connection and authentication to your configured Jira instance using the <code>JIRA_CONFIG</code> in your settings. This test verifies basic connectivity and that the provided credentials are valid.</p>
+
+                    <form method="post" action="{% url 'integrations:jira-admin' %}">
+                        {% csrf_token %}
+                        <button type="submit" name="test_connection" class="btn btn-primary d-flex align-items-center gap-1">
+                            <i class='bx bx-transfer-alt'></i> Test Connection
+                        </button>
+                    </form>
+
+                    {% if connection_tested %}
+                        <div class="mt-2"> {# Reduced margin top #}
+                            <h6>Connection Result:</h6>
+                            {% if connection_successful %}
+                                <div class="connection-status connection-success">
+                                    <strong><i class='bx bx-check-circle me-1'></i>Success!</strong> Connection to Jira established successfully.
+                                </div>
+                            {% else %}
+                                <div class="connection-status connection-error">
+                                    <strong><i class='bx bx-x-circle me-1'></i>Failed!</strong> Could not connect to Jira. Please check your <code>JIRA_CONFIG</code> settings and ensure the Jira server is reachable. Check application logs for more details.
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {# Add more cards here in the future #}
+        {# <div class="col-lg-6"> ... another card ... </div> #}
+    </div>
+
+{% endblock main_content %}
+
+{% block extra_js %}
+    {# Add specific JS if needed later #}
+{% endblock %}

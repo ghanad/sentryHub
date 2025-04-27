@@ -118,6 +118,13 @@
                     <span class="nav-text">Admin</span>
                 </a>
             </li>
+            <!-- Add Jira Admin Link -->
+            <li class="nav-item">
+                 <a href="{% url 'integrations:jira-admin' %}" class="nav-link {% if request.resolver_match.namespace == 'integrations' and request.resolver_match.url_name == 'jira-admin' %}active{% endif %}">
+                    <i class='bx bxl-jira nav-icon'></i> <!-- Using Jira brand icon -->
+                    <span class="nav-text">Jira Admin</span>
+                </a>
+            </li>
             {% endif %}
         </ul>
 
