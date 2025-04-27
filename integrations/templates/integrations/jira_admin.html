@@ -82,8 +82,43 @@
                 </div>
             </div>
         </div>
-        {# Add more cards here in the future #}
-        {# <div class="col-lg-6"> ... another card ... </div> #}
+        
+        <!-- Create Test Issue Card -->
+        <div class="col-lg-6">
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <h5 class="chart-title d-flex align-items-center gap-2">
+                        <i class='bx bx-plus-circle'></i>
+                        Create Test Issue
+                    </h5>
+                </div>
+                <div class="chart-card-body">
+                    <p>Click the button below to create a test issue in the configured Jira project (<code>{{ settings.JIRA_CONFIG.test_project_key }}</code>) with issue type <code>{{ settings.JIRA_CONFIG.test_issue_type }}</code>.</p>
+
+                    <form method="post" action="{% url 'integrations:jira-admin' %}">
+                        {% csrf_token %}
+                        <button type="submit" name="create_test_issue" class="btn btn-primary d-flex align-items-center gap-1">
+                            <i class='bx bx-plus'></i> Create Test Issue
+                        </button>
+                    </form>
+
+                    {% if test_issue_created %}
+                        <div class="mt-2">
+                            <h6>Test Issue Result:</h6>
+                            {% if test_issue_key %}
+                                <div class="connection-status connection-success">
+                                    <strong><i class='bx bx-check-circle me-1'></i>Success!</strong> Created test issue: <code>{{ test_issue_key }}</code>
+                                </div>
+                            {% else %}
+                                <div class="connection-status connection-error">
+                                    <strong><i class='bx bx-x-circle me-1'></i>Failed!</strong> Could not create test issue. Check application logs for details.
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
     </div>
 
 {% endblock main_content %}

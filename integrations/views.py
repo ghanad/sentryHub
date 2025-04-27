@@ -5,6 +5,9 @@ from django.urls import reverse_lazy
 from django.contrib import messages
 from django.shortcuts import redirect, get_object_or_404 # Added get_object_or_404
 from django.db.models import Q # Import Q for search if needed
+from django.shortcuts import render # Add render
+from django.contrib.auth.decorators import login_required # Add login_required
+from .services.jira_service import JiraService # Import the service
 
 from integrations.models import JiraIntegrationRule
 from integrations.forms import JiraIntegrationRuleForm
@@ -94,16 +97,20 @@ class JiraRuleDeleteView(LoginRequiredMixin, DeleteView):
 
     # No need for form_valid override anymore as delete() handles the message.
     # No need for get_context_data as the incorrect check is removed.
-from django.shortcuts import render # Add render
-from django.contrib.auth.decorators import login_required # Add login_required
-from .services.jira_service import JiraService # Import the service
+
 
 @login_required
 def jira_admin_view(request):
     """
-    Admin view for Jira integration, including connection testing.
+    Admin view for Jira integration, including connection testing and test issue creation.
     """
-    context = {'connection_tested': False, 'connection_successful': False}
+    context = {
+        'connection_tested': False,
+        'connection_successful': False,
+        'test_issue_created': False,
+        'test_issue_key': None,
+        'test_issue_error': False
+    }
     if request.method == 'POST':
         if 'test_connection' in request.POST:
             jira_service = JiraService()
@@ -115,6 +122,36 @@ def jira_admin_view(request):
             else:
                 messages.error(request, "Failed to connect to Jira. Check configuration and network.")
             # No redirect needed, just re-render the page with results
+            return render(request, 'integrations/jira_admin.html', context)
+        
+        elif 'create_test_issue' in request.POST:
+            from django.conf import settings
+            try:
+                test_project_key = settings.JIRA_CONFIG['test_project_key']
+                test_issue_type = settings.JIRA_CONFIG['test_issue_type']
+                
+                jira_service = JiraService()
+                issue_key = jira_service.create_issue(
+                    project_key=test_project_key,
+                    issue_type=test_issue_type,
+                    summary="SentryHub Test Issue",
+                    description="This is a test issue created automatically by SentryHub to verify Jira integration functionality."
+                )
+                
+                if issue_key:
+                    context['test_issue_created'] = True
+                    context['test_issue_key'] = issue_key
+                    messages.success(request, f"Successfully created test Jira issue: {issue_key}")
+                else:
+                    context['test_issue_created'] = True
+                    context['test_issue_error'] = True
+                    messages.error(request, "Failed to create test Jira issue. Check logs for details.")
+            
+            except KeyError as e:
+                context['test_issue_created'] = True
+                context['test_issue_error'] = True
+                messages.error(request, f"Missing required JIRA_CONFIG setting: {e}")
+            
             return render(request, 'integrations/jira_admin.html', context)
 
     # For GET request or initial page load
