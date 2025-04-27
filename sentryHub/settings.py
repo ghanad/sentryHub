@@ -251,12 +251,14 @@ CELERY_TIMEZONE = TIME_ZONE
 
 
 JIRA_CONFIG = {
-    'server_url': 'https://your-jira-instance.atlassian.net', # TODO: Replace with your Jira server URL
-    'api_user': 'your-email@example.com',          # TODO: Replace with your Jira API user email (used for authentication)
-    'api_token': 'YOUR_JIRA_API_TOKEN',             # TODO: Replace with your Jira API token
-    'allowed_project_keys': ['YOURPROJECT'],        # TODO: Replace 'YOURPROJECT' with your actual Jira project key(s) inside the list
-    # Status categories used to determine if an existing issue is open or closed
-    'open_status_categories': ['To Do', 'In Progress'], # Adjust if your Jira uses different 'open' categories
-    'closed_status_categories': ['Done'],             # Adjust if your Jira uses different 'closed' categories
-    # 'issue_type' and 'priority' are defined per-rule, not globally here.
+    'server_url': 'https://jira.tsetmc.com',
+    'username': 'username',  
+    'password': 'password', 
+    'allowed_project_keys': ['MON'],
+    'open_status_categories': ['To Do', 'In Progress'],
+    'closed_status_categories': ['Done'],
+
+    # test issue
+    'test_project_key': 'MON',
+    'test_issue_type': 'Task',
 }
