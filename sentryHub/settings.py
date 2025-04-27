@@ -249,11 +249,11 @@ CELERY_TASK_ROUTES = {
 # Removed redundant serializer settings
 CELERY_TIMEZONE = TIME_ZONE
 
-
+SITE_URL = "https://pmt.tsetmc.com"
 JIRA_CONFIG = {
     'server_url': 'https://jira.tsetmc.com',
-    'username': 'username',  
-    'password': 'password', 
+    'username': 'username',
+    'password': 'password',
     'allowed_project_keys': ['MON'],
     'open_status_categories': ['To Do', 'In Progress'],
     'closed_status_categories': ['Done'],

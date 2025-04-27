@@ -4,6 +4,7 @@ import logging
 import json
 import re
 from typing import Optional, Dict, Any
+import pytz # Import pytz library
 
 from celery import shared_task, Task
 from django.conf import settings
@@ -32,7 +33,7 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
     Celery task to handle Jira integration logic for an alert group.
     Triggered when an alert matches a JiraIntegrationRule.
     Labels will NOT be automatically added to the Jira issue.
-    Description includes the 'Occurred At' time of the specific instance.
+    Description includes the 'Occurred At' time converted to Tehran timezone.
     """
     logger.info(f"Starting Jira processing task {self.request.id} for AlertGroup ID: {alert_group_id}, Rule ID: {rule_id}, Status: {alert_status}")
 
@@ -40,7 +41,6 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
         # Fetch objects from DB using IDs
         alert_group = AlertGroup.objects.get(pk=alert_group_id)
         rule = JiraIntegrationRule.objects.get(pk=rule_id)
-        # Fetch the latest instance (the one that likely triggered this task)
         latest_instance = alert_group.instances.order_by('-started_at').first()
     except AlertGroup.DoesNotExist:
         logger.error(f"Task {self.request.id}: AlertGroup with ID {alert_group_id} not found. Aborting Jira task.")
@@ -91,7 +91,18 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
             if existing_issue_key:
                 # ... (logic for adding comments to existing issues remains the same) ...
                  if issue_status_category in open_categories:
-                    comment_body = f"Alert group '{alert_group.fingerprint}' is firing again at {timezone.now().isoformat()}."
+                    # --- Convert comment timestamp to Tehran time ---
+                    now_utc = timezone.now()
+                    try:
+                        tehran_tz = pytz.timezone("Asia/Tehran")
+                        now_tehran = now_utc.astimezone(tehran_tz)
+                        now_tehran_str = now_tehran.strftime('%Y-%m-%d %H:%M:%S')
+                    except Exception as tz_err:
+                         logger.error(f"Task {self.request.id}: Error converting current time to Tehran timezone for comment: {tz_err}", exc_info=True)
+                         now_tehran_str = now_utc.isoformat() # Fallback
+
+                    comment_body = f"Alert group '{alert_group.fingerprint}' is firing again at {now_tehran_str} (Tehran Time)."
+                    # --- End timestamp conversion ---
                     if latest_instance and latest_instance.annotations:
                         summary = latest_instance.annotations.get('summary', 'N/A')
                         description_anno = latest_instance.annotations.get('description', 'N/A')
@@ -105,18 +116,31 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
                     alert_group.save(update_fields=['jira_issue_key'])
                     existing_issue_key = None
                  else:
+                    # --- Convert comment timestamp to Tehran time ---
+                    now_utc = timezone.now()
+                    try:
+                        tehran_tz = pytz.timezone("Asia/Tehran")
+                        now_tehran = now_utc.astimezone(tehran_tz)
+                        now_tehran_str = now_tehran.strftime('%Y-%m-%d %H:%M:%S')
+                    except Exception as tz_err:
+                         logger.error(f"Task {self.request.id}: Error converting current time to Tehran timezone for comment: {tz_err}", exc_info=True)
+                         now_tehran_str = now_utc.isoformat() # Fallback
+
                     logger.warning(f"Task {self.request.id}: Jira issue {existing_issue_key} has unknown status category '{issue_status_category}'. Adding comment anyway.")
-                    comment_body = f"Alert firing again (Jira status category '{issue_status_category}') for group '{alert_group.fingerprint}' at {timezone.now().isoformat()}."
+                    comment_body = f"Alert firing again (Jira status category '{issue_status_category}') for group '{alert_group.fingerprint}' at {now_tehran_str} (Tehran Time)."
+                    # --- End timestamp conversion ---
                     success = jira_service.add_comment(existing_issue_key, comment_body)
                     if not success: raise Exception(f"Failed to add comment to {existing_issue_key}")
 
             # If no existing key (or cleared above), create new issue
             if not existing_issue_key:
+                # ... (build jira_summary) ...
                 alert_name = alert_group.labels.get('alertname', 'N/A')
                 severity = alert_group.labels.get('severity', 'default').capitalize()
                 summary_anno = latest_instance.annotations.get('summary', alert_name) if latest_instance else alert_name
                 jira_summary = f"[{severity}] SentryHub Alert: {summary_anno}"[:250]
 
+                # ... (build full_sentryhub_url) ...
                 try:
                     sentryhub_url_path = reverse('alerts:alert-detail', args=[alert_group.fingerprint])
                     site_base_url = str(settings.SITE_URL).rstrip('/')
@@ -125,16 +149,27 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
                     logger.warning(f"Could not generate SentryHub URL: {url_err}")
                     full_sentryhub_url = "N/A (Check SITE_URL setting and URL config)"
 
-                # --- Modify Description Parts ---
-                # Get the start time of the instance that triggered this task
-                occurred_at_time = latest_instance.started_at if latest_instance else alert_group.last_occurrence # Fallback to last_occurrence
-                occurred_at_str = occurred_at_time.isoformat() if occurred_at_time else "N/A"
+                # --- Convert Occurred At to Tehran Time ---
+                occurred_at_time = latest_instance.started_at if latest_instance else alert_group.last_occurrence
+                occurred_at_tehran_str = "N/A"
+                if occurred_at_time:
+                    try:
+                        tehran_tz = pytz.timezone("Asia/Tehran")
+                        if timezone.is_naive(occurred_at_time):
+                            logger.warning(f"Task {self.request.id}: occurred_at_time was naive. Making aware with default timezone.")
+                            occurred_at_time = timezone.make_aware(occurred_at_time, timezone.get_default_timezone())
+                        tehran_time = occurred_at_time.astimezone(tehran_tz)
+                        occurred_at_tehran_str = tehran_time.strftime('%Y-%m-%d %H:%M:%S') # Format without offset
+                    except Exception as tz_err:
+                         logger.error(f"Task {self.request.id}: Error converting occurred_at_time to Tehran timezone: {tz_err}", exc_info=True)
+                         occurred_at_tehran_str = occurred_at_time.isoformat() # Fallback
+                # --- End Conversion ---
 
+                # --- Build Description with Tehran Time ---
                 description_parts = [
                     f"*Alert Group Fingerprint:* {alert_group.fingerprint}",
                     f"*Status:* Firing",
-                    f"*Occurred At:* {occurred_at_str}", # Changed Line
-                    # Removed First/Last Occurrence
+                    f"*Occurred At (Tehran Time):* {occurred_at_tehran_str}", # Use Tehran time string
                     "\\n*Labels:*",
                     "{code:json}",
                     json.dumps(alert_group.labels, indent=2, ensure_ascii=False),
@@ -146,9 +181,9 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
                     f"\\n[View in SentryHub|{full_sentryhub_url}]"
                 ]
                 jira_description = "\\n".join(description_parts).strip()
-                # --------------------------------
+                # -----------------------------------------
 
-                logger.info(f"Task {self.request.id}: Creating new Jira issue for alert group {alert_group_id} in project {rule.jira_project_key} (without automatic labels)")
+                logger.info(f"Task {self.request.id}: Creating new Jira issue for alert group {alert_group_id}...")
 
                 # Create issue WITHOUT labels field
                 new_issue_key = jira_service.create_issue(
@@ -166,18 +201,27 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
                     raise Exception(f"Jira issue creation failed for AlertGroup {alert_group_id}")
 
         elif alert_status == 'resolved':
-            # ... (logic for resolved alerts remains the same) ...
-             if existing_issue_key and issue_status_category in open_categories:
-                resolved_time = timezone.now().isoformat()
-                comment_body = f"Alert group '{alert_group.fingerprint}' was resolved at {resolved_time}."
+            # ... (logic for resolved alerts) ...
+            if existing_issue_key and issue_status_category in open_categories:
+                # --- Convert Resolved timestamp to Tehran time ---
+                resolved_time_utc = timezone.now()
+                try:
+                    tehran_tz = pytz.timezone("Asia/Tehran")
+                    resolved_time_tehran = resolved_time_utc.astimezone(tehran_tz)
+                    resolved_time_str = resolved_time_tehran.strftime('%Y-%m-%d %H:%M:%S')
+                except Exception as tz_err:
+                    logger.error(f"Task {self.request.id}: Error converting resolved time to Tehran timezone: {tz_err}", exc_info=True)
+                    resolved_time_str = resolved_time_utc.isoformat() # Fallback
+
+                comment_body = f"Alert group '{alert_group.fingerprint}' was resolved at {resolved_time_str} (Tehran Time)."
+                # --- End timestamp conversion ---
                 logger.info(f"Task {self.request.id}: Adding 'resolved' comment to open Jira issue: {existing_issue_key}")
                 success = jira_service.add_comment(existing_issue_key, comment_body)
                 if not success: raise Exception(f"Failed to add resolved comment to {existing_issue_key}")
-             elif existing_issue_key:
+            elif existing_issue_key:
                 logger.info(f"Task {self.request.id}: Alert group {alert_group_id} resolved, but Jira issue {existing_issue_key} has status '{issue_status_category}'. No comment added.")
-             else:
+            else:
                 logger.info(f"Task {self.request.id}: Alert group {alert_group_id} resolved, but no associated Jira issue found. No action taken.")
-
 
     except Exception as e:
         logger.error(f"Task {self.request.id}: An error occurred during Jira processing logic for AlertGroup {alert_group_id}: {e}", exc_info=True)
