@@ -1,8 +1,14 @@
 {% if messages %}
-    {% for message in messages %}
-        <div class="alert alert-dismissible fade show {% if message.tags %}alert-{{ message.tags }}{% else %}alert-secondary{% endif %}" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    {% endfor %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        {% for message in messages %}
+        SentryNotification.{{ message.tags|default:'info' }}('{{ message|escapejs }}', {
+            timeOut: 5000,
+            closeButton: true,
+            progressBar: true,
+            positionClass: "toast-top-right"
+        });
+        {% endfor %}
+    });
+</script>
 {% endif %}
