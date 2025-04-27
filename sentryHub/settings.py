@@ -2,11 +2,21 @@
 Django settings for sentryHub project.
 """
 
+# Watchers options for Jira rules\nWATCHERS_CHOICES = [\n    ('user1', 'User 1'),\n    ('user2', 'User 2'),\n    ('user3', 'User 3'),\n    ('group1', 'Group 1'),\n    ('group2', 'Group 2'),\n]\n
 from pathlib import Path
 import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Watcher choices for Jira rules
+WATCHER_CHOICES = [
+    ('user1', 'User 1'),
+    ('user2', 'User 2'),
+    ('user3', 'User 3'),
+    ('group1', 'Group 1'),
+    ('group2', 'Group 2'),
+]
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-replace-this-in-production-environment'

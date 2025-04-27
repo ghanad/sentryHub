@@ -21,6 +21,11 @@ class JiraIntegrationRule(models.Model):
     # Action defines WHAT happens in Jira
     jira_project_key = models.CharField(max_length=50, help_text="Target Jira project key (e.g., OPS)")
     jira_issue_type = models.CharField(max_length=50, help_text="Target Jira issue type (e.g., Bug, Task)")
+    assignee = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Jira username to assign the issue to (leave blank for no assignment)"
+    )
 
     # Templates for Jira Issue content (use {{ variable }} syntax for alert labels/annotations)
     jira_title_template = models.TextField(
@@ -55,6 +60,24 @@ class JiraIntegrationRule(models.Model):
         if not isinstance(self.match_criteria, dict):
             raise ValidationError({'match_criteria': 'Must be a valid JSON object (dictionary).'})
 
+    watchers = models.ManyToManyField(
+        User,
+        related_name='jira_watchers',
+        blank=True,
+        help_text="Users who should be added as watchers to the Jira issue"
+    )
+
     def __str__(self):
         status = "Active" if self.is_active else "Inactive"
         return f"{self.name} ({status}, Prio: {self.priority})"
+
+    watchers = models.ManyToManyField(
+        User,
+        related_name='jira_watchers',
+        blank=True,
+        help_text="Users who should be added as watchers to the Jira issue"
+    )
+
+    def get_assignee(self):
+        """Get the assignee username or None if not set"""
+        return self.assignee if self.assignee else None

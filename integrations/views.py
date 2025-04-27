@@ -135,7 +135,8 @@ def jira_admin_view(request):
                     project_key=test_project_key,
                     issue_type=test_issue_type,
                     summary="SentryHub Test Issue",
-                    description="This is a test issue created automatically by SentryHub to verify Jira integration functionality."
+                    description="This is a test issue created automatically by SentryHub to verify Jira integration functionality.",
+                    assignee=None  # No assignee for test issues
                 )
                 
                 if issue_key:
