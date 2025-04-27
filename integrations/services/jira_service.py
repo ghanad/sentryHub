@@ -33,14 +33,16 @@ class JiraService:
             return None
 
         # Simplified fields dictionary, mirroring the test script
+        # Simplified fields dictionary, mirroring the test script + adding assignee
         fields = {
             'project': {'key': project_key},
             'summary': summary,
             'description': description,
             'issuetype': {'name': issue_type},
+            'assignee': {'name': settings.JIRA_CONFIG['username']}, # Assign to the configured user
         }
 
-        logger.info(f"Attempting to create Jira issue with simplified fields: {fields}")
+        logger.info(f"Attempting to create Jira issue with simplified fields (including assignee): {fields}")
 
         try:
             issue = self.client.create_issue(fields=fields)
