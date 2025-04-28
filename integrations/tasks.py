@@ -148,14 +148,19 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
                 jira_description = "\\n".join(description_parts).strip()
                 # --------------------------------
 
-                logger.info(f"Task {self.request.id}: Creating new Jira issue for alert group {alert_group_id} in project {rule.jira_project_key} (without automatic labels)")
+                logger.info(f"Task {self.request.id}: Creating new Jira issue for alert group {alert_group_id} in project {rule.jira_project_key}")
 
-                # Create issue WITHOUT labels field
+                # Get assignee username directly from the rule
+                assignee_username = rule.assignee
+
+                # Create issue, passing the username directly as assignee_name
+                # This matches the structure confirmed to work in jira_test_issue_plan.py
                 new_issue_key = jira_service.create_issue(
                     project_key=rule.jira_project_key,
                     issue_type=rule.jira_issue_type,
                     summary=jira_summary,
-                    description=jira_description
+                    description=jira_description,
+                    assignee_name=assignee_username # Pass the username from the rule
                 )
                 if new_issue_key:
                     alert_group.jira_issue_key = new_issue_key

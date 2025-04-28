@@ -10,13 +10,18 @@ JIRA_SERVER = 'https://jira.tsetmc.com'
 
 # Replace with your Jira username
 JIRA_USERNAME = 'monitoring'
-JIRA_PASSWORD_OR_TOKEN = "tsemntmc@1404!"
+JIRA_PASSWORD_OR_TOKEN = "tsemntmc@1404!" # یا توکن API
 
-PROJECT_KEY = 'MON' # Example: 'PROJ', 'TEST'
+# --- Issue Details ---
+PROJECT_KEY = 'SAM' # Example: 'PROJ', 'TEST'
 
-ISSUE_SUMMARY = 'Test issue created via Python'
-ISSUE_DESCRIPTION = 'This is a test issue description created using a Python script.'
-ISSUE_TYPE = 'Task' # Other examples: 'Bug', 'Story', 'Epic'
+ISSUE_SUMMARY = 'Test issue created via Python with Assignee'
+ISSUE_DESCRIPTION = 'This is a test issue description created using a Python script and assigned to a specific user.'
+ISSUE_TYPE = 'Incident' # Other examples: 'Bug', 'Story', 'Epic'
+
+# --- Assignee Details ---
+# !!! مهم: نام کاربری دقیق (username) فرد مورد نظر در جیرا را جایگزین کنید !!!
+ASSIGNEE_USERNAME = 'monitoring' # <--- این قسمت را ویرایش کنید
 
 # --- Connect to Jira ---
 print(f"Attempting to connect to {JIRA_SERVER} as {JIRA_USERNAME}...")
@@ -45,9 +50,11 @@ issue_dict = {
     'summary': ISSUE_SUMMARY,
     'description': ISSUE_DESCRIPTION,
     'issuetype': {'name': ISSUE_TYPE},
+    # --- اضافه کردن Assignee ---
+    'assignee': {'name': ASSIGNEE_USERNAME},
+    # --------------------------
     # You can add more fields here as needed, for example:
     # 'priority': {'name': 'High'},
-    # 'assignee': {'name': 'assignee_username'},
     # 'labels': ['python_created', 'test'],
     # 'components': [{'name': 'Backend'}],
     # If you have required custom fields, add them like:
@@ -61,14 +68,20 @@ try:
     print(f"New issue key: {new_issue.key}")
     # Get the URL (permalink) to the newly created issue
     print(f"Issue URL: {new_issue.permalink()}")
+    # نمایش Assignee (اختیاری)
+    if new_issue.fields.assignee:
+        print(f"Assigned to: {new_issue.fields.assignee.displayName} ({new_issue.fields.assignee.name})")
+    else:
+        print("Issue is unassigned.")
+
 
 except Exception as e:
     print(f"ERROR: Failed to create issue: {e}")
     # Common errors: invalid project key, invalid issue type,
-    # missing required fields, insufficient user permissions.
+    # missing required fields, insufficient user permissions, invalid assignee username.
     # Check the response for details:
-    # print(f"Status Code: {getattr(e, 'status_code', 'N/A')}")
-    # print(f"Response Text: {getattr(e, 'text', 'N/A')}")
+    print(f"Status Code: {getattr(e, 'status_code', 'N/A')}")
+    print(f"Response Text: {getattr(e, 'text', 'N/A')}") # <--- متن خطا بسیار مهم است
     sys.exit(1)
 
 # --- Close Connection (Optional - usually handled by the library) ---
