@@ -9,8 +9,8 @@ import sys     # To exit gracefully on error
 JIRA_SERVER = 'https://jira.tsetmc.com' 
 
 # Replace with your Jira username
-JIRA_USERNAME = 'monitoring'
-JIRA_PASSWORD_OR_TOKEN = "tsemntmc@1404!" # یا توکن API
+JIRA_USERNAME = 'username'
+JIRA_PASSWORD_OR_TOKEN = "password" 
 
 # --- Issue Details ---
 PROJECT_KEY = 'SAM' # Example: 'PROJ', 'TEST'
