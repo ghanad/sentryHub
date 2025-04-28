@@ -2,7 +2,6 @@
 Django settings for sentryHub project.
 """
 
-# Watchers options for Jira rules\nWATCHERS_CHOICES = [\n    ('user1', 'User 1'),\n    ('user2', 'User 2'),\n    ('user3', 'User 3'),\n    ('group1', 'Group 1'),\n    ('group2', 'Group 2'),\n]\n
 from pathlib import Path
 import os
 
@@ -264,11 +263,15 @@ JIRA_CONFIG = {
     'server_url': 'https://jira.tsetmc.com',
     'username': 'username',
     'password': 'password',
-    'allowed_project_keys': ['MON'],
+    'allowed_project_keys': ['SAM'],
     'open_status_categories': ['To Do', 'In Progress'],
     'closed_status_categories': ['Done'],
 
+    'ISSUE_TYPE_CHOICES': [
+        ('Incident', 'Incident'),
+        # ('task', 'Task'),
+    ],
     # test issue
-    'test_project_key': 'MON',
-    'test_issue_type': 'Task',
+    'test_project_key': 'SAM',
+    'test_issue_type': 'Incident',
 }

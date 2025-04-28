@@ -11,13 +11,7 @@ class JiraIntegrationRuleForm(forms.ModelForm):
     """
     def get_issue_types(self):
         """Get available Jira issue types from settings"""
-        return [
-            ('Task', 'Task'),
-            ('Bug', 'Bug'),
-            ('Story', 'Story'),
-            ('Sub-task', 'Sub-task'),
-            ('Epic', 'Epic'),
-        ]
+        return settings.JIRA_CONFIG.get('ISSUE_TYPE_CHOICES', [])
 
     class Meta:
         model = JiraIntegrationRule
@@ -71,15 +65,23 @@ class JiraIntegrationRuleForm(forms.ModelForm):
         # Set priority default
         self.fields['priority'].initial = 0
 
+        # Add watchers field (moved from duplicated __init__)
+        self.fields['watchers'] = forms.MultipleChoiceField(
+            choices=settings.WATCHER_CHOICES,
+            required=False,
+            widget=forms.SelectMultiple(attrs={'class': 'form-control'}),
+            help_text="Select users to add as watchers to the Jira issue"
+        )
+
     def clean_match_criteria(self):
         """
         Validate that match_criteria is a valid JSON dictionary.
         """
         match_criteria = self.cleaned_data.get('match_criteria', '{}')
-        
+
         if isinstance(match_criteria, dict):
             return match_criteria
-            
+
         try:
             parsed = json.loads(match_criteria)
             if not isinstance(parsed, dict):
@@ -95,26 +97,4 @@ class JiraIntegrationRuleForm(forms.ModelForm):
             raise ValidationError('Assignee username must be less than 100 characters')
         return cleaned_data
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        
-        # Get single allowed project key from settings
-        allowed_key = settings.JIRA_CONFIG.get('allowed_project_keys', [''])[0]
-        
-        # Set single value and make field read-only
-        self.fields['jira_project_key'].initial = allowed_key
-        self.fields['jira_project_key'].widget = forms.TextInput(attrs={
-            'class': 'form-control',
-            'readonly': 'readonly'
-        })
-        
-        # Add watchers field
-        self.fields['watchers'] = forms.MultipleChoiceField(
-            choices=settings.WATCHER_CHOICES,
-            required=False,
-            widget=forms.SelectMultiple(attrs={'class': 'form-control'}),
-            help_text="Select users to add as watchers to the Jira issue"
-        )
-        
-        # Set priority default
-        self.fields['priority'].initial = 0
+# Removed duplicated __init__ method
