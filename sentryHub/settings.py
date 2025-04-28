@@ -258,9 +258,12 @@ CELERY_TASK_ROUTES = {
 # Removed redundant serializer settings
 CELERY_TIMEZONE = TIME_ZONE
 
-
+SITE_URL = "https"
 JIRA_CONFIG = {
     'server_url': 'https://jira.tsetmc.com',
+    'username': 'username',
+    'password': 'password',
+    'allowed_project_keys': ['SAM'],
     'open_status_categories': ['To Do', 'In Progress'],
     'closed_status_categories': ['Done'],
 
