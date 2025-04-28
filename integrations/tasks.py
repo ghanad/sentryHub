@@ -3,8 +3,8 @@
 import logging
 import json
 import re
+import pytz 
 from typing import Optional, Dict, Any
-
 from celery import shared_task, Task
 from django.conf import settings
 from django.utils import timezone
@@ -128,12 +128,28 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
                 # --- Modify Description Parts ---
                 # Get the start time of the instance that triggered this task
                 occurred_at_time = latest_instance.started_at if latest_instance else alert_group.last_occurrence # Fallback to last_occurrence
-                occurred_at_str = occurred_at_time.isoformat() if occurred_at_time else "N/A"
+
+                # Convert timestamp to local timezone (Asia/Tehran)
+                occurred_at_str = "N/A"
+                if occurred_at_time:
+                    try:
+                        # Ensure the original time is timezone-aware (Django usually handles this)
+                        if timezone.is_naive(occurred_at_time):
+                             # If somehow naive, assume UTC as per Django default storage
+                             occurred_at_time = timezone.make_aware(occurred_at_time, pytz.utc)
+
+                        tehran_tz = pytz.timezone('Asia/Tehran')
+                        occurred_at_local = timezone.localtime(occurred_at_time, tehran_tz)
+                        # Format with timezone info
+                        occurred_at_str = occurred_at_local.strftime('%Y-%m-%d %H:%M:%S')
+                    except Exception as tz_err:
+                         logger.warning(f"Could not convert timestamp to Tehran time: {tz_err}. Falling back to ISO format.")
+                         occurred_at_str = occurred_at_time.isoformat() # Fallback
 
                 description_parts = [
                     f"*Alert Group Fingerprint:* {alert_group.fingerprint}",
                     f"*Status:* Firing",
-                    f"*Occurred At:* {occurred_at_str}", # Changed Line
+                    f"*Occurred At:* {occurred_at_str}", # Use locally formatted time string
                     # Removed First/Last Occurrence
                     "\\n*Labels:*",
                     "{code:json}",
@@ -166,6 +182,22 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
                     alert_group.jira_issue_key = new_issue_key
                     alert_group.save(update_fields=['jira_issue_key'])
                     logger.info(f"Task {self.request.id}: Associated AlertGroup {alert_group_id} with new Jira issue {new_issue_key}")
+
+                    # --- Add Watchers ---
+                    watchers_string = rule.watchers
+                    if watchers_string:
+                        watcher_usernames = [w.strip() for w in watchers_string.split(',') if w.strip()]
+                        if watcher_usernames:
+                            logger.info(f"Task {self.request.id}: Attempting to add watchers {watcher_usernames} to issue {new_issue_key}")
+                            for username in watcher_usernames:
+                                try:
+                                    success = jira_service.add_watcher(new_issue_key, username)
+                                    if success:
+                                        logger.info(f"Task {self.request.id}: Successfully added watcher '{username}' to issue {new_issue_key}")
+                                    else:
+                                        logger.warning(f"Task {self.request.id}: Failed to add watcher '{username}' to issue {new_issue_key} (API call returned false)")
+                                except Exception as watcher_err:
+                                    logger.error(f"Task {self.request.id}: Error adding watcher '{username}' to issue {new_issue_key}: {watcher_err}", exc_info=True)
                 else:
                     logger.error(f"Task {self.request.id}: Failed to create Jira issue for AlertGroup {alert_group_id}.")
                     raise Exception(f"Jira issue creation failed for AlertGroup {alert_group_id}")
