@@ -67,8 +67,8 @@ class JiraService:
     # --- متدهای create_issue, add_comment, get_issue_status_category ---
     # از نسخه قبلی (که description را به صورت رشته ساده ارسال می‌کرد) کپی کنید
     # ... (Copy create_issue, add_comment, get_issue_status_category from the previous response) ...
-    def create_issue(self, project_key: str, issue_type: str, summary: str, description: str, **extra_fields) -> Optional[str]:
-        """ Creates a new issue in Jira, sending description as plain text. """
+    def create_issue(self, project_key: str, issue_type: str, summary: str, description: str, assignee_name: Optional[str] = None, **extra_fields) -> Optional[str]:
+        """ Creates a new issue in Jira, sending description as plain text and optionally setting the assignee by username. """
         if self.client is None: # Check client directly
             logger.error("Cannot create Jira issue: Client not initialized.")
             return None
@@ -78,7 +78,7 @@ class JiraService:
         # but plain text with newlines usually works.
         plain_description = description.replace('\\n', '\n')
 
-        field_dict = {
+        field_dict: Dict[str, Any] = {
             'project': {'key': project_key},
             'issuetype': {'name': issue_type},
             'summary': summary,
@@ -86,7 +86,17 @@ class JiraService:
             **extra_fields
         }
 
+        # Add assignee using username if provided, matching the working test script
+        if assignee_name:
+            field_dict['assignee'] = {'name': assignee_name}
+            logger.info(f"Attempting to assign Jira issue to username: {assignee_name}")
+        else:
+             logger.info("No assignee name provided, creating issue unassigned.")
+
+
         try:
+            # Log the final dictionary being sent ONLY if debugging is needed
+            # logger.debug(f"Sending data to Jira create issue: {field_dict}")
             issue = self.client.create_issue(fields=field_dict)
             logger.info(f"Successfully created Jira issue: {issue.key} in project {project_key}")
             return issue.key
@@ -164,3 +174,6 @@ class JiraService:
         except Exception as e:
              logger.error(f"An unexpected error occurred getting status for Jira issue {issue_key}", exc_info=True)
              return None
+
+    # Removed get_user_account_id method as it was failing and is not needed
+    # if assigning by username works directly.
