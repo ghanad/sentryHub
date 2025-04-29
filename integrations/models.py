@@ -60,23 +60,17 @@ class JiraIntegrationRule(models.Model):
         if not isinstance(self.match_criteria, dict):
             raise ValidationError({'match_criteria': 'Must be a valid JSON object (dictionary).'})
 
-    watchers = models.ManyToManyField(
-        User,
-        related_name='jira_watchers',
+        # Validate watchers format if needed (e.g., comma-separated usernames)
+        # For now, we assume the task will handle parsing/validation
+
+    watchers = models.TextField(
         blank=True,
-        help_text="Users who should be added as watchers to the Jira issue"
+        help_text="Comma-separated list of Jira usernames to add as watchers (e.g., user1,user2,user3)"
     )
 
     def __str__(self):
         status = "Active" if self.is_active else "Inactive"
         return f"{self.name} ({status}, Prio: {self.priority})"
-
-    watchers = models.ManyToManyField(
-        User,
-        related_name='jira_watchers',
-        blank=True,
-        help_text="Users who should be added as watchers to the Jira issue"
-    )
 
     def get_assignee(self):
         """Get the assignee username or None if not set"""

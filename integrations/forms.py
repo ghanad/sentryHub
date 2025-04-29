@@ -19,7 +19,7 @@ class JiraIntegrationRuleForm(forms.ModelForm):
             'name', 'is_active', 'priority', # Removed 'description'
             'jira_project_key', 'jira_issue_type', 'assignee',
             'jira_title_template', 'jira_description_template', 'jira_update_comment_template',
-            'match_criteria'
+            'match_criteria', 'watchers' # Added watchers
         ]
         widgets = {
             # Removed 'description' widget
@@ -40,6 +40,7 @@ class JiraIntegrationRuleForm(forms.ModelForm):
             'jira_description_template': 'Template for Jira issue description. Uses Django template syntax. Available context: labels, annotations, alertname, status, etc.',
             'jira_update_comment_template': 'Template for comment added when updating an issue (e.g., alert resolved/re-fired). Uses Django template syntax.',
             'match_criteria': 'JSON object defining label match criteria. E.g. {"job": "node", "severity": "critical"}',
+            'watchers': 'Comma-separated list of Jira usernames to add as watchers (e.g., user1,user2,user3)', # Added help text for watchers
         }
 
     def __init__(self, *args, **kwargs):
@@ -64,14 +65,6 @@ class JiraIntegrationRuleForm(forms.ModelForm):
         
         # Set priority default
         self.fields['priority'].initial = 0
-
-        # Add watchers field (moved from duplicated __init__)
-        self.fields['watchers'] = forms.MultipleChoiceField(
-            choices=settings.WATCHER_CHOICES,
-            required=False,
-            widget=forms.SelectMultiple(attrs={'class': 'form-control'}),
-            help_text="Select users to add as watchers to the Jira issue"
-        )
 
     def clean_match_criteria(self):
         """

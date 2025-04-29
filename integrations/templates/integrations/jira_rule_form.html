@@ -25,7 +25,6 @@
 {% endblock %}
 
 {% block main_content %}
-    <!-- Page header -->
     <header class="page-header mb-4">
         <h1 class="page-title">{% if form.instance.pk %}Edit Jira Rule: {{ form.instance.name }}{% else %}Create New Jira Rule{% endif %}</h1>
         {# Optional: Add breadcrumbs or back link if desired #}
@@ -97,10 +96,16 @@
                                     {% for error in form.assignee.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                                 </div>
                                 <div class="col-md-6 mb-3">
+                                    {# --- Watchers Field Modification --- #}
+                                    {# Render as standard text input instead of textarea #}
+                                    {# NOTE: Ideally, set widget=forms.TextInput in integrations/forms.py #}
                                     <label for="{{ form.watchers.id_for_label }}" class="form-label">{{ form.watchers.label }}</label>
-                                    {{ form.watchers|add_class:"form-control" }}
+                                    <input type="text" name="{{ form.watchers.name }}" id="{{ form.watchers.id_for_label }}"
+                                           value="{{ form.watchers.value|default_if_none:'' }}"
+                                           class="form-control"{% if form.watchers.field.max_length %} maxlength="{{ form.watchers.field.max_length }}"{% endif %}>
                                     {% if form.watchers.help_text %}<div class="form-text">{{ form.watchers.help_text|safe }}</div>{% endif %}
                                     {% for error in form.watchers.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                                    {# --- End of Watchers Field Modification --- #}
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label for="{{ form.jira_issue_type.id_for_label }}" class="form-label">{{ form.jira_issue_type.label }}</label>
