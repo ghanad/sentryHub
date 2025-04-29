@@ -8,28 +8,7 @@
     <link rel="stylesheet" href="{% static 'dashboard/css/modern_dashboard.css' %}">
     {# Add specific CSS for this page if needed later #}
     {# <link rel="stylesheet" href="{% static 'integrations/css/jira_admin.css' %}"> #}
-    <style>
-        /* Keep connection status styles */
-        .connection-status {
-            padding: 10px;
-            margin-top: 15px;
-            border-radius: 4px;
-            font-size: 0.9rem; /* Slightly smaller font */
-        }
-        .connection-success {
-            background-color: #d1e7dd; /* Bootstrap success background */
-            color: #0f5132;      /* Bootstrap success text */
-            border: 1px solid #badbcc; /* Bootstrap success border */
-        }
-        .connection-error {
-            background-color: #f8d7da; /* Bootstrap danger background */
-            color: #842029;      /* Bootstrap danger text */
-            border: 1px solid #f5c2c7; /* Bootstrap danger border */
-        }
-        .chart-card-body .btn { /* Ensure button has some margin */
-            margin-bottom: 1rem;
-        }
-    </style>
+    <link rel="stylesheet" href="{% static 'integrations/css/jira-admin.css' %}">
 {% endblock %}
 
 {% block main_content %}

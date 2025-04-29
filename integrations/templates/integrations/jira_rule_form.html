@@ -9,19 +9,7 @@
     <link rel="stylesheet" href="{% static 'dashboard/css/modern_dashboard.css' %}">
     {# Remove standard-form.css as we are using a card layout now #}
     {# <link rel="stylesheet" href="{% static 'core/css/standard-form.css' %}"> #}
-    <style>
-        /* Optional: Add minor adjustments if needed */
-        .chart-card-body .form-label {
-            font-weight: 600;
-        }
-        .form-text {
-            font-size: 0.85rem;
-        }
-        .form-control-monospace {
-             font-family: var(--bs-font-monospace);
-             font-size: 0.9rem;
-        }
-    </style>
+    <link rel="stylesheet" href="{% static 'integrations/css/jira-rule-form.css' %}">
 {% endblock %}
 
 {% block main_content %}

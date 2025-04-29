@@ -1,0 +1,10 @@
+/* Optional: Add specific styles here if needed */
+.card.border-danger .card-header {
+    background-color: var(--bs-danger-bg-subtle); /* Use subtle danger background */
+    color: var(--bs-danger-text-emphasis); /* Use emphasis text color */
+    border-bottom: 1px solid rgba(var(--bs-danger-rgb), 0.3);
+}
+.card-body strong { /* Make strong elements stand out */
+     font-weight: 600;
+     color: var(--bs-body-color);
+}

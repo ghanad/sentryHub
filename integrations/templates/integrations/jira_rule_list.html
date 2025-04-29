@@ -1,33 +1,41 @@
 {% extends "dashboard/base.html" %}
+{% load static %}
 
 {% block title %}Jira Rules - SentryHub{% endblock %}
 
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'dashboard/css/modern_dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'alerts/css/alerts_list.css' %}">
+    <link rel="stylesheet" href="{% static 'integrations/css/jira-rule-list.css' %}">
+{% endblock %}
+
 {% block main_content %}
-<div class="container-fluid py-4">
-    <div class="row">
-        <div class="col-12">
-            <div class="card mb-4">
-                <div class="card-header pb-0 d-flex justify-content-between align-items-center">
-                    <h6>Jira Integration Rules</h6>
-                    <a href="{% url 'integrations:jira-rule-create' %}" class="btn btn-sm btn-primary">
-                        <i class="fas fa-plus me-1"></i> New Rule
-                    </a>
-                </div>
-                <div class="card-body px-0 pt-0 pb-2">
-                    <div class="row px-4">
-                        <div class="col-md-6">
-                            <form method="get">
-                                <div class="input-group">
-                                    <input type="text" class="form-control" name="search"
-                                           placeholder="Search rules..." value="{{ request.GET.search }}">
-                                    <button class="btn btn-outline-primary mb-0" type="submit">
-                                        <i class="fas fa-search"></i>
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-        <div class="card-body">
+    <!-- Page header -->
+    <header class="page-header">
+        <h1 class="page-title">Jira Integration Rules</h1>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'integrations:jira-rule-create' %}" class="btn btn-primary d-flex align-items-center gap-2">
+                <i class='bx bx-plus-circle'></i> New Rule
+            </a>
+        </div>
+    </header>
+    <!-- Rules Table Card -->
+    <div class="chart-card">
+        <div class="chart-card-header">
+            <h5 class="chart-title d-flex align-items-center gap-2">
+                <i class='bx bx-list-ul'></i>
+                Jira Rules
+                {% if is_paginated %}
+                    <span class="badge bg-secondary rounded-pill fw-normal ms-2">
+                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                    </span>
+                {% endif %}
+            </h5>
+            <span class="text-muted small">Total: {{ page_obj.paginator.count }}</span>
+        </div>
+        <div class="chart-card-body p-0">
+            <div class="table-responsive">
+                <table class="jira-rule-table">
             <div class="table-responsive">
                 <table class="table align-items-center mb-0">
                     <thead class="thead-light">
@@ -45,29 +53,29 @@
                         {% for rule in jira_rules %}
                         <tr>
                             <td>
-                                <div class="d-flex px-2 py-1">
-                                    <div class="d-flex flex-column justify-content-center">
-                                        <h6 class="mb-0 text-sm">{{ rule.name }}</h6>
-                                    </div>
-                                </div>
+                                <span class="alert-name-link">
+                                    {{ rule.name }}
+                                </span>
                             </td>
                             <td>
-                                <span class="badge badge-sm bg-gradient-{% if rule.is_active %}success{% else %}secondary{% endif %}">
+                                <span class="status-badge badge-{% if rule.is_active %}success{% else %}secondary{% endif %}">
                                     {% if rule.is_active %}Active{% else %}Inactive{% endif %}
                                 </span>
                             </td>
-                            <td class="text-sm">{{ rule.jira_project_key }}</td>
-                            <td class="text-sm">{{ rule.jira_issue_type }}</td>
-                            <td class="text-sm">{{ rule.priority }}</td>
-                            <td class="match-criteria-column">
+                            <td>{{ rule.jira_project_key }}</td>
+                            <td>{{ rule.jira_issue_type }}</td>
+                            <td>{{ rule.priority }}</td>
+                            <td>
                                 {% for key, value in rule.match_criteria.items %}
-                                    <span class="badge bg-secondary fw-normal me-1 mb-1">{{ key }}: {{ value }}</span>
+                                    <span class="badge bg-secondary fw-normal me-1 mb-1">
+                                        {{ key }}: {{ value }}
+                                    </span>
                                 {% empty %}
                                     <span class="text-muted small">No criteria</span>
                                 {% endfor %}
                             </td>
-                            <td class="align-middle">
-                                <div class="action-menu d-flex gap-2">
+                            <td>
+                                <div class="action-menu">
                                     <a href="{% url 'integrations:jira-rule-update' rule.pk %}"
                                        class="action-btn"
                                        data-bs-toggle="tooltip" title="Edit">
@@ -83,14 +91,9 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="7" class="text-center py-4">
-                                <div class="d-flex flex-column align-items-center">
-                                    <i class="fas fa-inbox text-secondary mb-2" style="font-size: 2rem;"></i>
-                                    <h6 class="text-secondary">No Jira rules found</h6>
-                                    <p class="text-xs text-secondary mb-0">
-                                        Create your first rule to start integrating with Jira
-                                    </p>
-                                </div>
+                            <td colspan="7" class="text-center p-5">
+                                <i class='bx bx-info-circle fs-1 text-muted mb-3 d-block'></i>
+                                <p class="text-muted mb-0">No Jira rules found matching your criteria.</p>
                             </td>
                         </tr>
                         {% endfor %}

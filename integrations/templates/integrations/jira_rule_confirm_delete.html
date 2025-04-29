@@ -7,18 +7,7 @@
     <link rel="stylesheet" href="{% static 'dashboard/css/modern_dashboard.css' %}">
     {# Add specific delete confirmation CSS if needed #}
     {# <link rel="stylesheet" href="{% static 'integrations/css/delete_confirm.css' %}"> #}
-     <style>
-        /* Optional: Add specific styles here if needed */
-        .card.border-danger .card-header {
-            background-color: var(--bs-danger-bg-subtle); /* Use subtle danger background */
-            color: var(--bs-danger-text-emphasis); /* Use emphasis text color */
-            border-bottom: 1px solid rgba(var(--bs-danger-rgb), 0.3);
-        }
-        .card-body strong { /* Make strong elements stand out */
-             font-weight: 600;
-             color: var(--bs-body-color);
-        }
-    </style>
+    <link rel="stylesheet" href="{% static 'integrations/css/jira-rule-confirm-delete.css' %}">
 {% endblock %}
 
 {# *** Corrected block name here *** #}
@@ -72,7 +61,4 @@
 
 {% block extra_js %}
     {# Add specific JS if needed #}
-    <script>
-        // console.log("Delete confirmation page JS loaded.");
-    </script>
 {% endblock %}
