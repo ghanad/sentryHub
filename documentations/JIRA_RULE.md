@@ -73,11 +73,13 @@
     * ...
 * `{{ occurred_at }}`: آبجکت datetime زمان شروع آخرین `AlertInstance` (یا `last_occurrence` گروه اگر نمونه‌ای یافت نشد).
 * `{{ occurred_at_str }}`: رشته فرمت شده زمان وقوع به وقت تهران (مثلاً `2023-10-27 15:30:00`).
+* `{{ resolved_time }}`: آبجکت datetime زمان دقیق Resolve شدن هشدار (زمان اجرای تسک). این معمولاً در UTC است و برای نمایش در منطقه زمانی دیگر نیاز به فیلتر `timezone` دارد.
+* `{{ resolved_time_iso }}`: رشته فرمت شده ISO زمان دقیق Resolve شدن هشدار (زمان اجرای تسک).
 * `{{ sentryhub_url }}`: لینک به صفحه جزئیات هشدار در SentryHub.
 * `{{ severity }}`: مقدار لیبل `severity` (مثلاً `Critical`, `Warning`).
 * `{{ summary_annotation }}`: مقدار انوتیشن `summary` (یا `alertname` اگر `summary` نباشد).
 * `{{ description_annotation }}`: مقدار انوتیشن `description` (یا متن پیش‌فرض اگر نباشد).
-* `{{ now }}`: آبجکت datetime زمان اجرای تسک.
+* `{{ now }}`: آبجکت datetime زمان اجرای تسک (همان `resolved_time` در زمان Resolve شدن).
 
 ### ۶. استفاده از منطق در قالب‌ها (Using Template Logic)
 
@@ -185,8 +187,9 @@
 
 * **Jira Update Comment Template:**
 
-    ```jinja2
-    Alert status changed to *{{ alert_status|title }}* at {{ now|date:"Y-m-d H:i:s" }}.
+    ```django
+    {% load tz %}
+    Alert status changed to *{{ alert_status|title }}* at {% if alert_status == 'resolved' %}{{ resolved_time|timezone:"Asia/Tehran"|date:"Y-m-d H:i:s" }}{% else %}{{ now|timezone:"Asia/Tehran"|date:"Y-m-d H:i:s" }}{% endif %}.
 
     {% if alert_status == 'resolved' %}
     The high CPU usage issue seems to be resolved.
