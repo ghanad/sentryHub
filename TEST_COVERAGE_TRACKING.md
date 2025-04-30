@@ -22,6 +22,7 @@ This document tracks the testing progress for different parts of the SentryHub a
 |                   | `AlertInstance` (`models.py`)             |   🟢   | Creation, relations, `__str__`, ordering                     |
 |                   | `AlertComment` (`models.py`)              |   🟢   | Creation, relations, `__str__`, ordering                     |
 |                   | `AlertAcknowledgementHistory` (`models.py`) |   🟢   | Creation, relations, `__str__`, ordering, FK behavior      |
+|                   | `JiraRuleMatcher` (`models.py`)           |   ⚪️   | Creation, validation (`clean`), `__str__`                   |
 | **Forms**         |                                           |        |                                                              |
 |                   | `SilenceRuleForm` (`forms.py`)            |   🟢   | Validation (JSON, dates, required), clean methods, saving     |
 |                   | `AlertAcknowledgementForm` (`forms.py`)   |   🟢   | Validation (required comment)                                |
@@ -43,6 +44,7 @@ This document tracks the testing progress for different parts of the SentryHub a
 |                   | `SilenceRuleCreateView` (`views.py`)      |   🟢   | GET (auth, initial data), POST (valid/invalid form), service calls |
 |                   | `SilenceRuleUpdateView` (`views.py`)      |   ⚪️   | GET, POST (valid/invalid), permissions, service calls      |
 |                   | `SilenceRuleDeleteView` (`views.py`)      |   ⚪️   | GET (confirmation), POST (deletion), permissions, service calls |
+|                   | `login_view` (`views.py`)                 |   ⚪️   | Basic GET/POST handling, authentication, redirects           |
 | **API Views**     |                                           |        |                                                              |
 |                   | `AlertWebhookView` (`api/views.py`)       |   ⚪️   | POST (valid/invalid serializer), calls task, status codes    |
 |                   | `AlertGroupViewSet` (`api/views.py`)      |   ⚪️   | List/Retrieve (GET), filters, actions (ack, history, comments) |
@@ -60,6 +62,7 @@ This document tracks the testing progress for different parts of the SentryHub a
 |                   | `AlertCommentAdmin` (`admin.py`)          |   ⚫️   | Basic registration checks                                    |
 |                   | `AlertAcknowledgementHistoryAdmin` (`admin.py`) | ⚫️ | Basic registration checks                                    |
 |                   | `SilenceRuleAdmin` (`admin.py`)           |   ⚪️   | Custom methods, `save_model`                               |
+                  | `JiraRuleMatcherAdmin` (`admin.py`)       |   ⚪️   | Custom methods (`get_criteria_preview`)                     |
 | **Signals**       | `signals.py`                              |   ⚪️   | Test `handle_silence_rule_save/delete` trigger `_rescan_alerts_for_silence` |
 | **Handlers**      | `handlers.py`                             |   ⚪️   | Test `handle_silence_check` receiver logic                 |
 | **Tasks**         | `process_alert_payload_task` (`tasks.py`) |   ⚪️   | Task logic, exception handling, signal sending             |
@@ -76,6 +79,7 @@ This document tracks the testing progress for different parts of the SentryHub a
 | **Template Tags**    |                                      |        |                                             |
 |                      | `core_tags.py`                       |   ⚪️   | `time_ago`, `status_badge`, `jsonify`, `format_datetime`, `has_group`, `calculate_duration` |
 |                      | `date_format_tags.py`                |   ⚪️   | `to_jalali`, `to_jalali_datetime`, `force_jalali`, `force_gregorian` |
+|                      | `add_class` (`core_tags.py`)                 |   ⚪️   | Adds CSS classes to form fields                      |
 
 ### `docs` App
 
@@ -102,6 +106,7 @@ This document tracks the testing progress for different parts of the SentryHub a
 | **Handlers**      | `handle_documentation_matching` (`handlers.py`) | ⚪️ | Test receiver logic for `match_documentation_to_alert` call |
 | **Admin**         | `AlertDocumentationAdmin` (`admin.py`)    |   ⚪️   | `save_model`, Inline checks (if needed)                      |
 |                   | `DocumentationAlertGroupAdmin` (`admin.py`) | ⚫️   | Basic registration checks                                    |
+|                   | `DocumentationAlertGroupInline` (`admin.py`) |   ⚪️   | Basic inline registration checks                     |
 
 ### `users` App
 
@@ -117,6 +122,7 @@ This document tracks the testing progress for different parts of the SentryHub a
 |                   | `UserProfileView` (`views.py`)            |   ⚪️   | GET, context                                                 |
 |                   | `PreferencesView` (`views.py`)            |   ⚪️   | GET, context                                                 |
 |                   | `update_preferences` (`views.py`)         |   ⚪️   | POST (valid/invalid data), profile update                    |
+|                   | `AdminRequiredMixin` (`views.py`)            |   ⚪️   | Permission mixin for admin access                      |
 | **Signals**       | `create_user_profile`, `save_user_profile` (`signals.py`) | ⚪️ | Check if `UserProfile` exists after `User` save            |
 | **Admin**         | `admin.py`                                |   ⚫️   | Empty file                                                   |
 
@@ -136,19 +142,21 @@ This document tracks the testing progress for different parts of the SentryHub a
 
 | Component         | File / Functionality                      | Status | Notes                                                        |
 | :---------------- | :---------------------------------------- | :----: | :----------------------------------------------------------- |
-| **Models**        | `JiraRuleMatcher` (`models.py`)           |   ⚪️   | Creation, validation (`clean`), `__str__`                   |
-|                   | `JiraIntegrationRule` (`models.py`)       |   ⚪️   | Creation, relations, `__str__`, ordering                   |
+| **Models**        | `JiraIntegrationRule` (`models.py`)       |   ⚪️   | Creation, relations, `__str__`, ordering                   |
 | **Forms**         | `JiraIntegrationRuleForm` (`forms.py`)    |   ⚪️   | Validation, saving, queryset for matchers                  |
-| **Services**      | `JiraService` (`jira_service.py`)         |   ⚪️   | Initialization, API methods (create, comment, status), error handling |
-|                   | `JiraRuleMatcherService` (`jira_matcher.py`) | ⚪️ | `find_matching_rule`, `_does_rule_match`, `_does_matcher_match` logic |
+| **Services**      | `JiraService` (`jira_service.py`)         |   ⚪️   | `__init__`, `check_connection`, `create_issue`, `add_comment`, `get_issue_status_category`, `add_watcher` |
+|                   | `JiraRuleMatcherService` (`jira_matcher.py`) | ⚪️ | `find_matching_rule`, `_does_rule_match`, `_does_criteria_match` |
 | **Views**         | `JiraRuleListView` (`views.py`)           |   ⚪️   | GET, filters, context, pagination                            |
 |                   | `JiraRuleCreateView` (`views.py`)         |   ⚪️   | GET, POST (valid/invalid), permissions                       |
 |                   | `JiraRuleUpdateView` (`views.py`)         |   ⚪️   | GET, POST (valid/invalid), permissions                       |
 |                   | `JiraRuleDeleteView` (`views.py`)         |   ⚪️   | GET, POST, permissions, check for referenced alerts        |
+|                   | `jira_admin_view` (`views.py`)            |   ⚪️   | Connection testing, test issue creation                      |
+|                   | `jira_rule_guide_view` (`views.py`)       |   ⚪️   | Display markdown guide content                             |
 | **Handlers**      | `handle_alert_processed` (`handlers.py`)  |   ⚪️   | Receiver logic, conditions (status, silence), task call     |
 | **Tasks**         | `process_jira_for_alert_group` (`tasks.py`)|   ⚪️   | Task logic, error handling, retry logic, API calls         |
-| **Admin**         | `JiraRuleMatcherAdmin` (`admin.py`)       |   ⚪️   | Custom methods (`get_criteria_preview`)                     |
-|                   | `JiraIntegrationRuleAdmin` (`admin.py`)   |   ⚪️   | Custom methods (`matcher_count`), fieldsets                |
+                  | `JiraTaskBase` (`tasks.py`)               |   ⚪️   | Base class for Jira tasks with retry logic                   |
+                  | `render_template_safe` (`tasks.py`)       |   ⚪️   | Helper function for safe template rendering                  |
+| **Admin**         | `JiraIntegrationRuleAdmin` (`admin.py`)   |   ⚪️   | Custom methods (`matcher_count`), fieldsets                |
 
 ---
 
@@ -168,7 +176,7 @@ This document tracks the testing progress for different parts of the SentryHub a
 
 | File                | Functionality                               | Status | Notes                              |
 | :------------------ | :------------------------------------------ | :----: | :--------------------------------- |
-| `main.js`           | Tooltip/Popover init, alert closing         |   ⚫️   | Mostly Bootstrap init             |
+| `main.js`           | Tooltip/Popover init, Auto-hide alerts, Confirm delete, Toggle sidebar, Periodic data refresh, AJAX form submission |   ⚪️   |                                    |
 | `notifications.js`  | `SentryNotification` object                 |   ⚫️   | Low priority, simple wrapper      |
 | `rtl-text.js`       | `isPersianText`, `setTextDirection`, `handleInputDirection` | ⚪️ | Unit tests, DOM manipulation tests |
 
@@ -185,9 +193,9 @@ This document tracks the testing progress for different parts of the SentryHub a
 
 | File                   | Functionality                               | Status | Notes                              |
 | :--------------------- | :------------------------------------------ | :----: | :--------------------------------- |
-| `modern_dashboard.js`  | Sidebar toggle/pin, Theme toggle, DateTime update, Tooltips | ⚪️ | DOM manipulation, localStorage tests |
-| `unack_alerts.js`      | Auto-refresh `fetch`, Table update, Notification sound, Countdown, Tooltips | ⚪️ | Requires mocking `fetch`, timers |
-| `admin.js`             | Tooltip init, Date range logic, Delete confirm stub | ⚪️ | Basic DOM/event tests              |
+| `modern_dashboard.js`  | Sidebar toggle/pin, Mobile sidebar toggle, Collapsed account menu toggle, Account dropdown toggle, Apply initial sidebar state, Modified hover behavior, Theme toggle, DateTime update, Tooltips | ⚪️ | DOM manipulation, localStorage tests |
+| `unack_alerts.js`      | Auto-refresh `fetch`, Update table, Detect new alerts, Play notification sound, Update alert count, Countdown timer, Initialize dynamic content (tooltips, event listeners), Handle row clicks, Handle expand/collapse | ⚪️ | Requires mocking `fetch`, timers, DOM manipulation tests |
+| `admin.js`             | Tooltip init, Date range logic, Delete confirm stub, Toggle sidebar on mobile, Admin notification system, Handle bulk actions | ⚪️ | Basic DOM/event tests              |
 
 ### `users` App JS
 
@@ -196,4 +204,3 @@ This document tracks the testing progress for different parts of the SentryHub a
 | `preferences.js`    | (Currently empty)                           |   ⚫️   |                                    |
 | `user_list.html` (JS)| Delete confirmation (`fetch`), Modal handling | ⚪️ | Test via E2E or extract to JS file |
 | `user_form.html` (JS)| AJAX form submit (`fetch`), error handling | ⚪️ | Test via E2E or extract to JS file |
-| **Integrations JS** |                                             |   ⚫️   | No JS files listed                 |
