@@ -19,7 +19,9 @@
                     <td>
                         {% if instance.status == 'firing' and not instance.ended_at %}
                         <span class="badge bg-danger">Firing</span>
-                        {% else %}
+                        {% elif instance.status == 'resolved' and instance.resolution_type == 'inferred' %}
+                        <span class="badge bg-secondary" data-bs-toggle="tooltip" title="Resolution inferred due to new firing event">Resolved (Inferred)</span>
+                        {% else %} {# instance.status == 'resolved' and instance.ended_at is not NULL #}
                         <span class="badge bg-success">Resolved</span>
                         {% endif %}
                     </td>
@@ -29,8 +31,7 @@
                             {{ instance.started_at|force_jalali:"%Y-%m-%d %H:%M:%S" }}
                         {% else %}
                             {{ instance.started_at|force_gregorian:"%Y-%m-%d %H:%M:%S" }}
-                        {% endif %}
-                        ">
+                        {% endif %}">
                              {% if user.profile.date_format_preference == 'jalali' %}
                                     {{ instance.started_at|force_jalali:"%Y-%m-%d %H:%M:%S"  }}
                                 {% else %}
@@ -54,7 +55,7 @@
                                 {% endif %}
                             </span>
                         {% elif instance.status == 'resolved' and instance.resolution_type == 'inferred' %}
-                            <span class="badge bg-warning text-dark">Inferred</span>
+                            <span class="text-muted" data-bs-toggle="tooltip" title="End time not received from Alertmanager">-</span>
                         {% elif instance.status == 'firing' and not instance.ended_at %}
                             <span class="badge bg-warning text-dark">Active</span>
                         {% else %}
@@ -71,8 +72,10 @@
                             <span class="ongoing-duration" data-start="{{ instance.started_at|date:'c' }}">
                                 Ongoing
                             </span>
+                            {% elif instance.status == 'resolved' and not instance.ended_at %} {# This covers the inferred case #}
+                            -
                             {% else %}
-                            --
+                            -- {# Fallback for other unknown states #}
                             {% endif %}
                         </span>
                     </td>
