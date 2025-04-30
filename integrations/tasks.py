@@ -222,7 +222,12 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
                     template_context,
                     default_description
                 )
-                # ------------------------------------------------
+                # --- Start: Append SentryHub URL ---
+                # Ensure the link is always added, regardless of the template content
+                sentryhub_link_text = f"\n\n[View in SentryHub|{full_sentryhub_url}]"
+                if sentryhub_link_text not in jira_description:
+                     jira_description += sentryhub_link_text
+                # --- End: Append SentryHub URL ---
 
                 assignee_username = rule.assignee
 
