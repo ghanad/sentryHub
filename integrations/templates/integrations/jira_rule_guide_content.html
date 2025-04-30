@@ -1,0 +1,233 @@
+<h1>راهنمای تنظیم قوانین یکپارچه‌سازی Jira در SentryHub</h1>
+
+<h2>مقدمه</h2>
+
+<p>این صفحه راهنما به شما در ایجاد و مدیریت "Jira Integration Rules" در SentryHub کمک می‌کند. این قوانین به شما اجازه می‌دهند تا به صورت خودکار بر اساس هشدارهای دریافتی از Alertmanager، تیکت‌هایی را در Jira ایجاد کرده یا به‌روزرسانی کنید. تنظیم صحیح این قوانین می‌تواند به طور قابل توجهی فرآیند پیگیری و رفع مشکلات را بهبود بخشد.</p>
+
+<h2>هدف قوانین</h2>
+
+<p>هدف اصلی این قوانین، تعریف <strong>شرایطی</strong> است که تحت آن یک هشدار خاص باید منجر به یک <strong>اقدام</strong> در Jira شود (ایجاد تیکت جدید یا افزودن کامنت به تیکت موجود).</p>
+
+<h2>ایجاد/ویرایش یک قانون</h2>
+
+<p>برای ایجاد یا ویرایش قانون، به بخش "Integrations" -> "Jira Rules" در منوی SentryHub بروید. فرم شامل بخش‌های زیر است:</p>
+
+<h3>۱. تنظیمات عمومی (General Settings)</h3>
+
+<ul>
+<li><strong>Name:</strong> یک نام منحصر به فرد و توصیفی برای قانون خود انتخاب کنید (مثلاً <code>Create Critical DB Incidents</code>, <code>Comment on Resolved Infra Alerts</code>).</li>
+<li><strong>Is Active:</strong> این چک‌باکس مشخص می‌کند که آیا قانون فعال است و باید برای هشدارهای ورودی اعمال شود یا خیر. قوانین غیرفعال نادیده گرفته می‌شوند.</li>
+<li><strong>Priority:</strong> یک عدد صحیح که اولویت این قانون را نسبت به سایر قوانین مشخص می‌کند. <strong>عدد بالاتر به معنای اولویت بیشتر است.</strong> زمانی که یک هشدار با معیارهای چند قانون مطابقت دارد، قانونی با بالاترین اولویت انتخاب می‌شود (جزئیات بیشتر در بخش "منطق تطبیق قوانین").</li>
+</ul>
+
+<h3>۲. تنظیمات Jira (Jira Configuration)</h3>
+
+<ul>
+<li><strong>Jira Project Key:</strong> کلید پروژه‌ای در Jira که تیکت‌ها باید در آن ایجاد شوند (مثلاً <code>OPS</code>, <code>SAM</code>, <code>INFRA</code>). این مقدار معمولاً توسط ادمین سیستم در تنظیمات SentryHub (<code>settings.py</code>) مشخص شده و ممکن است قابل ویرایش نباشد.</li>
+<li><strong>Jira Issue Type:</strong> نوع تیکتی که باید ایجاد شود (مثلاً <code>Incident</code>, <code>Task</code>, <code>Bug</code>). لیست انواع موجود معمولاً توسط ادمین سیستم در تنظیمات SentryHub (<code>settings.py</code>) تعریف می‌شود.</li>
+<li><strong>Assignee:</strong> (اختیاری) <strong>نام کاربری (Username)</strong> دقیق کاربری در Jira که تیکت ایجاد شده باید به او اختصاص یابد. اگر خالی بماند، تیکت بدون Assignee ایجاد می‌شود. اگر نام کاربری نامعتبر باشد، SentryHub سعی می‌کند تیکت را بدون Assignee ایجاد کند.</li>
+<li><strong>Watchers:</strong> (اختیاری) لیستی از <strong>نام‌های کاربری (Username)</strong> دقیق کاربران Jira که باید به عنوان Watcher به تیکت اضافه شوند. نام‌های کاربری را با <strong>کاما (,)</strong> از هم جدا کنید (مثلاً <code>user1,user2,another.user</code>).</li>
+</ul>
+
+<h3>۳. معیارهای تطبیق (Match Criteria)</h3>
+
+<p>این بخش <strong>مهم‌ترین</strong> قسمت برای تعیین <strong>کدام هشدارها</strong> باید این قانون را فعال کنند.</p>
+
+<ul>
+<li><strong>فرمت:</strong> باید یک <strong>آبجکت JSON معتبر</strong> باشد (با <code>{}</code> شروع و تمام شود).</li>
+<li><strong>منطق:</strong> تطابق <strong>دقیق</strong> انجام می‌شود. تمام جفت‌های <strong>کلید: مقدار</strong> که در این JSON تعریف می‌کنید، <strong>باید</strong> دقیقاً با همان کلید و مقدار در بخش <code>labels</code> هشدار دریافتی وجود داشته باشند تا قانون مطابقت پیدا کند.</li>
+<li><strong>مثال‌ها:</strong>
+<ul>
+<li><code>{"severity": "critical"}</code>: فقط هشدارهایی که دارای لیبل <code>severity</code> با مقدار دقیق <code>critical</code> هستند، مطابقت پیدا می‌کنند.</li>
+<li><code>{"job": "node_exporter", "instance": "server1.example.com"}</code>: فقط هشدارهایی که <strong>هم</strong> لیبل <code>job</code> با مقدار <code>node_exporter</code> و <strong>هم</strong> لیبل <code>instance</code> با مقدار <code>server1.example.com</code> دارند، مطابقت پیدا می‌کنند.</li>
+<li><code>{}</code>: (توصیه نمی‌شود) یک آبجکت خالی با تمام هشدارها مطابقت پیدا می‌کند، اما به دلیل عدم وجود معیار خاص، احتمالاً توسط قوانین با اولویت بالاتر یا معیارهای بیشتر نادیده گرفته می‌شود (به بخش "منطق تطبیق قوانین" مراجعه کنید). بهتر است همیشه معیارهای مشخصی تعریف کنید.</li>
+</ul>
+</li>
+</ul>
+
+<h3>۴. قالب‌های تیکت Jira (Jira Issue Templates)</h3>
+
+<p>این بخش‌ها محتوای تیکت یا کامنتی که در Jira ایجاد می‌شود را با استفاده از <strong>زبان قالب جنگو (Django Template Language - DTL)</strong> تعریف می‌کنند. شما می‌توانید از متغیرهای مربوط به هشدار در این قالب‌ها استفاده کنید.</p>
+
+<ul>
+<li><strong>Jira Title Template:</strong> قالبی برای عنوان (Summary) تیکت Jira.
+<ul>
+<li>مثال: <code>[SentryHub Alert] {{ alertname }} firing on {{ labels.instance }}</code></li>
+</ul>
+</li>
+<li><strong>Jira Description Template:</strong> قالبی برای توضیحات (Description) تیکت Jira. می‌توانید از تگ‌های قالب جنگو مانند <code>{% if %}</code> یا <code>{% for %}</code> و همچنین markup مخصوص Jira (مانند <code>{code}</code>, <code>*bold*</code>, <code>h2.</code>) استفاده کنید.
+<ul>
+<li>مثال در بخش "مثال کامل یک قانون" آورده شده است.</li>
+</ul>
+</li>
+<li><strong>Jira Update Comment Template:</strong> قالبی برای کامنتی که هنگام تغییر وضعیت هشدار (مثلاً Firing -> Resolved یا Resolved -> Firing) به تیکت موجود اضافه می‌شود. متغیر <code>{{ alert_status }}</code> در اینجا بسیار مفید است.
+<ul>
+<li>مثال: <code>Alert status changed to *{{ alert_status|title }}* at {{ now|date:"Y-m-d H:i" }}. {% if alert_status == 'resolved' %}Problem seems to be resolved.{% endif %}</code></li>
+</ul>
+</li>
+</ul>
+
+<h3>۵. متغیرهای قابل استفاده در قالب‌ها (Available Template Variables)</h3>
+
+<p>هنگام رندر کردن قالب‌های عنوان، توضیحات و کامنت، متغیرهای زیر در دسترس هستند:</p>
+
+<ul>
+<li><code>{{ alert_group }}</code>: آبجکت مدل <code>AlertGroup</code> جنگو. می‌توانید به فیلدهای آن دسترسی پیدا کنید:
+<ul>
+<li><code>{{ alert_group.name }}</code></li>
+<li><code>{{ alert_group.fingerprint }}</code></li>
+<li><code>{{ alert_group.labels }}</code> (دیکشنری لیبل‌ها)</li>
+<li><code>{{ alert_group.severity }}</code></li>
+<li><code>{{ alert_group.instance }}</code></li>
+<li><code>{{ alert_group.first_occurrence }}</code> (آبجکت datetime)</li>
+<li><code>{{ alert_group.last_occurrence }}</code> (آبجکت datetime)</li>
+<li>...</li>
+</ul>
+</li>
+<li><code>{{ rule }}</code>: آبجکت مدل <code>JiraIntegrationRule</code> مربوط به همین قانون.</li>
+<li><code>{{ alert_status }}</code>: رشته وضعیت فعلی که باعث اجرای تسک شده (<code>'firing'</code> یا <code>'resolved'</code>).</li>
+<li><code>{{ labels }}</code>: دیکشنری کامل <code>labels</code> مربوط به هشدار.</li>
+<li><code>{{ annotations }}</code>: دیکشنری کامل <code>annotations</code> مربوط به <strong>آخرین</strong> <code>AlertInstance</code> هشدار.</li>
+<li><code>{{ alertname }}</code>: مقدار لیبل <code>alertname</code> (میانبر برای <code>labels.alertname</code>).</li>
+<li><code>{{ fingerprint }}</code>: مقدار <code>fingerprint</code> هشدار (همان <code>alert_group.fingerprint</code>).</li>
+<li><code>{{ latest_instance }}</code>: آبجکت مدل <code>AlertInstance</code> مربوط به آخرین وضعیت هشدار (ممکن است <code>None</code> باشد). می‌توانید به فیلدهای آن دسترسی پیدا کنید:
+<ul>
+<li><code>{{ latest_instance.started_at }}</code> (آبجکت datetime)</li>
+<li><code>{{ latest_instance.ended_at }}</code> (آبجکت datetime یا <code>None</code>)</li>
+<li><code>{{ latest_instance.annotations }}</code> (دیکشنری)</li>
+<li>...</li>
+</ul>
+</li>
+<li><code>{{ occurred_at }}</code>: آبجکت datetime زمان شروع آخرین <code>AlertInstance</code> (یا <code>last_occurrence</code> گروه اگر نمونه‌ای یافت نشد).</li>
+<li><code>{{ occurred_at_str }}</code>: رشته فرمت شده زمان وقوع به وقت تهران (مثلاً <code>2023-10-27 15:30:00</code>).</li>
+<li><code>{{ sentryhub_url }}</code>: لینک به صفحه جزئیات هشدار در SentryHub.</li>
+<li><code>{{ severity }}</code>: مقدار لیبل <code>severity</code> (مثلاً <code>Critical</code>, <code>Warning</code>).</li>
+<li><code>{{ summary_annotation }}</code>: مقدار انوتیشن <code>summary</code> (یا <code>alertname</code> اگر <code>summary</code> نباشد).</li>
+<li><code>{{ description_annotation }}</code>: مقدار انوتیشن <code>description</code> (یا متن پیش‌فرض اگر نباشد).</li>
+<li><code>{{ now }}</code>: آبجکت datetime زمان اجرای تسک.</li>
+</ul>
+
+<h3>۶. استفاده از منطق در قالب‌ها (Using Template Logic)</h3>
+
+<p>می‌توانید از تگ‌های استاندارد Django Template Language استفاده کنید:</p>
+
+<ul>
+<li><strong>شرط‌ها (If/Else):</strong></li>
+</ul>
+<pre><code class="language-django">{% if labels.severity == 'critical' %}
+  h1. CRITICAL ALERT!
+{% elif labels.severity == 'warning' %}
+  h2. Warning
+{% else %}
+  h3. Info
+{% endif %}
+
+{% if alert_status == 'resolved' %}
+  Alert has been resolved.
+{% endif %}
+</code></pre>
+<ul>
+<li><strong>حلقه‌ها (For Loops):</strong></li>
+</ul>
+<pre><code class="language-django">h3. All Labels:
+{% for key, value in labels.items() %}
+  * {{ key }}: {{ value }}
+{% empty %}
+  No labels found.
+{% endfor %}
+</code></pre>
+<ul>
+<li><strong>فیلترها (Filters):</strong>
+<ul>
+<li><code>|title</code>: <code>{{ alert_status|title }}</code> -> <code>Firing</code> یا <code>Resolved</code></li>
+<li><code>|upper</code>: <code>{{ labels.dc|upper }}</code></li>
+<li><code>|default:"-"</code>: <code>{{ labels.optional_label|default:"N/A" }}</code></li>
+<li><code>|date:"Y-m-d H:i"</code>: <code>{{ occurred_at|date:"Y-m-d H:i" }}</code> (برای آبجکت‌های datetime)</li>
+<li><code>|jsonify</code>: (اگر تعریف شده باشد) برای نمایش دیکشنری به صورت JSON: <code>{code:json}{{ labels|jsonify }}{code}</code></li>
+</ul>
+</li>
+</ul>
+
+<h2>منطق تطبیق قوانین (Rule Matching Logic)</h2>
+
+<p>زمانی که یک هشدار دریافت می‌شود و نیاز به بررسی قوانین Jira دارد (یعنی <code>firing</code> است و <code>silenced</code> نیست، یا <code>resolved</code> است و قبلاً کلید Jira داشته)، SentryHub به ترتیب زیر بهترین قانون مطابق را پیدا می‌کند:</p>
+
+<ol>
+<li><strong>فیلتر اولیه:</strong> فقط قوانین <code>is_active=True</code> در نظر گرفته می‌شوند.</li>
+<li><strong>تطابق معیارها:</strong> تمام قوانینی که <code>match_criteria</code> آن‌ها <strong>به طور کامل</strong> توسط <code>labels</code> هشدار برآورده می‌شود، پیدا می‌شوند.</li>
+<li><strong>انتخاب خاص‌ترین قانون:</strong> از بین قوانین مطابق، قانونی انتخاب می‌شود که <strong>بیشترین تعداد کلید</strong> را در <code>match_criteria</code> خود دارد (یعنی دقیق‌تر و خاص‌تر است).</li>
+<li><strong>اولویت (Priority) به عنوان گره‌گشا:</strong> اگر چند قانون با <strong>تعداد معیارهای یکسان</strong> مطابقت داشته باشند، قانونی با <strong>بالاترین عدد</strong> <code>priority</code> انتخاب می‌شود.</li>
+<li><strong>نام به عنوان گره‌گشای نهایی:</strong> اگر اولویت‌ها نیز یکسان باشند، قانونی که نام آن از نظر الفبایی <strong>زودتر</strong> می‌آید، انتخاب می‌شود.</li>
+</ol>
+
+<p><strong>مهم:</strong> فقط <strong>یک</strong> قانون (بهترین تطابق) برای هر رویداد هشدار (firing یا resolved) اجرا می‌شود.</p>
+
+<h2>مثال کامل یک قانون</h2>
+
+<ul>
+<li><strong>Name:</strong> <code>Create High CPU Incident for Prod Servers</code></li>
+<li><strong>Is Active:</strong> <code>True</code></li>
+<li><strong>Priority:</strong> <code>10</code></li>
+<li><strong>Jira Project Key:</strong> <code>OPS</code></li>
+<li><strong>Jira Issue Type:</strong> <code>Incident</code></li>
+<li><strong>Assignee:</strong> <code>oncall_admin</code></li>
+<li><strong>Watchers:</strong> <code>sysadmin1,manager1</code></li>
+<li><strong>Match Criteria:</strong></li>
+</ul>
+<pre><code class="language-json">{
+  "alertname": "HighCPUUsage",
+  "severity": "critical",
+  "environment": "production"
+}
+</code></pre>
+<ul>
+<li><strong>Jira Title Template:</strong></li>
+</ul>
+<pre><code class="language-django">[CPU Alert] High CPU on {{ labels.instance }} ({{ severity }})
+</code></pre>
+<ul>
+<li><strong>Jira Description Template:</strong></li>
+</ul>
+<pre><code class="language-django">h2. High CPU Usage Detected!
+
+A critical CPU usage alert is firing.
+
+*Alert Details:*
+| Name | Value |
+|---|---|
+| Fingerprint | {noformat}{{ fingerprint }}{noformat} |
+| Severity | {{ severity }} |
+| Instance | {{ labels.instance }} |
+| Job | {{ labels.job|default:"N/A" }} |
+| Environment | {{ labels.environment }} |
+| Summary | {{ annotations.summary|default:"-" }} |
+| Occurred At | {{ occurred_at_str }} |
+
+h3. Full Labels
+{code:json}
+{{ labels|jsonify }}
+{code}
+
+h3. Full Annotations
+{code:json}
+{{ annotations|jsonify }}
+{code}
+
+Please investigate immediately.
+
+[Link to Alert in SentryHub|{{ sentryhub_url }}]
+</code></pre>
+<ul>
+<li><strong>Jira Update Comment Template:</strong></li>
+</ul>
+<pre><code class="language-django">Alert status changed to *{{ alert_status|title }}* at {{ now|date:"Y-m-d H:i:s" }}.
+
+{% if alert_status == 'resolved' %}
+The high CPU usage issue seems to be resolved.
+{% elif alert_status == 'firing' %}
+The high CPU usage issue is firing again. Please re-investigate.
+*Current Summary:* {{ annotations.summary|default:"-" }}
+{% endif %}
+
+[Link to Alert in SentryHub|{{ sentryhub_url }}]
+</code></pre>

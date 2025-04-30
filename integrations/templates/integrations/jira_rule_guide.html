@@ -1,0 +1,71 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block title %}Jira Rules Guide - SentryHub{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'dashboard/css/modern_dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'alerts/css/alerts_list.css' %}">
+    <link rel="stylesheet" href="{% static 'integrations/css/jira-rule-list.css' %}">
+    <link rel="stylesheet" href="{% static 'docs/css/documentation_detail.css' %}"> {# Include CSS for markdown rendering #}
+    {# Add any specific CSS for the guide page if needed #}
+{% endblock %}
+
+{% block main_content %}
+    <header class="page-header">
+        <h1 class="page-title">Jira Integration Rules Guide</h1>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'integrations:jira-rule-list' %}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+                <i class='bx bx-arrow-back'></i> Back to Rules
+            </a>
+        </div>
+    </header>
+
+    <div class="content-card mb-4"> {# Use content-card for consistency with documentation detail #}
+        {# Add ID for JS targeting and data-rtl for automatic direction handling #}
+        <div id="description-content" class="description-content" data-rtl="true"> {# Use description-content class for markdown styling #}
+            {% if guide_content_md %}
+                <div id="markdown-content">{{ guide_content_md }}</div> {# Container for raw markdown #}
+            {% else %}
+                <p>Could not load guide content.</p>
+            {% endif %}
+        </div>
+    </div>
+{% endblock main_content %}
+
+{% block extra_js %}
+    {# Include a client-side markdown rendering library, e.g., Marked.js #}
+    <script src="https://cdn.jsdelivr.net/npm/marked@4.0.10/marked.min.js"></script> {# Using a CDN for simplicity #}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const markdownDiv = document.getElementById('markdown-content');
+            if (markdownDiv) {
+                // Get the raw markdown text
+                const markdownText = markdownDiv.textContent;
+                // Render markdown to HTML
+                markdownDiv.innerHTML = marked.parse(markdownText);
+
+                // Re-apply RTL/LTR detection after markdown rendering
+                const descriptionElement = document.getElementById('description-content');
+                if (descriptionElement) {
+                    // Need to re-select the element as innerHTML was replaced
+                    const renderedContent = document.getElementById('description-content');
+                    if (renderedContent) {
+                         // Assuming setTextDirection is available globally or included here
+                         // For now, let's assume it's in documentation_detail.js which is included below
+                    }
+                }
+            }
+
+            // Initialize Bootstrap Tooltips (already in documentation_detail.js, but ensure it runs after content is added)
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+              return new bootstrap.Tooltip(tooltipTriggerEl)
+            });
+
+            console.log("Jira Rule Guide JS loaded.");
+        });
+    </script>
+    {# Include JS for RTL handling and other details after markdown rendering script #}
+    <script src="{% static 'docs/js/documentation_detail.js' %}"></script>
+{% endblock %}

@@ -49,6 +49,18 @@ class JiraRuleListView(LoginRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         context['active_filter'] = self.request.GET.get('active', '')
         context['search'] = self.request.GET.get('search', '')
+
+        try:
+            with open('documentations/JIRA_RULE.md', 'r', encoding='utf-8') as f:
+                jira_rule_guide_content = f.read()
+            context['jira_rule_guide_content'] = jira_rule_guide_content
+        except FileNotFoundError:
+            logger.error("Jira rule guide file not found.")
+            context['jira_rule_guide_content'] = "Error loading guide: File not found."
+        except Exception as e:
+            logger.error(f"Error reading Jira rule guide file: {e}")
+            context['jira_rule_guide_content'] = "Error loading guide."
+
         return context
 
 
@@ -157,3 +169,32 @@ def jira_admin_view(request):
 
     # For GET request or initial page load
     return render(request, 'integrations/jira_admin.html', context)
+
+import markdown # Import the markdown library
+import re # Import regex module
+
+# import markdown # Remove markdown import
+# import re # Remove re import
+
+@login_required
+def jira_rule_guide_view(request):
+    """
+    View to display the raw Jira Integration Rules guide markdown content
+    for client-side rendering.
+    """
+    guide_content_md = "Error loading guide."
+
+    try:
+        with open('documentations/JIRA_RULE.md', 'r', encoding='utf-8') as f:
+            guide_content_md = f.read()
+    except FileNotFoundError:
+        logger.error("Jira rule guide file not found for guide view.")
+        guide_content_md = "Error loading guide: File not found."
+    except Exception as e:
+        logger.error(f"Error reading Jira rule guide file: {e}")
+        guide_content_md = "Error loading guide."
+
+    context = {
+        'guide_content_md': guide_content_md # Pass raw markdown content to the template
+    }
+    return render(request, 'integrations/jira_rule_guide.html', context)
