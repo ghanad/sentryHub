@@ -9,3 +9,9 @@
      font-family: var(--bs-font-monospace);
      font-size: 0.9rem;
 }
+/* Override chart-card-body flexbox for form layout */
+.chart-card-body {
+    display: block;
+    align-items: unset;
+    justify-content: unset;
+}
