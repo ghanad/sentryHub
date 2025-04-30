@@ -117,16 +117,12 @@
                                     <a href="{% url 'docs:documentation-detail' doc.pk %}" class="action-btn" data-bs-toggle="tooltip" title="View">
                                         <i class='bx bx-show'></i>
                                     </a>
-                                     {% if perms.docs.change_alertdocumentation %}
                                     <a href="{% url 'docs:documentation-update' doc.pk %}" class="action-btn" data-bs-toggle="tooltip" title="Edit">
                                         <i class='bx bx-pencil'></i>
                                     </a>
-                                     {% endif %}
-                                     {% if perms.docs.delete_alertdocumentation %}
                                     <a href="{% url 'docs:documentation-delete' doc.pk %}" class="action-btn delete-doc-btn" data-bs-toggle="tooltip" title="Delete">
                                         <i class='bx bx-trash'></i>
                                     </a>
-                                     {% endif %}
                                 </div>
                             </td>
                         </tr>
