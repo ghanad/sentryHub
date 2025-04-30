@@ -15,11 +15,9 @@
         <h1 class="page-title">Documentation</h1>
         <div class="d-flex align-items-center gap-2">
              {# Link to create new documentation #}
-             {% if perms.docs.add_alertdocumentation %}
              <a href="{% url 'docs:documentation-create' %}" class="btn btn-primary d-flex align-items-center gap-2">
                  <i class='bx bx-plus-circle'></i> Create Documentation
              </a>
-             {% endif %}
         </div>
     </header>
 

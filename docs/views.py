@@ -66,11 +66,10 @@ class DocumentationDetailView(LoginRequiredMixin, DetailView):
         return context
 
 
-class DocumentationCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+class DocumentationCreateView(LoginRequiredMixin, CreateView):
     model = AlertDocumentation
     form_class = AlertDocumentationForm
     template_name = 'docs/documentation_form.html'
-    permission_required = 'docs.add_alertdocumentation'
 
     def get_success_url(self):
         # Redirect to the detail view of the newly created documentation
@@ -107,11 +106,10 @@ class DocumentationCreateView(LoginRequiredMixin, PermissionRequiredMixin, Creat
         return context
 
 
-class DocumentationUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+class DocumentationUpdateView(LoginRequiredMixin, UpdateView):
     model = AlertDocumentation
     form_class = AlertDocumentationForm
     template_name = 'docs/documentation_form.html'
-    permission_required = 'docs.change_alertdocumentation'
     
     def get_success_url(self):
         return reverse('docs:documentation-detail', kwargs={'pk': self.object.pk})
@@ -121,22 +119,20 @@ class DocumentationUpdateView(LoginRequiredMixin, PermissionRequiredMixin, Updat
         return super().form_valid(form)
 
 
-class DocumentationDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
+class DocumentationDeleteView(LoginRequiredMixin, DeleteView):
     model = AlertDocumentation
     template_name = 'docs/documentation_confirm_delete.html'
     success_url = reverse_lazy('docs:documentation-list')
-    permission_required = 'docs.delete_alertdocumentation'
     
     def delete(self, request, *args, **kwargs):
         messages.success(request, 'Documentation deleted successfully.')
         return super().delete(request, *args, **kwargs)
 
 
-class LinkDocumentationToAlertView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+class LinkDocumentationToAlertView(LoginRequiredMixin, UpdateView):
     model = AlertGroup
     template_name = 'docs/link_documentation.html'
     fields = []  # We don't need any fields from AlertGroup
-    permission_required = 'alerts.change_alertgroup'
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -168,9 +164,8 @@ class LinkDocumentationToAlertView(LoginRequiredMixin, PermissionRequiredMixin, 
         return redirect('alerts:alert-detail', fingerprint=alert_group.fingerprint)
 
 
-class UnlinkDocumentationFromAlertView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
+class UnlinkDocumentationFromAlertView(LoginRequiredMixin, DeleteView):
     model = DocumentationAlertGroup
-    permission_required = 'alerts.change_alertgroup'
     
     def get_object(self):
         alert_group_id = self.kwargs.get('alert_group_id')
