@@ -100,6 +100,7 @@
                             <th>Age</th>
                             <th>Start Time</th>
                             <th>Ack</th>
+                            <th>Jira Issue</th>
                             <th class="text-center">Actions</th>
                         </tr>
                     </thead>
@@ -161,6 +162,13 @@
                                 {% endif %}
 
                             </td>
+                            <td> {# Jira Issue #}
+                                {% if alert.jira_issue_key %}
+                                    <a href="https://jira.tsetmc.com/browse/{{ alert.jira_issue_key }}" target="_blank">{{ alert.jira_issue_key }}</a>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
                             <td> {# Actions #}
                                 <div class="action-menu text-center justify-content-center">
                                     <button class="action-btn expand-btn"
@@ -188,13 +196,13 @@
                             </td>
                         </tr>
                         <tr class="collapse alert-details-row" id="details-{{ alert.fingerprint }}">
-                            <td colspan="8"> {# Adjusted colspan #}
+                            <td colspan="9"> {# Adjusted colspan #}
                                 {% include "alerts/partials/alert_row_details.html" with alert=alert %}
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="8" class="text-center p-5"> {# Adjusted colspan #}
+                            <td colspan="9" class="text-center p-5"> {# Adjusted colspan #}
                                 <i class='bx bx-info-circle fs-1 text-muted mb-3 d-block'></i>
                                 <p class="text-muted mb-0">No alerts found matching your criteria.</p>
                             </td>
