@@ -7,146 +7,176 @@ document.addEventListener('DOMContentLoaded', function() {
     const accountHeader = document.querySelector('.account-header');
     const accountMenu = document.querySelector('.account-menu');
     const accountToggle = document.querySelector('.account-toggle');
-    // Get references to both theme toggle buttons
     const themeToggleExpanded = document.getElementById('themeToggleExpanded');
     const themeToggleCollapsed = document.getElementById('themeToggleCollapsed');
     const htmlElement = document.documentElement;
 
     // --- Sidebar Toggle & Pin ---
     function toggleSidebarClass(e) {
-        // Check for long press (pin action)
-        const isLongPress = e && e.timeStamp - (e.currentTarget.dataset.lastClick || 0) > 500;
-        
+        if (!e || !e.currentTarget) return; // Guard against potential errors
+
+        // Get the timestamp of the *previous* click, parsing it as a float
+        const lastClickTime = parseFloat(e.currentTarget.dataset.lastClick || '0');
+        const currentTime = e.timeStamp;
+        let isLongPress = false;
+
+        // Only calculate long press if it's *not* the very first click
+        if (lastClickTime > 0) {
+            isLongPress = (currentTime - lastClickTime) > 500; // 500ms threshold for long press
+        }
+
+        // --- Logic for Pinning (Long Press) ---
         if (isLongPress) {
-            // Toggle pin state
             const isPinned = !sidebar.classList.contains('sidebar-pinned');
             sidebar.classList.toggle('sidebar-pinned', isPinned);
-            localStorage.setItem('sidebarPinned', isPinned);
-            
-            // Ensure sidebar stays open when pinned
+            localStorage.setItem('sidebarPinned', isPinned ? 'true' : 'false'); // Store as string
+
+            // Ensure sidebar stays open and clean up other states when pinned
             if (isPinned) {
                 sidebar.classList.remove('sidebar-collapsed');
                 mainContent.classList.remove('main-collapsed');
+                sidebar.classList.remove('sidebar-hover'); // Remove hover state if pinning while hovered
             }
-        } else {
-            // Normal toggle
+            // If unpinning via long press, don't automatically collapse. User can do that next.
+
+        }
+        // --- Logic for Toggling Collapse/Expand (Short Press) ---
+        else {
             sidebar.classList.toggle('sidebar-collapsed');
             mainContent.classList.toggle('main-collapsed');
-            // Remove pinned state when manually toggling
+
+            // If we are performing a normal toggle, it definitely shouldn't be pinned
             if (sidebar.classList.contains('sidebar-pinned')) {
                 sidebar.classList.remove('sidebar-pinned');
                 localStorage.setItem('sidebarPinned', 'false');
             }
-            localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('sidebar-collapsed'));
+            // Store the collapsed state
+            localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('sidebar-collapsed') ? 'true' : 'false'); // Store as string
+            // Remove hover class if collapsing via click
+            sidebar.classList.remove('sidebar-hover');
         }
-        
-        // Update last click time
-        if (e) {
-            e.currentTarget.dataset.lastClick = e.timeStamp;
-        }
+
+        // Update last click time at the VERY END for the next calculation
+        e.currentTarget.dataset.lastClick = currentTime;
     }
 
-     // --- Mobile Sidebar Toggle ---
-     function toggleMobileSidebar() {
-         sidebar.classList.toggle('sidebar-visible'); // Use a different class for mobile visibility
-     }
+    // --- Mobile Sidebar Toggle ---
+    function toggleMobileSidebar() {
+        sidebar.classList.toggle('sidebar-visible'); // Use a different class for mobile visibility
+    }
 
 
     if (sidebarToggle) {
         sidebarToggle.addEventListener('click', toggleSidebarClass);
     }
 
-     if (mobileToggle) {
-         mobileToggle.addEventListener('click', toggleMobileSidebar);
-     }
- 
-     // Collapsed Account Menu Toggle
-     const collapsedAccountIcon = document.querySelector('.account-collapsed-icon');
-     const accountMenuCollapsed = document.querySelector('.account-menu-collapsed');
-     
-     if (collapsedAccountIcon && accountMenuCollapsed) {
-         collapsedAccountIcon.addEventListener('click', function(e) {
-             e.preventDefault();
-             accountMenuCollapsed.style.display =
-                 accountMenuCollapsed.style.display === 'flex' ? 'none' : 'flex';
-         });
-     }
- 
-     // Account Dropdown Toggle
-     if (accountHeader) {
-         accountHeader.addEventListener('click', function(e) {
-             e.preventDefault();
-             accountMenu.style.display = accountMenu.style.display === 'block' ? 'none' : 'block';
-             accountToggle.style.transform = accountMenu.style.display === 'block' ? 'rotate(180deg)' : 'rotate(0)';
-         });
-     }
- 
-     // Close account menu when sidebar is collapsed
-     function handleSidebarState() {
-         if (sidebar.classList.contains('sidebar-collapsed') && accountMenu) {
-             accountMenu.style.display = 'none';
-             if (accountToggle) accountToggle.style.transform = 'rotate(0)';
-         }
-     }
- 
-     // Initial setup
-     handleSidebarState();
- 
-     // --- Apply Initial Sidebar State ---
-     // Check localStorage for desktop state
-     if (window.innerWidth >= 992) {
-         if (localStorage.getItem('sidebarPinned') === 'true') {
-             sidebar.classList.add('sidebar-pinned');
+    if (mobileToggle) {
+        mobileToggle.addEventListener('click', toggleMobileSidebar);
+    }
+
+    // Collapsed Account Menu Toggle
+    const collapsedAccountIcon = document.querySelector('.account-collapsed-icon');
+    const accountMenuCollapsed = document.querySelector('.account-menu-collapsed');
+
+    if (collapsedAccountIcon && accountMenuCollapsed) {
+        collapsedAccountIcon.addEventListener('click', function(e) {
+            e.preventDefault();
+            accountMenuCollapsed.style.display =
+                accountMenuCollapsed.style.display === 'flex' ? 'none' : 'flex';
+        });
+    }
+
+    // Account Dropdown Toggle
+    if (accountHeader) {
+        accountHeader.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (accountMenu) {
+                accountMenu.style.display = accountMenu.style.display === 'block' ? 'none' : 'block';
+            }
+            if (accountToggle) {
+                accountToggle.style.transform = (accountMenu && accountMenu.style.display === 'block') ? 'rotate(180deg)' : 'rotate(0)';
+            }
+        });
+    }
+
+    // Close account menu when sidebar is collapsed (Helper for initial state)
+    function handleSidebarState() {
+        if (sidebar.classList.contains('sidebar-collapsed') && accountMenu) {
+            accountMenu.style.display = 'none';
+            if (accountToggle) accountToggle.style.transform = 'rotate(0)';
+        }
+    }
+
+    // Initial setup for account menu display
+    handleSidebarState();
+
+    // --- Apply Initial Sidebar State ---
+    // Check localStorage for desktop state
+    if (window.innerWidth >= 992) {
+        const storedPinned = localStorage.getItem('sidebarPinned');
+        const storedCollapsed = localStorage.getItem('sidebarCollapsed');
+
+        if (storedPinned === 'true') {
+            sidebar.classList.add('sidebar-pinned');
+            sidebar.classList.remove('sidebar-collapsed'); // Ensure not collapsed if pinned
+            mainContent.classList.remove('main-collapsed');
+        } else if (storedCollapsed === 'true') {
+            sidebar.classList.add('sidebar-collapsed');
+            mainContent.classList.add('main-collapsed');
+            sidebar.classList.remove('sidebar-pinned'); // Ensure not pinned if collapsed
+        } else {
+            // Default state if nothing is stored (e.g., first visit)
              sidebar.classList.remove('sidebar-collapsed');
              mainContent.classList.remove('main-collapsed');
-         } else if (localStorage.getItem('sidebarCollapsed') === 'true') {
-             sidebar.classList.add('sidebar-collapsed');
-             mainContent.classList.add('main-collapsed');
-         }
-         // Remove the temporary initial state class
-         htmlElement.classList.remove('sidebar-is-initially-collapsed');
-     }
- 
-     // Modified hover behavior
-     sidebar.addEventListener('mouseenter', function() {
-         if (this.classList.contains('sidebar-collapsed') &&
-             !this.classList.contains('sidebar-pinned')) {
-             this.classList.remove('sidebar-collapsed');
-             this.classList.add('sidebar-hover');
-             mainContent.classList.remove('main-collapsed');
-         }
-     });
- 
-     sidebar.addEventListener('mouseleave', function() {
-         if (this.classList.contains('sidebar-hover') &&
-             !this.classList.contains('sidebar-pinned')) {
-             setTimeout(() => {
-                 this.classList.add('sidebar-collapsed');
-                 this.classList.remove('sidebar-hover');
-                 mainContent.classList.add('main-collapsed');
-             }, 300);
-         }
-     });
-    // Ensure sidebar is hidden on mobile initially if using sidebar-visible class
-     if (window.innerWidth < 992) {
+             sidebar.classList.remove('sidebar-pinned');
+        }
+        // Remove the temporary initial state class after applying stored state
+        htmlElement.classList.remove('sidebar-is-initially-collapsed');
+    } else {
+         // Ensure sidebar is hidden on mobile initially
          sidebar.classList.remove('sidebar-visible');
+         // Remove temporary class on mobile too
+         htmlElement.classList.remove('sidebar-is-initially-collapsed');
     }
+
+    // Modified hover behavior (only applies if NOT pinned)
+    sidebar.addEventListener('mouseenter', function() {
+        if (this.classList.contains('sidebar-collapsed') &&
+            !this.classList.contains('sidebar-pinned')) {
+            this.classList.remove('sidebar-collapsed');
+            this.classList.add('sidebar-hover');
+            mainContent.classList.remove('main-collapsed');
+        }
+    });
+
+    sidebar.addEventListener('mouseleave', function() {
+        if (this.classList.contains('sidebar-hover') &&
+            !this.classList.contains('sidebar-pinned')) {
+            // Use a short delay to avoid accidentally closing when moving mouse quickly
+            setTimeout(() => {
+                 // Double-check if still hovering before collapsing
+                 if (!sidebar.matches(':hover') && this.classList.contains('sidebar-hover')) {
+                     this.classList.add('sidebar-collapsed');
+                     this.classList.remove('sidebar-hover');
+                     mainContent.classList.add('main-collapsed');
+                 }
+            }, 300); // 300ms delay
+        }
+    });
+
 
     // --- Theme Toggle ---
     const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
 
     function setTheme(theme) {
-        // Update the data-bs-theme attribute and local storage
         if (theme === 'dark') {
             htmlElement.setAttribute('data-bs-theme', 'dark');
             localStorage.setItem('theme', 'dark');
-            // Update visual state for BOTH toggles (dark mode = moon = not active)
             if (themeToggleExpanded) themeToggleExpanded.classList.remove('active');
             if (themeToggleCollapsed) themeToggleCollapsed.classList.remove('active');
         } else {
             htmlElement.setAttribute('data-bs-theme', 'light');
             localStorage.setItem('theme', 'light');
-            // Update visual state for BOTH toggles (light mode = sun = active)
             if (themeToggleExpanded) themeToggleExpanded.classList.add('active');
             if (themeToggleCollapsed) themeToggleCollapsed.classList.add('active');
         }
@@ -176,7 +206,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Listen for changes in system preference
     prefersDarkScheme.addEventListener('change', (e) => {
-        // Only change if no theme is explicitly saved by the user
         if (!localStorage.getItem('theme')) {
             setTheme(e.matches ? 'dark' : 'light');
         }
@@ -201,7 +230,6 @@ document.addEventListener('DOMContentLoaded', function() {
     setInterval(updateDateTime, 60000); // Update every minute
 
     // --- Initialize Bootstrap Tooltips ---
-    // Required if you use tooltips in the base or dashboard content
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
       return new bootstrap.Tooltip(tooltipTriggerEl)
