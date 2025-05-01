@@ -112,20 +112,40 @@
                 </a>
             </li>
              {% if user.is_authenticated and user.is_staff %}
+             <!-- Admin Dropdown -->
              <li class="nav-item">
-                 <a href="{% url 'dashboard:admin_dashboard_summary' %}" class="nav-link {% if request.resolver_match.url_name == 'admin_dashboard_summary' %}active{% endif %}">
-                    <i class='bx bxs-cog nav-icon'></i>
-                    <span class="nav-text">Admin</span>
-                </a>
-            </li>
-            <!-- Add Jira Admin Link -->
-            <li class="nav-item">
-                 <a href="{% url 'integrations:jira-admin' %}" class="nav-link {% if request.resolver_match.namespace == 'integrations' and request.resolver_match.url_name == 'jira-admin' %}active{% endif %}">
-                    <i class='bx bxl-jira nav-icon'></i> <!-- Using Jira brand icon -->
-                    <span class="nav-text">Jira Admin</span>
-                </a>
-            </li>
-            {% endif %}
+                 <a class="nav-link collapsed {% if request.resolver_match.url_name in 'admin_dashboard_summary,user_list,jira-admin' %}active{% endif %}"
+                    href="#adminSubmenu" data-bs-toggle="collapse" role="button"
+                    aria-expanded="{% if request.resolver_match.url_name in 'admin_dashboard_summary,user_list,jira-admin' %}true{% else %}false{% endif %}"
+                    aria-controls="adminSubmenu">
+                     <i class='bx bxs-cog nav-icon'></i>
+                     <span class="nav-text">Admin</span>
+                     <i class='bx bx-chevron-down ms-auto sidebar-arrow'></i>
+                 </a>
+                 <ul class="nav-submenu collapse {% if request.resolver_match.url_name in 'admin_dashboard_summary,user_list,jira-admin' %}show{% endif %}"
+                     id="adminSubmenu" data-bs-parent=".sidebar-nav">
+                     <li class="nav-item">
+                         <a href="{% url 'dashboard:admin_dashboard_summary' %}" class="nav-link {% if request.resolver_match.url_name == 'admin_dashboard_summary' %}active{% endif %}">
+                             <i class='bx bx-radio-circle nav-icon-sub'></i>
+                             <span class="nav-text">Admin Summary</span>
+                         </a>
+                     </li>
+                     <li class="nav-item">
+                         <a href="{% url 'users:user_list' %}" class="nav-link {% if request.resolver_match.namespace == 'users' and request.resolver_match.url_name == 'user_list' %}active{% endif %}">
+                             <i class='bx bx-radio-circle nav-icon-sub'></i>
+                             <span class="nav-text">User Management</span>
+                         </a>
+                     </li>
+                     <li class="nav-item">
+                         <a href="{% url 'integrations:jira-admin' %}" class="nav-link {% if request.resolver_match.namespace == 'integrations' and request.resolver_match.url_name == 'jira-admin' %}active{% endif %}">
+                             <i class='bx bxl-jira nav-icon-sub'></i>
+                             <span class="nav-text">Jira Admin</span>
+                         </a>
+                     </li>
+                 </ul>
+             </li>
+             <!-- End Admin Dropdown -->
+{% endif %}
         </ul>
 
         <div class="sidebar-footer mt-auto">
