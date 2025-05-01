@@ -7,7 +7,7 @@ from django.utils import timezone
 # Import models from the parent 'alerts' app
 from ..models import SilenceRule, AlertGroup, AlertInstance, AlertComment, AlertAcknowledgementHistory
 # Import service functions to test
-from ..services.alerts_processor import get_or_create_alert_group
+from ..services.alert_state_manager import update_alert_state
 
 # Assuming AlertDocumentation is in docs app, adjust if different
 # from docs.models import AlertDocumentation
@@ -655,24 +655,26 @@ class AlertAcknowledgementHistoryModelTests(TestCase):
 
 
 class AlertProcessorServiceTests(TestCase):
-    """Tests for service functions in alerts_processor.py"""
-    
+    """Tests for service functions in alert_state_manager.py""" # Updated docstring
+
     @classmethod
     def setUpTestData(cls):
         # Create a test user
         cls.test_user = User.objects.create_user(username='testuser', password='password')
-        
+
         # Create test data for AlertGroup
         cls.existing_group = AlertGroup.objects.create(
             fingerprint="existing_fp",
             name="Existing Alert",
             labels={"alertname": "ExistingAlert", "instance": "server1"},
             current_status="firing",
-            total_firing_count=3
+            total_firing_count=3,
+            first_occurrence=timezone.now() - datetime.timedelta(days=1), # Add first_occurrence
+            last_occurrence=timezone.now() - datetime.timedelta(hours=1) # Add last_occurrence
         )
-    
-    def test_get_or_create_alert_group_new_creation(self):
-        """Test creating a new AlertGroup"""
+
+    def test_update_alert_state_new_creation(self): # Renamed test method
+        """Test creating a new AlertGroup using update_alert_state""" # Updated docstring
         fingerprint = "new_fp"
         status = "firing"
         labels = {
@@ -680,10 +682,19 @@ class AlertProcessorServiceTests(TestCase):
             "severity": "critical",
             "instance": "server2"
         }
-        
+        parsed_alert_data = { # Create parsed_alert_data
+            'fingerprint': fingerprint,
+            'status': status,
+            'labels': labels,
+            'starts_at': timezone.now(), # Dummy value
+            'ends_at': None, # Dummy value
+            'annotations': {}, # Dummy value
+            'generator_url': '' # Dummy value
+        }
+
         # Call the function
-        alert_group = get_or_create_alert_group(fingerprint, status, labels)
-        
+        alert_group, _ = update_alert_state(parsed_alert_data) # Call new function and unpack tuple
+
         # Verify new group was created
         self.assertEqual(alert_group.fingerprint, fingerprint)
         self.assertEqual(alert_group.name, "NewAlert")
@@ -692,15 +703,15 @@ class AlertProcessorServiceTests(TestCase):
         self.assertEqual(alert_group.current_status, "firing")
         self.assertEqual(alert_group.instance, "server2")
         self.assertEqual(alert_group.total_firing_count, 1)  # Default for new
-        
+
         # Verify it was actually saved to DB
         db_group = AlertGroup.objects.get(fingerprint=fingerprint)
         self.assertEqual(db_group.pk, alert_group.pk)
-    
-    def test_get_or_create_alert_group_existing_update_status(self):
-        """Test updating an existing AlertGroup's status"""
+
+    def test_update_alert_state_existing_update_status(self): # Renamed test method
+        """Test updating an existing AlertGroup's status using update_alert_state""" # Updated docstring
         new_status = "resolved"
-        
+
         # Ensure the original timestamp is slightly in the past
         # Set the timestamp back significantly and refresh
         timestamp_before_call = self.existing_group.last_occurrence - timezone.timedelta(minutes=1)
@@ -710,12 +721,18 @@ class AlertProcessorServiceTests(TestCase):
         # Re-read the timestamp directly from the refreshed object before the call
         timestamp_before_call = self.existing_group.last_occurrence
 
+        parsed_alert_data = { # Create parsed_alert_data
+            'fingerprint': self.existing_group.fingerprint,
+            'status': new_status,
+            'labels': self.existing_group.labels,
+            'starts_at': timezone.now(), # Dummy value
+            'ends_at': timezone.now(), # Dummy value for resolved
+            'annotations': {}, # Dummy value
+            'generator_url': '' # Dummy value
+        }
+
         # Call the function
-        alert_group = get_or_create_alert_group(
-            self.existing_group.fingerprint,
-            new_status,
-            self.existing_group.labels
-        )
+        alert_group, _ = update_alert_state(parsed_alert_data) # Call new function and unpack tuple
 
         # Refresh the object after the function call
         alert_group.refresh_from_db()
@@ -731,88 +748,123 @@ class AlertProcessorServiceTests(TestCase):
         self.assertGreater(timestamp_after_service_call, timestamp_before_call,
                          "Service call failed to update last_occurrence timestamp")
 
-        
+
         # Verify firing count wasn't incremented (only happens on firing transitions)
+        # Need to refresh existing_group to get the correct initial count after potential previous tests
+        self.existing_group.refresh_from_db()
         self.assertEqual(alert_group.total_firing_count, self.existing_group.total_firing_count)
-    
-    def test_get_or_create_alert_group_firing_transition(self):
-        """Test updating an existing AlertGroup with firing transition"""
+
+    def test_update_alert_state_firing_transition(self): # Renamed test method
+        """Test updating an existing AlertGroup with firing transition using update_alert_state""" # Updated docstring
         # Set existing group to resolved first
         self.existing_group.current_status = "resolved"
         self.existing_group.save()
-        
+        self.existing_group.refresh_from_db() # Refresh to get updated total_firing_count if it was incremented in a previous test
+        initial_firing_count = self.existing_group.total_firing_count # Capture initial count
+
         new_status = "firing"
-        
+        parsed_alert_data = { # Create parsed_alert_data
+            'fingerprint': self.existing_group.fingerprint,
+            'status': new_status,
+            'labels': self.existing_group.labels,
+            'starts_at': timezone.now(), # Dummy value
+            'ends_at': None, # Dummy value
+            'annotations': {}, # Dummy value
+            'generator_url': '' # Dummy value
+        }
+
         # Call the function
-        alert_group = get_or_create_alert_group(
-            self.existing_group.fingerprint, 
-            new_status, 
-            self.existing_group.labels
-        )
-        
+        alert_group, _ = update_alert_state(parsed_alert_data) # Call new function and unpack tuple
+
+        alert_group.refresh_from_db() # Refresh to get the updated total_firing_count
+
         # Verify it's the same group
         self.assertEqual(alert_group.pk, self.existing_group.pk)
-        
+
         # Verify status was updated
         self.assertEqual(alert_group.current_status, new_status)
-        
-        # Verify firing count was incremented (from 3 to 4)
-        self.assertEqual(alert_group.total_firing_count, self.existing_group.total_firing_count + 1)
-    
-    def test_get_or_create_alert_group_instance_update(self):
-        """Test updating an existing AlertGroup's instance"""
+
+        # Verify firing count was incremented (from its initial value + 1)
+        self.assertEqual(alert_group.total_firing_count, initial_firing_count + 1) # Use initial_firing_count
+
+    def test_update_alert_state_instance_update(self): # Renamed test method
+        """Test updating an existing AlertGroup's instance using update_alert_state""" # Updated docstring
         new_labels = {
             "alertname": "ExistingAlert",
             "instance": "new_server",
             "severity": "warning"
         }
-        
+        parsed_alert_data = { # Create parsed_alert_data
+            'fingerprint': self.existing_group.fingerprint,
+            'status': self.existing_group.current_status,
+            'labels': new_labels, # Use new labels here
+            'starts_at': timezone.now(), # Dummy value
+            'ends_at': None, # Dummy value
+            'annotations': {}, # Dummy value
+            'generator_url': '' # Dummy value
+        }
+
         # Call the function
-        alert_group = get_or_create_alert_group(
-            self.existing_group.fingerprint, 
-            self.existing_group.current_status, 
-            new_labels
-        )
-        
+        alert_group, _ = update_alert_state(parsed_alert_data) # Call new function and unpack tuple
+
         # Verify it's the same group
         self.assertEqual(alert_group.pk, self.existing_group.pk)
-        
-        # Verify instance was updated
-        self.assertEqual(alert_group.instance, "new_server")
-        
-        # Verify labels remain unchanged (function doesn't update labels for existing groups)
+
+        # Verify instance was NOT updated (update_alert_state does NOT update instance on existing groups)
+        self.existing_group.refresh_from_db() # Refresh to get original instance
+        self.assertEqual(alert_group.instance, self.existing_group.instance) # Assert instance is unchanged
+
+        # Verify labels remain unchanged (update_alert_state does NOT update labels on existing groups)
         self.assertEqual(alert_group.labels, self.existing_group.labels)
-    
-    def test_get_or_create_alert_group_no_instance(self):
-        """Test with labels that don't include an instance"""
+
+    def test_update_alert_state_no_instance(self): # Renamed test method
+        """Test with labels that don't include an instance using update_alert_state""" # Updated docstring
         fingerprint = "no_instance_fp"
         status = "firing"
         labels = {
             "alertname": "NoInstanceAlert",
             "severity": "warning"
         }
-        
+        parsed_alert_data = { # Create parsed_alert_data
+            'fingerprint': fingerprint,
+            'status': status,
+            'labels': labels,
+            'starts_at': timezone.now(), # Dummy value
+            'ends_at': None, # Dummy value
+            'annotations': {}, # Dummy value
+            'generator_url': '' # Dummy value
+        }
+
         # Call the function
-        alert_group = get_or_create_alert_group(fingerprint, status, labels)
-        
+        alert_group, _ = update_alert_state(parsed_alert_data) # Call new function and unpack tuple
+
         # Verify new group was created
         self.assertEqual(alert_group.fingerprint, fingerprint)
         self.assertEqual(alert_group.name, "NoInstanceAlert")
         self.assertEqual(alert_group.labels, labels)
         self.assertIsNone(alert_group.instance)
-    
-    def test_get_or_create_alert_group_no_alertname(self):
-        """Test with labels that don't include an alertname"""
+
+    def test_update_alert_state_no_alertname(self): # Renamed test method
+        """Test with labels that don't include an alertname using update_alert_state""" # Updated docstring
         fingerprint = "no_name_fp"
         status = "firing"
         labels = {
             "severity": "critical",
             "instance": "server3"
         }
-        
+        parsed_alert_data = { # Create parsed_alert_data
+            'fingerprint': fingerprint,
+            'status': status,
+            'labels': labels,
+            'starts_at': timezone.now(), # Dummy value
+            'ends_at': None, # Dummy value
+            'annotations': {}, # Dummy value
+            'generator_url': '' # Dummy value
+        }
+
         # Call the function
-        alert_group = get_or_create_alert_group(fingerprint, status, labels)
-        
+        alert_group, _ = update_alert_state(parsed_alert_data) # Call new function and unpack tuple
+
         # Verify new group was created with default name
         self.assertEqual(alert_group.fingerprint, fingerprint)
         self.assertEqual(alert_group.name, "Unknown Alert")

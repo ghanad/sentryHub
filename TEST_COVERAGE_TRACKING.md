@@ -22,7 +22,7 @@ This document tracks the testing progress for different parts of the SentryHub a
 |                   | `AlertInstance` (`models.py`)             |   🟢   | Creation, relations, `__str__`, ordering                     |
 |                   | `AlertComment` (`models.py`)              |   🟢   | Creation, relations, `__str__`, ordering                     |
 |                   | `AlertAcknowledgementHistory` (`models.py`) |   🟢   | Creation, relations, `__str__`, ordering, FK behavior      |
-|                   | `JiraRuleMatcher` (`models.py`)           |   ⚪️   | Creation, validation (`clean`), `__str__`                   |
+|                   | `JiraIntegrationRule` (`models.py`)       |   🟢   | Creation, validation (`clean`), `__str__`, `get_assignee`   |
 | **Forms**         |                                           |        |                                                              |
 |                   | `SilenceRuleForm` (`forms.py`)            |   🟢   | Validation (JSON, dates, required), clean methods, saving     |
 |                   | `AlertAcknowledgementForm` (`forms.py`)   |   🟢   | Validation (required comment)                                |
@@ -30,7 +30,7 @@ This document tracks the testing progress for different parts of the SentryHub a
 | **Services**      |                                           |        |                                                              |
 |                   | `check_alert_silence` (`silence_matcher.py`)|   🟢   | Matching logic, DB updates, multiple rules, expiry         |
 |                   | `acknowledge_alert` (`alerts_processor.py`)|   🟢   | AlertGroup update, History creation                          |
-|                   | `get_active_firing_instance` (`alerts_processor.py`) | ⚪️ | Logic for finding active instance                        |
+|                   | `get_active_firing_instance` (`alerts_processor.py`) | 🟢 | Logic for finding active instance                        |
 |                   | `update_alert_state` (`alert_state_manager.py`) | ⚪️ | Main logic for group/instance creation/update, status transitions |
 |                   | `parse_alertmanager_payload` (`payload_parser.py`) | ⚪️ | Parsing different payload versions, date handling          |
 |                   | `jira_service.py`                         |   ⚪️   | (Also in integrations) API calls, connection handling         |

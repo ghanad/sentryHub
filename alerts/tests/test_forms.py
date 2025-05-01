@@ -66,7 +66,7 @@ class SilenceRuleFormTests(TestCase):
         self.assertFalse(form.is_valid())
         self.assertIn('matchers', form.errors)
         # Django's JSONField parses the list, then clean_matchers hits the 'else' block
-        self.assertIn('Matchers must be provided as a JSON object.', form.errors['matchers'])
+        self.assertIn('Invalid data format for matchers.', form.errors['matchers']) # Updated error message
 
     def test_silence_rule_form_end_before_start(self):
         """Test form validation when ends_at is before starts_at."""

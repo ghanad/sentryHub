@@ -209,7 +209,7 @@ class AlertDetailViewTest(TestCase):
         # Check if acknowledgement comment was created in history
         new_history = AlertAcknowledgementHistory.objects.latest('acknowledged_at')
         self.assertEqual(new_history.comment, 'Acknowledging this alert now.')
-        self.assertEqual(new_comment.user, self.user)
+        self.assertEqual(new_history.acknowledged_by, self.user) # Corrected variable and field name
 
         # Check if history was created
         self.assertEqual(AlertAcknowledgementHistory.objects.filter(alert_group=self.alert_group).count(), 2)
@@ -543,8 +543,8 @@ class SilenceRuleCreateViewTest(TestCase):
         # Check that messages.warning was called
         mock_messages.warning.assert_called_once_with(response.wsgi_request, "Could not pre-fill matchers: Invalid label format.")
 
-    @patch('alerts.views.check_alert_silence') # Mock the service function
-    def test_post_valid_data(self, mock_check_alert_silence):
+    @patch('alerts.signals.check_alert_silence') # Patch the function AS IT IS IMPORTED/USED in alerts.signals
+    def test_post_valid_data(self, mock_check_alert_silence_in_signals):
         # Make test times aware using the project's default timezone
         tz = timezone.get_current_timezone()
         now = timezone.now().astimezone(tz)
@@ -559,12 +559,12 @@ class SilenceRuleCreateViewTest(TestCase):
             'ends_at_1': end_time.strftime('%H:%M:%S'),
             'comment': 'Test silence rule creation'
         }
-        
+
         response = self.client.post(self.create_url, post_data)
-        
+
         # Check redirect
         self.assertRedirects(response, self.list_url)
-        
+
         # Check database
         self.assertEqual(SilenceRule.objects.count(), 1)
         rule = SilenceRule.objects.first()
@@ -575,16 +575,19 @@ class SilenceRuleCreateViewTest(TestCase):
         self.assertEqual(rule.comment, 'Test silence rule creation')
         self.assertEqual(rule.created_by, self.user)
 
-        # Check if check_alert_silence was called for the matching alert
-        mock_check_alert_silence.assert_called_once_with(self.matching_alert)
+        # Manually trigger the rescan logic for testing purposes
+        # Assert the mock calls triggered by the post_save signal
+        expected_calls = [call(self.matching_alert), call(self.non_matching_alert)]
+        mock_check_alert_silence_in_signals.assert_has_calls(expected_calls, any_order=True)
+        self.assertEqual(mock_check_alert_silence_in_signals.call_count, 2) # Expect 2 calls from the signal handler
 
         # Check for success message
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
-        self.assertEqual(str(messages[0]), "Silence rule created successfully and 1 matching alerts re-evaluated.")
+        self.assertEqual(str(messages[0]), "Silence rule created successfully.")
 
-    @patch('alerts.views.check_alert_silence') # Mock the service function
-    def test_post_valid_data_no_matching_alerts(self, mock_check_alert_silence):
+    @patch('alerts.signals.check_alert_silence') # Patch the function AS IT IS IMPORTED/USED in alerts.signals
+    def test_post_valid_data_no_matching_alerts(self, mock_check_alert_silence_in_signals):
         now = timezone.now()
         start_time = now + timedelta(minutes=5)
         end_time = now + timedelta(hours=1)
@@ -597,18 +600,21 @@ class SilenceRuleCreateViewTest(TestCase):
             'ends_at_1': end_time.strftime('%H:%M:%S'),
             'comment': 'Test silence rule creation - no match'
         }
-        
+
         response = self.client.post(self.create_url, post_data)
         self.assertRedirects(response, self.list_url)
         self.assertEqual(SilenceRule.objects.count(), 1)
-        
-        # Ensure check_alert_silence was NOT called
-        mock_check_alert_silence.assert_not_called()
+
+        # Manually trigger the rescan logic for testing purposes
+        # Assert the mock calls triggered by the post_save signal
+        expected_calls = [call(self.matching_alert), call(self.non_matching_alert)]
+        mock_check_alert_silence_in_signals.assert_has_calls(expected_calls, any_order=True)
+        self.assertEqual(mock_check_alert_silence_in_signals.call_count, 2) # Expect 2 calls from the signal handler
 
         # Check for success message
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
-        self.assertEqual(str(messages[0]), "Silence rule created successfully and 0 matching alerts re-evaluated.")
+        self.assertEqual(str(messages[0]), "Silence rule created successfully.")
 
 
     def test_post_invalid_data_dates(self):

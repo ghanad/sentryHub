@@ -28,10 +28,10 @@ This document outlines the process and guidelines for incrementally adding tests
 1.  **Identify Target:** Choose the next component to test from the `TEST_COVERAGE_TRACKING.md` file (usually one marked with ⚪️).
 2.  **Generate Prompt:** Use the specific prompt template provided below, filling in the details for the target component.
 3.  **Provide Context:** Ensure the AI has access to the relevant project code files.
-4.  **Generate Tests:** Ask the AI to generate the test code based on the prompt.
-5.  **Integrate Code:** Place the generated code into the appropriate `tests.py` (or `test_*.py` / `*.test.js`) file. Handle imports and potential conflicts if appending to existing files.
-6.  **Run Tests:** Execute the specific tests for the component locally (e.g., `python manage.py test app_name.tests.TestClassName`).
-7.  **Debug/Refine:** If tests fail, provide the error messages back to the AI and ask for corrections. Iterate until all tests for the component pass.
+4.  **Generate, Integrate, and Test Incrementally:** Ask the AI to generate test code for a specific scenario or small group of scenarios. Integrate the generated code into the appropriate `tests.py` (or `test_*.py` / `*.test.js`) file, handling imports and potential conflicts. Run the newly added test(s) locally (e.g., `python manage.py test app_name.tests.TestClassName::test_specific_scenario`). Debug and refine with the AI until the test(s) pass before proceeding to the next scenario.
+5.  **Run All Component Tests:** Once all scenarios for the component have been covered and their individual tests pass, execute all tests for the component locally as a final check (e.g., `python manage.py test app_name.tests.TestClassName`).
+6.  **Final Debug/Refine:** If any tests fail during the full component run, provide the error messages back to the AI and ask for corrections. Iterate until all tests for the component pass.
+7.  **Update Tracking:** Update the status of the corresponding component in `TEST_COVERAGE_TRACKING.md` to 🟢 Done and add any relevant notes.
 8.  **Update Tracking:** Once tests pass, update the status of the corresponding component in `TEST_COVERAGE_TRACKING.md` to 🟢 Done and add any relevant notes.
 9.  **Commit Changes:** Commit the new/updated test file and the updated tracking file.
 

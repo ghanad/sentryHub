@@ -49,7 +49,8 @@ def update_alert_state(parsed_alert_data: dict) -> Tuple[Optional[AlertGroup], O
             )
 
             if not created:
-                 # Update fields that might change
+                original_status = alert_group.current_status # Store original status
+                # Update fields that might change
                 alert_group.current_status = status
                 alert_group.last_occurrence = timezone.now()
                 # Optionally update these based on new data, if desired
@@ -59,7 +60,7 @@ def update_alert_state(parsed_alert_data: dict) -> Tuple[Optional[AlertGroup], O
                 # alert_group.instance = labels.get('instance')
 
                 # Increment firing count ONLY if transitioning TO firing
-                if status == 'firing' and alert_group.current_status != 'firing':
+                if status == 'firing' and original_status != 'firing': # Use original_status in condition
                      alert_group.total_firing_count = F('total_firing_count') + 1 # Use F() for atomic update
                      alert_group.save(update_fields=['current_status', 'last_occurrence', 'total_firing_count'])
                 else:

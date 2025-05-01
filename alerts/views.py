@@ -513,6 +513,7 @@ class SilenceRuleCreateView(LoginRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context['form_title'] = 'Create New Silence Rule' # Add form title
         context['now'] = timezone.now()
         return context
 
