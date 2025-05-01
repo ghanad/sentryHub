@@ -12,6 +12,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const htmlElement = document.documentElement;
 
     // --- Sidebar Toggle & Pin ---
+    // Get a reference to the icon element within the toggle button
+    const toggleIcon = sidebarToggle ? sidebarToggle.querySelector('i') : null;
+
     function toggleSidebarClass(e) {
         if (!e || !e.currentTarget) return; // Guard against potential errors
 
@@ -25,36 +28,60 @@ document.addEventListener('DOMContentLoaded', function() {
             isLongPress = (currentTime - lastClickTime) > 500; // 500ms threshold for long press
         }
 
-        // --- Logic for Pinning (Long Press) ---
-        if (isLongPress) {
-            const isPinned = !sidebar.classList.contains('sidebar-pinned');
-            sidebar.classList.toggle('sidebar-pinned', isPinned);
-            localStorage.setItem('sidebarPinned', isPinned ? 'true' : 'false'); // Store as string
+        const currentlyPinned = sidebar.classList.contains('sidebar-pinned');
 
-            // Ensure sidebar stays open and clean up other states when pinned
-            if (isPinned) {
-                sidebar.classList.remove('sidebar-collapsed');
+        // --- Logic for Pinning (Long Press) or Unpinning (Any Click when Pinned) ---
+        if (currentlyPinned) {
+            // If currently pinned, ANY click unpins
+            sidebar.classList.remove('sidebar-pinned');
+            localStorage.setItem('sidebarPinned', 'false'); // Store as string
+            if (toggleIcon) {
+                toggleIcon.classList.remove('bxs-pin');
+                toggleIcon.classList.add('bx-pin');
+            }
+            if (sidebarToggle) {
+                sidebarToggle.title = "Toggle Sidebar (Hold to Pin)";
+            }
+            // Do NOT toggle collapsed state here; let the user collapse separately if they want.
+        } else {
+            // If not currently pinned, check for long press to pin or short press to toggle collapse
+            if (isLongPress) {
+                // --- Logic for Pinning (Long Press) ---
+                sidebar.classList.add('sidebar-pinned');
+                sidebar.classList.remove('sidebar-collapsed'); // Ensure not collapsed if pinned
                 mainContent.classList.remove('main-collapsed');
+                localStorage.setItem('sidebarPinned', 'true'); // Store as string
+                if (toggleIcon) {
+                    toggleIcon.classList.remove('bx-pin');
+                    toggleIcon.classList.add('bxs-pin');
+                }
+                if (sidebarToggle) {
+                    sidebarToggle.title = "Unpin Sidebar";
+                }
                 sidebar.classList.remove('sidebar-hover'); // Remove hover state if pinning while hovered
-            }
-            // If unpinning via long press, don't automatically collapse. User can do that next.
 
-        }
-        // --- Logic for Toggling Collapse/Expand (Short Press) ---
-        else {
-            sidebar.classList.toggle('sidebar-collapsed');
-            mainContent.classList.toggle('main-collapsed');
+            } else {
+                // --- Logic for Toggling Collapse/Expand (Short Press) ---
+                sidebar.classList.toggle('sidebar-collapsed');
+                mainContent.classList.toggle('main-collapsed');
 
-            // If we are performing a normal toggle, it definitely shouldn't be pinned
-            if (sidebar.classList.contains('sidebar-pinned')) {
-                sidebar.classList.remove('sidebar-pinned');
-                localStorage.setItem('sidebarPinned', 'false');
+                // Store the collapsed state
+                localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('sidebar-collapsed') ? 'true' : 'false'); // Store as string
+
+                // Ensure icon remains outline pin and title remains the same
+                if (toggleIcon) {
+                     toggleIcon.classList.remove('bxs-pin');
+                     toggleIcon.classList.add('bx-pin');
+                }
+                 if (sidebarToggle) {
+                    sidebarToggle.title = "Toggle Sidebar (Hold to Pin)";
+                }
+
+                // Remove hover class if collapsing via click
+                sidebar.classList.remove('sidebar-hover');
             }
-            // Store the collapsed state
-            localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('sidebar-collapsed') ? 'true' : 'false'); // Store as string
-            // Remove hover class if collapsing via click
-            sidebar.classList.remove('sidebar-hover');
         }
+
 
         // Update last click time at the VERY END for the next calculation
         e.currentTarget.dataset.lastClick = currentTime;
@@ -112,6 +139,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- Apply Initial Sidebar State ---
     // Check localStorage for desktop state
+    // --- Apply Initial Sidebar State ---
+    // Check localStorage for desktop state
     if (window.innerWidth >= 992) {
         const storedPinned = localStorage.getItem('sidebarPinned');
         const storedCollapsed = localStorage.getItem('sidebarCollapsed');
@@ -120,15 +149,36 @@ document.addEventListener('DOMContentLoaded', function() {
             sidebar.classList.add('sidebar-pinned');
             sidebar.classList.remove('sidebar-collapsed'); // Ensure not collapsed if pinned
             mainContent.classList.remove('main-collapsed');
+            if (toggleIcon) {
+                toggleIcon.classList.remove('bx-pin');
+                toggleIcon.classList.add('bxs-pin');
+            }
+            if (sidebarToggle) {
+                sidebarToggle.title = "Unpin Sidebar";
+            }
         } else if (storedCollapsed === 'true') {
             sidebar.classList.add('sidebar-collapsed');
             mainContent.classList.add('main-collapsed');
             sidebar.classList.remove('sidebar-pinned'); // Ensure not pinned if collapsed
+             if (toggleIcon) {
+                toggleIcon.classList.remove('bxs-pin');
+                toggleIcon.classList.add('bx-pin');
+            }
+             if (sidebarToggle) {
+                sidebarToggle.title = "Toggle Sidebar (Hold to Pin)";
+            }
         } else {
             // Default state if nothing is stored (e.g., first visit)
              sidebar.classList.remove('sidebar-collapsed');
              mainContent.classList.remove('main-collapsed');
              sidebar.classList.remove('sidebar-pinned');
+             if (toggleIcon) {
+                toggleIcon.classList.remove('bxs-pin');
+                toggleIcon.classList.add('bx-pin');
+            }
+             if (sidebarToggle) {
+                sidebarToggle.title = "Toggle Sidebar (Hold to Pin)";
+            }
         }
         // Remove the temporary initial state class after applying stored state
         htmlElement.classList.remove('sidebar-is-initially-collapsed');

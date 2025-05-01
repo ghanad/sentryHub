@@ -146,9 +146,6 @@ html.sidebar-is-initially-collapsed .nav-icon {
     transition: var(--transition);
 }
 
-.sidebar-collapsed .sidebar-toggle {
-    transform: rotate(180deg);
-}
 
 .sidebar-nav {
     list-style: none;
