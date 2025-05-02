@@ -11,7 +11,8 @@ This document outlines the process and guidelines for incrementally adding tests
 5.  **Clarity:** Test names should clearly describe what they are testing. Assertions should be specific.
 6.  **No `codeBase.json` Modification:** **Crucially, do not read from or modify the `codeBase.json` file.** Analyze the actual Python/JS/HTML code directly.
 
-7.  **File Size and Organization:** Keep test files small and manageable. If a test file (like `tests.py` or `test_*.py`) becomes too large, split it into smaller files. A common approach is to put each test class or related group of tests into a separate file (e.g., `test_models.py`, `test_views.py`, `test_forms.py`). This improves the readability, organization, and maintainability of the test suite.
+7.  **Check for Existing Tests:** Before writing a test, always check if a similar test already exists. If a similar test is found, ensure that it covers all necessary cases and scenarios. A test class might exist, but it might not cover all required aspects.
+8.  **File Size and Organization:** Keep test files small and manageable. If a test file (like `tests.py` or `test_*.py`) becomes too large, split it into smaller files. A common approach is to put each test class or related group of tests into a separate file (e.g., `test_models.py`, `test_views.py`, `test_forms.py`). This improves the readability, organization, and maintainability of the test suite.
 
 **Testing Stack:**
 
