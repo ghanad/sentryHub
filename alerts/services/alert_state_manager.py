@@ -102,9 +102,8 @@ def update_alert_state(parsed_alert_data: dict) -> Tuple[Optional[AlertGroup], O
                     matching_firing = _get_matching_firing_instance(alert_group, starts_at)
                     if matching_firing:
                         # Resolve the specific firing instance that matches the start time
-                        # Use the provided ends_at, or fallback to starts_at if ends_at is missing from payload
-                        effective_end_time = ends_at or starts_at
-                        alert_instance = _update_to_resolved(matching_firing, effective_end_time, 'normal') # Mark as normal resolution
+                        # Use the provided ends_at. The helper function _update_to_resolved handles None.
+                        alert_instance = _update_to_resolved(matching_firing, ends_at, 'normal') # Mark as normal resolution
                     else:
                          # If no matching firing instance, check for ANY other open firing instances
                          other_open_firing = AlertInstance.objects.filter(

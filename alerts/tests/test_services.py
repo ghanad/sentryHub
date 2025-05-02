@@ -305,6 +305,168 @@ class UpdateAlertStateTests(TestCase):
         self.assertEqual(alert_group.instance, 'host2')
 
 
+    def test_duplicate_firing_event_skipped(self):
+        """Scenario: Duplicate 'firing' alert is skipped."""
+        start_time = timezone.now() - datetime.timedelta(minutes=10)
+        existing_group = AlertGroup.objects.create(
+            fingerprint='duplicate-fire-fg', name='Duplicate Fire', labels={},
+            current_status='firing', total_firing_count=1
+        )
+        AlertInstance.objects.create(
+            alert_group=existing_group, status='firing', started_at=start_time,
+            ended_at=None, annotations={}
+        )
+        parsed_data = {
+            'fingerprint': 'duplicate-fire-fg', 'status': 'firing', 'labels': {},
+            'starts_at': start_time, 'ends_at': None, 'annotations': {}, 'generator_url': ''
+        }
+
+        initial_instance_count = AlertInstance.objects.filter(alert_group=existing_group).count()
+
+        # Use patch to capture logger output
+        with patch('alerts.services.alert_state_manager.logger.warning') as mock_warning:
+            alert_group, alert_instance = update_alert_state(parsed_data)
+
+        self.assertEqual(alert_group.pk, existing_group.pk)
+        self.assertIsNone(alert_instance) # No new instance created
+        self.assertEqual(AlertInstance.objects.filter(alert_group=existing_group).count(), initial_instance_count) # Count unchanged
+        mock_warning.assert_called_once()
+        self.assertIn("Duplicate firing event detected", mock_warning.call_args[0][0])
+
+    def test_duplicate_resolved_event_skipped(self):
+        """Scenario: Duplicate 'resolved' alert is skipped."""
+        start_time = timezone.now() - datetime.timedelta(hours=2)
+        end_time = timezone.now() - datetime.timedelta(hours=1)
+        existing_group = AlertGroup.objects.create(
+            fingerprint='duplicate-resolved-fg', name='Duplicate Resolved', labels={},
+            current_status='resolved', total_firing_count=1
+        )
+        AlertInstance.objects.create(
+            alert_group=existing_group, status='resolved', started_at=start_time,
+            ended_at=end_time, annotations={}, resolution_type='normal'
+        )
+        parsed_data = {
+            'fingerprint': 'duplicate-resolved-fg', 'status': 'resolved', 'labels': {},
+            'starts_at': start_time, 'ends_at': end_time, 'annotations': {}, 'generator_url': ''
+        }
+
+        initial_instance_count = AlertInstance.objects.filter(alert_group=existing_group).count()
+
+        with patch('alerts.services.alert_state_manager.logger.warning') as mock_warning:
+            alert_group, alert_instance = update_alert_state(parsed_data)
+
+        self.assertEqual(alert_group.pk, existing_group.pk)
+        self.assertIsNone(alert_instance) # No new instance created/updated
+        self.assertEqual(AlertInstance.objects.filter(alert_group=existing_group).count(), initial_instance_count) # Count unchanged
+        mock_warning.assert_called_once()
+        self.assertIn("Duplicate resolved event detected", mock_warning.call_args[0][0])
+
+    def test_resolved_no_exact_match_marks_latest_open_inferred(self):
+        """Scenario: Resolved alert with no exact start_at match, but other open firing instances exist."""
+        start_time_old = timezone.now() - datetime.timedelta(hours=2)
+        start_time_latest_open = timezone.now() - datetime.timedelta(hours=1)
+        start_time_resolved_payload = timezone.now() - datetime.timedelta(minutes=30) # This one doesn't match any open instance
+
+        existing_group = AlertGroup.objects.create(
+            fingerprint='resolve-other-open-fg', name='Resolve Other Open', labels={},
+            current_status='firing', total_firing_count=2
+        )
+        old_open_instance = AlertInstance.objects.create(
+            alert_group=existing_group, status='firing', started_at=start_time_old,
+            ended_at=None, annotations={'summary': 'Old open'}
+        )
+        latest_open_instance = AlertInstance.objects.create(
+            alert_group=existing_group, status='firing', started_at=start_time_latest_open,
+            ended_at=None, annotations={'summary': 'Latest open'}
+        )
+
+        parsed_data = {
+            'fingerprint': 'resolve-other-open-fg', 'status': 'resolved', 'labels': {},
+            'starts_at': start_time_resolved_payload, # This start time doesn't match any open instance
+            'ends_at': timezone.now() - datetime.timedelta(minutes=10),
+            'annotations': {}, 'generator_url': ''
+        }
+
+        with patch('alerts.services.alert_state_manager.logger.warning') as mock_warning:
+            alert_group, updated_instance = update_alert_state(parsed_data)
+
+        self.assertEqual(alert_group.pk, existing_group.pk)
+        alert_group.refresh_from_db()
+        self.assertEqual(alert_group.current_status, 'resolved') # Group status should become resolved
+
+        # Check that the latest open instance was marked as inferred resolved
+        latest_open_instance.refresh_from_db()
+        self.assertEqual(latest_open_instance.status, 'resolved')
+        self.assertIsNone(latest_open_instance.ended_at) # ended_at should remain None
+        self.assertEqual(latest_open_instance.resolution_type, 'inferred')
+        self.assertEqual(updated_instance.pk, latest_open_instance.pk) # The returned instance should be the updated one
+
+        # Check the old open instance is still firing (or was marked inferred by the initial re-fire logic)
+        # The re-fire logic at the start of update_alert_state should have marked old_open_instance as inferred
+        old_open_instance.refresh_from_db()
+        self.assertEqual(old_open_instance.status, 'firing') # This instance should not be marked resolved by this logic
+        self.assertIsNone(old_open_instance.ended_at)
+        self.assertIsNone(old_open_instance.resolution_type) # This instance is not marked inferred by this resolved logic
+
+        # Check no new instance was created
+        self.assertEqual(AlertInstance.objects.filter(alert_group=existing_group).count(), 2) # Two instances, both inferred resolved
+
+        mock_warning.assert_called_once()
+        self.assertIn("Received resolved event for AlertGroup", mock_warning.call_args[0][0])
+        self.assertIn("no exact firing match found. Marking latest open instance", mock_warning.call_args[0][0])
+
+
+    def test_resolved_with_none_ends_at_updates_instance_correctly(self):
+        """Scenario: Resolved alert with ends_at=None updates existing firing instance."""
+        start_time = timezone.now() - datetime.timedelta(minutes=30)
+        existing_group = AlertGroup.objects.create(
+            fingerprint='resolve-none-end-fg', name='Resolve None End', labels={},
+            current_status='firing', total_firing_count=1
+        )
+        firing_instance = AlertInstance.objects.create(
+            alert_group=existing_group, status='firing', started_at=start_time,
+            ended_at=None, annotations={}
+        )
+        parsed_data = {
+            'fingerprint': 'resolve-none-end-fg', 'status': 'resolved', 'labels': {},
+            'starts_at': start_time, 'ends_at': None, # ends_at is None
+            'annotations': {}, 'generator_url': ''
+        }
+
+        alert_group, resolved_instance = update_alert_state(parsed_data)
+
+        self.assertEqual(alert_group.pk, existing_group.pk)
+        alert_group.refresh_from_db()
+        self.assertEqual(alert_group.current_status, 'resolved')
+
+        # Check the existing instance was updated
+        self.assertEqual(resolved_instance.pk, firing_instance.pk)
+        resolved_instance.refresh_from_db()
+        self.assertEqual(resolved_instance.status, 'resolved')
+        self.assertEqual(resolved_instance.started_at, start_time)
+        self.assertIsNone(resolved_instance.ended_at) # ended_at should remain None
+        self.assertEqual(resolved_instance.resolution_type, 'normal') # Should be normal resolution
+
+    @patch('alerts.services.alert_state_manager.AlertGroup.objects.get_or_create')
+    def test_exception_handling(self, mock_get_or_create):
+        """Scenario: Exception during processing is caught and logged."""
+        mock_get_or_create.side_effect = Exception("Simulated database error")
+
+        parsed_data = {
+            'fingerprint': 'error-fg', 'status': 'firing', 'labels': {},
+            'starts_at': timezone.now(), 'ends_at': None, 'annotations': {}, 'generator_url': ''
+        }
+
+        with patch('alerts.services.alert_state_manager.logger.error') as mock_error:
+            with self.assertRaises(Exception) as cm:
+                update_alert_state(parsed_data)
+
+            self.assertIn("Simulated database error", str(cm.exception))
+            mock_error.assert_called_once()
+            self.assertIn("Error processing alert update for fingerprint error-fg", mock_error.call_args[0][0])
+            self.assertIsNotNone(mock_error.call_args[1]['exc_info']) # Check exc_info is True
+
+
 # --- Tests for payload_parser.py ---
 
 class ParsePayloadTests(unittest.TestCase): # Inherit from unittest.TestCase
