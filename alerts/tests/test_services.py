@@ -602,3 +602,34 @@ class ParsePayloadTests(unittest.TestCase): # Inherit from unittest.TestCase
         # dateutil.parser raises ValueError for unparseable dates
         with self.assertRaises(ValueError):
             parse_alertmanager_payload(payload)
+
+    def test_missing_fingerprint(self):
+        """Test payload missing 'fingerprint' key."""
+        sample_alert = self._create_sample_alert()
+        del sample_alert['fingerprint']
+        payload = {"alerts": [sample_alert]}
+
+        parsed_alerts = parse_alertmanager_payload(payload)
+
+        self.assertEqual(len(parsed_alerts), 1)
+        self.assertIsNone(parsed_alerts[0]['fingerprint'])
+
+    def test_missing_status(self):
+        """Test payload missing 'status' key."""
+        sample_alert = self._create_sample_alert()
+        del sample_alert['status']
+        payload = {"alerts": [sample_alert]}
+
+        parsed_alerts = parse_alertmanager_payload(payload)
+
+        self.assertEqual(len(parsed_alerts), 1)
+        self.assertIsNone(parsed_alerts[0]['status'])
+
+    def test_missing_starts_at(self):
+        """Test payload missing 'startsAt' key raises exception."""
+        sample_alert = self._create_sample_alert()
+        del sample_alert['startsAt']
+        payload = {"alerts": [sample_alert]}
+
+        with self.assertRaises(TypeError): # parse_datetime(None) raises TypeError
+            parse_alertmanager_payload(payload)
