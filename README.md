@@ -91,3 +91,8 @@ else:
 # Tasks 
 1. ~~move /alerts/alerts to /alerts~~
 2. ~~upload code to github~~
+
+
+# Production 
+export PYTHONPATH=/etc/sentryhub
+python manage.py shell --settings=settings
