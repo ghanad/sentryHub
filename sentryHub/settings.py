@@ -258,11 +258,23 @@ CELERY_TASK_ROUTES = {
 # Removed redundant serializer settings
 CELERY_TIMEZONE = TIME_ZONE
 
-SITE_URL = "https"
+# RabbitMQ Configuration for External Alerts
+RABBITMQ_CONFIG = {
+    'HOST': os.environ.get('RABBITMQ_HOST', 'localhost'),
+    'PORT': int(os.environ.get('RABBITMQ_PORT', 5672)),
+    'EXTERNAL_QUEUE': os.environ.get('RABBITMQ_EXTERNAL_QUEUE', 'sentryhub_alerts_external'),
+    'USER': os.environ.get('RABBITMQ_USER', 'guest'),
+    'PASSWORD': os.environ.get('RABBITMQ_PASSWORD', 'guest'),
+    'HEARTBEAT': int(os.environ.get('RABBITMQ_HEARTBEAT', 600)),
+    'BLOCKED_CONNECTION_TIMEOUT': int(os.environ.get('RABBITMQ_BLOCKED_CONNECTION_TIMEOUT', 300)),
+    'RETRY_DELAY': int(os.environ.get('RABBITMQ_RETRY_DELAY', 30)), # Seconds
+}
+
+SITE_URL = "https://sentryhub.tsetmc.com"
 JIRA_CONFIG = {
     'server_url': 'https://jira.tsetmc.com',
-    'username': 'username',
-    'password': 'password',
+    'username': 'monitoring',
+    'password': 'tsemntmc@1404!',
     'allowed_project_keys': ['SAM'],
     'open_status_categories': ['To Do', 'In Progress'],
     'closed_status_categories': ['Done'],
