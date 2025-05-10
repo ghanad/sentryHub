@@ -17,6 +17,7 @@ Add functionality to SentryHub to read alert messages from a specified RabbitMQ 
         RABBITMQ_CONFIG = {
             'HOST': os.environ.get('RABBITMQ_HOST', 'localhost'),
             'PORT': int(os.environ.get('RABBITMQ_PORT', 5672)),
+            'VHOST': os.environ.get('RABBITMQ_VHOST', '/'), # Virtual host
             'EXTERNAL_QUEUE': os.environ.get('RABBITMQ_EXTERNAL_QUEUE', 'sentryhub_alerts_external'),
             'USER': os.environ.get('RABBITMQ_USER', 'guest'),
             'PASSWORD': os.environ.get('RABBITMQ_PASSWORD', 'guest'),
@@ -40,7 +41,7 @@ Add functionality to SentryHub to read alert messages from a specified RabbitMQ 
     *   **Main `handle` Method:**
         *   Implement an outer `while True` loop to manage connection retries.
         *   Inside the loop, attempt to establish a connection to RabbitMQ.
-        *   Use `pika.ConnectionParameters` with `host`, `port`, `credentials`, `heartbeat`, and `blocked_connection_timeout` from `settings.RABBITMQ_CONFIG`.
+        *   Use `pika.ConnectionParameters` with `host`, `port`, `virtual_host`, `credentials`, `heartbeat`, and `blocked_connection_timeout` from `settings.RABBITMQ_CONFIG`.
         *   Handle `pika.exceptions.AMQPConnectionError`, `pika.exceptions.ChannelClosedByBroker`, `pika.exceptions.ChannelWrongStateError`, and other relevant Pika exceptions.
         *   On connection failure, log the error and the retry attempt, then `time.sleep(settings.RABBITMQ_CONFIG.get('RETRY_DELAY', 30))` before the next iteration of the outer loop.
     *   **Channel and Queue Setup (within successful connection block):**
@@ -62,17 +63,31 @@ Add functionality to SentryHub to read alert messages from a specified RabbitMQ 
         *   Handle `KeyboardInterrupt` to stop the consumer gracefully, ensuring the RabbitMQ connection is closed if open.
         *   The `finally` block in the connection `try` should close the connection.
 
-5.  **Update Documentation**:
+5.  **Documentation & Production Deployment**:
     *   Update project documentation to reflect:
-        *   The new `RABBITMQ_CONFIG` structure in `settings.py`.
-        *   Instructions for running the new management command: `python manage.py consume_rabbitmq_alerts`.
+        *   The new `RABBITMQ_CONFIG` structure in `settings.py` (including `VHOST`).
+        *   Instructions for running the new management command for development/testing: `python manage.py consume_rabbitmq_alerts`.
         *   Notes on its resilience and retry mechanisms.
+        *   **Production Deployment:** Explain that the management command must run as a separate, persistent background process. Recommend using a process manager like Supervisor or systemd.
+            *   **Example Supervisor Configuration (`/etc/supervisor/conf.d/sentryhub_rabbitmq_consumer.conf`):**
+                ```ini
+                [program:sentryhub_rabbitmq_consumer]
+                command=/path/to/your/virtualenv/bin/python /path/to/your/project/manage.py consume_rabbitmq_alerts
+                directory=/path/to/your/project/
+                user=your_django_project_user
+                autostart=true
+                autorestart=true
+                stderr_logfile=/var/log/sentryhub/rabbitmq_consumer_err.log
+                stdout_logfile=/var/log/sentryhub/rabbitmq_consumer_out.log
+                environment=PYTHONUNBUFFERED=1,DJANGO_SETTINGS_MODULE='sentryHub.settings' ; Adjust as needed
+                ```
+            *   Briefly mention steps to use Supervisor: install, create config, `supervisorctl reread`, `supervisorctl update`, `supervisorctl start`.
 
 ## Architecture Diagram
 
 ```mermaid
 graph LR
-    A[RabbitMQ Queue (sentryhub_alerts_external)] --> B[Django Management Command (consume_rabbitmq_alerts)]
+    A[RabbitMQ Queue (sentryhub_alerts_external)] --> B[Django Management Command (consume_rabbitmq_alerts) managed by Supervisor/systemd]
     B --> C[Celery Task Queue (Redis)]
     C --> D[Alert Processing Task]
     D --> E[SentryHub Database]
@@ -82,4 +97,4 @@ graph LR
 
 ## Next Steps
 
-Implement the changes in `settings.py` and create/update the `consume_rabbitmq_alerts.py` management command.
+Confirm the implementation of `settings.py` (with `VHOST`) and the `consume_rabbitmq_alerts.py` management command (using `virtual_host` in connection parameters). Ensure the documentation reflects these production considerations.

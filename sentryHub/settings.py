@@ -262,6 +262,7 @@ CELERY_TIMEZONE = TIME_ZONE
 RABBITMQ_CONFIG = {
     'HOST': os.environ.get('RABBITMQ_HOST', 'localhost'),
     'PORT': int(os.environ.get('RABBITMQ_PORT', 5672)),
+    'VHOST': os.environ.get('RABBITMQ_VHOST', '/'),
     'EXTERNAL_QUEUE': os.environ.get('RABBITMQ_EXTERNAL_QUEUE', 'sentryhub_alerts_external'),
     'USER': os.environ.get('RABBITMQ_USER', 'guest'),
     'PASSWORD': os.environ.get('RABBITMQ_PASSWORD', 'guest'),

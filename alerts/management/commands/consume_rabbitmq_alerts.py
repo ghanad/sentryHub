@@ -28,6 +28,7 @@ class Command(BaseCommand):
                 parameters = pika.ConnectionParameters(
                     host=rabbitmq_config['HOST'],
                     port=rabbitmq_config['PORT'],
+                    virtual_host=rabbitmq_config.get('VHOST', '/'),
                     credentials=credentials,
                     heartbeat=rabbitmq_config.get('HEARTBEAT', 600),
                     blocked_connection_timeout=rabbitmq_config.get('BLOCKED_CONNECTION_TIMEOUT', 300)
@@ -86,25 +87,21 @@ class Command(BaseCommand):
                 logger.info(f"Consumer started. Waiting for messages on queue '{queue_name}'.")
                 channel.start_consuming() # This is a blocking call
 
-            except (pika.exceptions.AMQPConnectionError, 
-                    pika.exceptions.ChannelClosedByBroker, 
+            except (pika.exceptions.AMQPConnectionError,
+                    pika.exceptions.ChannelClosedByBroker,
                     pika.exceptions.ChannelWrongStateError,
-                    pika.exceptions.StreamLostError) as e_conn:
-                logger.error(f"RabbitMQ connection/channel error: {e_conn}", exc_info=True)
-                self.stderr.write(self.style.ERROR(f"RabbitMQ connection/channel error: {e_conn}"))
-                if connection and connection.is_open:
-                    try:
-                        connection.close()
-                        logger.info("RabbitMQ connection closed due to error.")
-                    except Exception as e_close:
-                        logger.error(f"Error closing RabbitMQ connection during error handling: {e_close}", exc_info=True)
+                    pika.exceptions.StreamLostError) as e_pika: # Renamed e_conn to e_pika for clarity
+                logger.error(f"RabbitMQ connection/channel error: {e_pika}", exc_info=True)
+                self.stderr.write(self.style.ERROR(f"RabbitMQ connection/channel error: {e_pika}"))
+                # Connection closing is handled in the finally block below
             except KeyboardInterrupt:
                 self.stdout.write(self.style.WARNING('\nRabbitMQ consumer stopping due to KeyboardInterrupt.'))
                 logger.info("RabbitMQ consumer stopping due to KeyboardInterrupt.")
-                break # Exit the while True loop
+                break # Exit the while True loop, connection closing handled in finally
             except Exception as e_main:
                 logger.error(f"An unexpected error occurred in the main consumer loop: {e_main}", exc_info=True)
                 self.stderr.write(self.style.ERROR(f"An unexpected error occurred: {e_main}"))
+                # Connection closing is handled in the finally block below
             finally:
                 if connection and connection.is_open:
                     try:
@@ -112,13 +109,36 @@ class Command(BaseCommand):
                         logger.info("RabbitMQ connection closed in finally block.")
                     except Exception as e_close_finally:
                         logger.error(f"Error closing RabbitMQ connection in finally block: {e_close_finally}", exc_info=True)
-                
-                if isinstance(e_conn, KeyboardInterrupt): # type: ignore
-                     break # Ensure exit from while loop if KeyboardInterrupt was caught by AMQP errors
+            
+            # If KeyboardInterrupt was caught, the loop would have been broken.
+            # Otherwise, we are in a retry scenario.
+            # This message should not print if KeyboardInterrupt broke the loop.
+            # The 'break' for KeyboardInterrupt ensures we exit before this.
+            # The loop continues if other exceptions (e_pika, e_main) occurred.
+
+            # Check if the loop should continue for retry or if it was broken by KeyboardInterrupt
+            # A more explicit way to handle this is to set a flag.
+            # For now, the existing structure with 'break' in KeyboardInterrupt is assumed.
+            # If the loop wasn't broken by KeyboardInterrupt, then we print retry message.
+            # This part will be reached if e_pika or e_main occurred.
+            
+            # To prevent the retry message after KeyboardInterrupt, we can re-check.
+            # However, the 'break' in KeyboardInterrupt should prevent reaching here.
+            # The current structure is:
+            # while True:
+            #   try: ...
+            #   except PikaError as e_pika: log(e_pika)
+            #   except KeyboardInterrupt: log(); break
+            #   except Exception as e_main: log(e_main)
+            #   finally: close_connection_if_open()
+            #   log_retry_and_sleep() --- THIS IS THE LINE WE ARE AT
+            # If KeyboardInterrupt happens, it breaks, so it won't reach here.
+            # If PikaError or Exception happens, it falls through to here.
 
             self.stdout.write(self.style.WARNING(f"Consumer loop iteration ended. Retrying in {retry_delay} seconds..."))
             logger.info(f"Consumer loop iteration ended. Retrying in {retry_delay} seconds...")
             time.sleep(retry_delay)
         
+        # This part is outside the while loop, reached only when 'break' (e.g. by KeyboardInterrupt) occurs.
         self.stdout.write(self.style.SUCCESS('RabbitMQ consumer shut down completely.'))
         logger.info("RabbitMQ consumer shut down completely.")
