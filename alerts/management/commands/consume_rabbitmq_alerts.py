@@ -64,7 +64,7 @@ class Command(BaseCommand):
 
                         # Send to Celery task
                         # Ensure process_alert_payload_task is correctly imported and is a Celery task
-                        process_alert_payload_task.delay(payload)
+                        process_alert_payload_task.delay(payload_str)
                         alert_name = payload.get('commonLabels', {}).get('alertname', 'N/A')
                         logger.info(f"[>] Dispatched message (tag: {message_tag}, alert: {alert_name}) to Celery.")
                         
