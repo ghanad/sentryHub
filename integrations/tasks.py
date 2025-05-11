@@ -166,6 +166,7 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
                     )
                     logger.info(f"Task {self.request.id}: Adding 'firing again' comment (from template) to open Jira issue: {existing_issue_key}")
                     success = jira_service.add_comment(existing_issue_key, comment_body)
+                    logger.info(f"Task {self.request.id}: Successfully added 'firing again' comment to Jira issue {existing_issue_key} for AlertGroup {alert_group_id}.")
                     if not success: raise Exception(f"Failed to add comment to {existing_issue_key}")
 
                  elif issue_status_category in closed_categories:
@@ -185,6 +186,7 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
                         default_comment
                     )
                     success = jira_service.add_comment(existing_issue_key, comment_body)
+                    logger.info(f"Task {self.request.id}: Successfully added comment (firing, Jira status category '{issue_status_category}') to Jira issue {existing_issue_key} for AlertGroup {alert_group_id}.")
                     if not success: raise Exception(f"Failed to add comment to {existing_issue_key}")
 
             # If no existing key (or was cleared above), create a new issue
@@ -281,6 +283,7 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
                 )
                 logger.info(f"Task {self.request.id}: Adding 'resolved' comment (from template) to open Jira issue: {existing_issue_key}")
                 success = jira_service.add_comment(existing_issue_key, comment_body)
+                logger.info(f"Task {self.request.id}: Successfully added 'resolved' comment to Jira issue {existing_issue_key} for AlertGroup {alert_group_id}.")
                 if not success: raise Exception(f"Failed to add resolved comment to {existing_issue_key}")
 
             elif existing_issue_key:
