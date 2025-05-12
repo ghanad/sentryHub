@@ -87,15 +87,15 @@ def update_alert_state(parsed_alert_data: dict) -> Tuple[Optional[AlertGroup], O
                         resolution_type='inferred' # Keep marking as inferred
                     )
                     # Adjust log message
-                    logger.info(f"Marked {resolved_count} previous firing instance(s) as 'resolved' (inferred, ended_at=NULL) for AlertGroup {alert_group.id} due to new firing event starting at {starts_at}.")
-                # --- END: Modified Logic ---
+                    logger.info(f"Marked {resolved_count} previous firing instance(s) as 'resolved' (inferred, ended_at=NULL) for AlertGroup {alert_group.id} (FP: {alert_group.fingerprint}) due to new firing event starting at {starts_at}.")
+                 # --- END: Modified Logic ---
 
                 if not _is_duplicate_firing(alert_group, starts_at):
                     alert_instance = _create_firing_instance(
                         alert_group, starts_at, annotations, generator_url
                     )
                 else:
-                     logger.warning(f"Duplicate firing event detected for AlertGroup {alert_group.id} starting at {starts_at}. Skipping instance creation.")
+                     logger.warning(f"Duplicate firing event detected for AlertGroup {alert_group.id} (FP: {alert_group.fingerprint}) starting at {starts_at}. Skipping instance creation.")
 
             else:  # resolved
                 if not _is_duplicate_resolved(alert_group, starts_at, ends_at):
@@ -114,11 +114,11 @@ def update_alert_state(parsed_alert_data: dict) -> Tuple[Optional[AlertGroup], O
 
                          if other_open_firing:
                               # Resolve the LATEST open one as inferred, keeping ended_at NULL as per the primary request
-                              logger.warning(f"Received resolved event for AlertGroup {alert_group.id} starting at {starts_at}, but no exact firing match found. Marking latest open instance ({other_open_firing.id}) as 'resolved' (inferred, ended_at=NULL).")
+                              logger.warning(f"Received resolved event for AlertGroup {alert_group.id} (FP: {alert_group.fingerprint}) starting at {starts_at}, but no exact firing match found. Marking latest open instance ({other_open_firing.id}) as 'resolved' (inferred, ended_at=NULL).")
                               alert_instance = _update_to_resolved(other_open_firing, None, 'inferred') # Pass None for end_time
                          else:
                               # No matching firing AND no other open firing instances. Create resolved directly.
-                              logger.warning(f"Received resolved event for AlertGroup {alert_group.id} starting at {starts_at}, but no matching or open firing instance found. Creating resolved instance directly.")
+                              logger.warning(f"Received resolved event for AlertGroup {alert_group.id} (FP: {alert_group.fingerprint}) starting at {starts_at}, but no matching or open firing instance found. Creating resolved instance directly.")
                               effective_end_time = ends_at or starts_at
                               alert_instance = _create_resolved_instance(
                                   alert_group, starts_at, effective_end_time, annotations, generator_url, 'normal'
@@ -159,7 +159,7 @@ def _get_matching_firing_instance(alert_group, starts_at):
 
 def _create_firing_instance(alert_group, starts_at, annotations, generator_url):
     """Create a new firing instance."""
-    logger.info(f"Creating new 'firing' instance for AlertGroup {alert_group.id} starting at {starts_at}")
+    logger.info(f"Creating new 'firing' instance for AlertGroup {alert_group.id} (FP: {alert_group.fingerprint}) starting at {starts_at}")
     return AlertInstance.objects.create(
         alert_group=alert_group,
         status='firing',
@@ -206,13 +206,13 @@ def _update_to_resolved(instance, end_time, resolution_type):
 
     instance.save(update_fields=update_fields)
     end_time_str = f"at {end_time}" if end_time else "(ended_at=NULL)"
-    logger.info(f"Updated instance {instance.id} to 'resolved' (Type: {resolution_type}) {end_time_str} for AlertGroup {instance.alert_group.id}")
+    logger.info(f"Updated instance {instance.id} to 'resolved' (Type: {resolution_type}) {end_time_str} for AlertGroup {instance.alert_group.id} (FP: {instance.alert_group.fingerprint})")
     return instance
 
 def _create_resolved_instance(alert_group, starts_at, ends_at, annotations, generator_url, resolution_type):
     """Create a new resolved instance."""
     end_time_str = f"ended at {ends_at}" if ends_at else "ended_at=NULL"
-    logger.info(f"Creating new 'resolved' instance (Type: {resolution_type}) for AlertGroup {alert_group.id} starting at {starts_at}, {end_time_str}")
+    logger.info(f"Creating new 'resolved' instance (Type: {resolution_type}) for AlertGroup {alert_group.id} (FP: {alert_group.fingerprint}) starting at {starts_at}, {end_time_str}")
     return AlertInstance.objects.create(
         alert_group=alert_group,
         status='resolved',

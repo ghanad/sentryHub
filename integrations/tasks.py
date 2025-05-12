@@ -52,13 +52,14 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
     """
     Celery task to handle Jira integration logic for an alert group using templates.
     """
-    logger.info(f"Starting Jira processing task {self.request.id} for AlertGroup ID: {alert_group_id}, Rule ID: {rule_id}, Status: {alert_status}")
-
+    # Add a line to get the fingerprint and modify the initial log
     try:
         # Fetch objects from DB
         alert_group = AlertGroup.objects.get(pk=alert_group_id)
         rule = JiraIntegrationRule.objects.get(pk=rule_id)
         latest_instance = alert_group.instances.order_by('-started_at').first()
+        fingerprint_for_log = alert_group.fingerprint # Extract for logging
+        logger.info(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Starting for AlertGroup ID: {alert_group_id}, Rule ID: {rule_id}, Status: {alert_status}")
     except AlertGroup.DoesNotExist:
         logger.error(f"Task {self.request.id}: AlertGroup with ID {alert_group_id} not found. Aborting Jira task.")
         return
@@ -80,20 +81,20 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
 
     if existing_issue_key:
         # Check existing issue status
-        logger.debug(f"Task {self.request.id}: AlertGroup {alert_group_id} has existing Jira key: {existing_issue_key}. Checking status.")
+        logger.info(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): AlertGroup has existing Jira key: {existing_issue_key}. Checking status.")
         try:
             issue_status_category = jira_service.get_issue_status_category(existing_issue_key)
         except Exception as e:
-            logger.error(f"Task {self.request.id}: Failed to get status for Jira issue {existing_issue_key}: {e}", exc_info=True)
+            logger.error(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Failed to get status for Jira issue {existing_issue_key}: {e}", exc_info=True)
             raise e
 
         if issue_status_category is None and jira_service.client is not None:
-            logger.warning(f"Task {self.request.id}: Could not get status for Jira issue {existing_issue_key}. Assuming deleted. Clearing local key.")
+            logger.warning(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Could not get status for Jira issue {existing_issue_key}. Assuming deleted. Clearing local key.")
             alert_group.jira_issue_key = None
             try:
                 alert_group.save(update_fields=['jira_issue_key'])
             except Exception as db_err:
-                logger.error(f"Task {self.request.id}: Failed to clear jira_issue_key for AlertGroup {alert_group_id}: {db_err}", exc_info=True)
+                logger.error(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Failed to clear jira_issue_key for AlertGroup {alert_group_id}: {db_err}", exc_info=True)
                 raise db_err
             existing_issue_key = None
 
@@ -111,7 +112,7 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
         site_base_url = str(settings.SITE_URL).rstrip('/')
         full_sentryhub_url = f"{site_base_url}{sentryhub_url_path}"
     except Exception as url_err:
-        logger.warning(f"Could not generate SentryHub URL: {url_err}")
+        logger.warning(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Could not generate SentryHub URL: {url_err}")
         full_sentryhub_url = "N/A"
 
     # Occurred At Time (Formatted)
@@ -125,7 +126,7 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
             occurred_at_local = timezone.localtime(occurred_at_time, tehran_tz)
             occurred_at_str = occurred_at_local.strftime('%Y-%m-%d %H:%M:%S')
         except Exception as tz_err:
-             logger.warning(f"Could not convert timestamp to Tehran time: {tz_err}. Falling back to ISO.")
+             logger.warning(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Could not convert timestamp to Tehran time: {tz_err}. Falling back to ISO.")
              occurred_at_str = occurred_at_time.isoformat()
 
     template_context = {
@@ -164,21 +165,21 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
                         template_context,
                         default_comment
                     )
-                    logger.info(f"Task {self.request.id}: Adding 'firing again' comment (from template) to open Jira issue: {existing_issue_key}")
+                    logger.info(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Adding 'firing again' comment to open Jira issue: {existing_issue_key}")
                     success = jira_service.add_comment(existing_issue_key, comment_body)
                     logger.info(f"Task {self.request.id}: Successfully added 'firing again' comment to Jira issue {existing_issue_key} for AlertGroup {alert_group_id}.")
                     if not success: raise Exception(f"Failed to add comment to {existing_issue_key}")
 
                  elif issue_status_category in closed_categories:
                     # Issue is closed, clear key to create a new one
-                    logger.info(f"Task {self.request.id}: Existing Jira issue {existing_issue_key} is closed. Clearing local key to create a new issue.")
+                    logger.info(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Existing Jira issue {existing_issue_key} is closed. Clearing local key to create a new issue.")
                     alert_group.jira_issue_key = None
                     alert_group.save(update_fields=['jira_issue_key'])
                     existing_issue_key = None # Ensure we proceed to create new issue below
 
                  else:
                     # Unknown status, add comment anyway (using template)
-                    logger.warning(f"Task {self.request.id}: Jira issue {existing_issue_key} has unknown status category '{issue_status_category}'. Adding comment anyway.")
+                    logger.warning(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Jira issue {existing_issue_key} has unknown status category '{issue_status_category}'. Adding 'firing again' comment.")
                     default_comment = f"Alert firing again (Jira status category '{issue_status_category}') for group '{alert_group.fingerprint}' at {timezone.now().isoformat()}."
                     comment_body = render_template_safe(
                         rule.jira_update_comment_template,
@@ -191,7 +192,7 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
 
             # If no existing key (or was cleared above), create a new issue
             if not existing_issue_key:
-                logger.info(f"Task {self.request.id}: Creating new Jira issue for alert group {alert_group_id} in project {rule.jira_project_key} using templates.")
+                logger.info(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Creating new Jira issue in project {rule.jira_project_key} for AlertGroup ID: {alert_group_id}.")
 
                 # --- Use Templates for Title and Description ---
                 # Render Title
@@ -245,25 +246,25 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
                 if new_issue_key:
                     alert_group.jira_issue_key = new_issue_key
                     alert_group.save(update_fields=['jira_issue_key'])
-                    logger.info(f"Task {self.request.id}: Associated AlertGroup {alert_group_id} with new Jira issue {new_issue_key}")
+                    logger.info(f"Task {self.request.id} (FP: {fingerprint_for_log}): Associated AlertGroup with new Jira issue {new_issue_key}")
 
                     # Add Watchers (logic remains the same)
                     watchers_string = rule.watchers
                     if watchers_string:
                         watcher_usernames = [w.strip() for w in watchers_string.split(',') if w.strip()]
                         if watcher_usernames:
-                            logger.info(f"Task {self.request.id}: Attempting to add watchers {watcher_usernames} to issue {new_issue_key}")
+                            logger.info(f"Task {self.request.id} (FP: {fingerprint_for_log}): Attempting to add watchers {watcher_usernames} to issue {new_issue_key}")
                             for username in watcher_usernames:
                                 try:
                                     success = jira_service.add_watcher(new_issue_key, username)
                                     if success:
-                                        logger.info(f"Task {self.request.id}: Successfully added watcher '{username}' to issue {new_issue_key}")
+                                        logger.info(f"Task {self.request.id} (FP: {fingerprint_for_log}): Successfully added watcher '{username}' to issue {new_issue_key}")
                                     else:
-                                        logger.warning(f"Task {self.request.id}: Failed to add watcher '{username}' to issue {new_issue_key} (API call returned false)")
+                                        logger.warning(f"Task {self.request.id} (FP: {fingerprint_for_log}): Failed to add watcher '{username}' to issue {new_issue_key} (API call returned false)")
                                 except Exception as watcher_err:
-                                    logger.error(f"Task {self.request.id}: Error adding watcher '{username}' to issue {new_issue_key}: {watcher_err}", exc_info=True)
+                                    logger.error(f"Task {self.request.id} (FP: {fingerprint_for_log}): Error adding watcher '{username}' to issue {new_issue_key}: {watcher_err}", exc_info=True)
                 else:
-                    logger.error(f"Task {self.request.id}: Failed to create Jira issue for AlertGroup {alert_group_id}.")
+                    logger.error(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Failed to create Jira issue for AlertGroup {alert_group_id}.")
                     raise Exception(f"Jira issue creation failed for AlertGroup {alert_group_id}")
 
         elif alert_status == 'resolved':
@@ -281,18 +282,18 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
                     template_context,
                     default_comment
                 )
-                logger.info(f"Task {self.request.id}: Adding 'resolved' comment (from template) to open Jira issue: {existing_issue_key}")
+                logger.info(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Adding 'resolved' comment to open Jira issue: {existing_issue_key}")
                 success = jira_service.add_comment(existing_issue_key, comment_body)
                 logger.info(f"Task {self.request.id}: Successfully added 'resolved' comment to Jira issue {existing_issue_key} for AlertGroup {alert_group_id}.")
                 if not success: raise Exception(f"Failed to add resolved comment to {existing_issue_key}")
 
             elif existing_issue_key:
-                logger.info(f"Task {self.request.id}: Alert group {alert_group_id} resolved, but Jira issue {existing_issue_key} has status '{issue_status_category}'. No comment added.")
+                logger.info(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): AlertGroup resolved, but Jira issue {existing_issue_key} has status '{issue_status_category}'. No comment added.")
             else:
-                logger.info(f"Task {self.request.id}: Alert group {alert_group_id} resolved, but no associated Jira issue found. No action taken.")
+                logger.info(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): AlertGroup resolved, but no associated Jira issue found. No action taken.")
 
     except Exception as e:
-        logger.error(f"Task {self.request.id}: An error occurred during Jira processing logic for AlertGroup {alert_group_id}: {e}", exc_info=True)
+        logger.error(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): An error occurred during Jira processing logic for AlertGroup {alert_group_id}: {e}", exc_info=True)
         raise e
 
-    logger.info(f"Finished Jira processing task {self.request.id} for AlertGroup ID: {alert_group_id}")
+    logger.info(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Finished processing for AlertGroup ID: {alert_group_id}")

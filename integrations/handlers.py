@@ -23,12 +23,18 @@ def handle_alert_processed(sender, **kwargs):
     is_silenced = kwargs.get('is_silenced', False) # Default to False if not provided
 
     if not alert_group:
-        logger.warning("Received alert_processed signal without alert_group object. Cannot process for Jira.")
+        logger.warning("Integrations Handler: Received alert_processed signal without alert_group. Cannot process for Jira.")
         return
 
-    is_firing = (status == 'firing')
-    is_resolved = (status == 'resolved')
-    fingerprint = alert_group.fingerprint # For logging
+    fingerprint_for_log = alert_group.fingerprint # Extract fingerprint
+    status_kwarg = kwargs.get('status') # Renamed from status to avoid conflict
+    is_silenced = kwargs.get('is_silenced', False) # Default to False if not provided
+
+    logger.info(f"Integrations Handler (FP: {fingerprint_for_log}): Received 'alert_processed'. Status: {status_kwarg}. Current alert_group.is_silenced: {alert_group.is_silenced}")
+
+    is_firing = (status_kwarg == 'firing')
+    is_resolved = (status_kwarg == 'resolved')
+    # fingerprint = alert_group.fingerprint # For logging - now using fingerprint_for_log
 
     # Determine if we should even look for a Jira rule
     # Condition:
@@ -39,7 +45,7 @@ def handle_alert_processed(sender, **kwargs):
                        (is_resolved and alert_group.jira_issue_key)
 
     if should_find_rule:
-        logger.debug(f"Checking Jira rules for alert group {fingerprint} (Status: {status})")
+        logger.info(f"Integrations Handler (FP: {fingerprint_for_log}): Checking Jira rules. Status: {status_kwarg}, Silenced: {is_silenced}")
         jira_matcher_service = JiraRuleMatcherService()
         # Use alert group labels to find the rule (consistent for firing/resolved)
         matching_rule = jira_matcher_service.find_matching_rule(alert_group.labels)
@@ -48,7 +54,7 @@ def handle_alert_processed(sender, **kwargs):
             # We found a rule, now trigger the task.
             # The task itself will handle the logic based on the status ('firing' or 'resolved')
             # and the state of the Jira issue (open/closed).
-            logger.info(f"Alert group {fingerprint} matched Jira rule '{matching_rule.name}'. Triggering Jira processing task for status '{status}'.")
+            logger.info(f"Integrations Handler (FP: {fingerprint_for_log}): Matched Jira rule '{matching_rule.name}'. Triggering Jira task for status '{status_kwarg}'.")
             try:
                 process_jira_for_alert_group.delay(
                     alert_group_id=alert_group.id,
@@ -56,12 +62,12 @@ def handle_alert_processed(sender, **kwargs):
                     alert_status=status # Pass the actual status ('firing' or 'resolved')
                 )
             except Exception as e:
-                logger.error(f"Failed to queue Jira processing task for alert group {alert_group.id}, status {status}: {e}", exc_info=True)
+                logger.error(f"Integrations Handler (FP: {fingerprint_for_log}): Failed to queue Jira processing task for AlertGroup {alert_group.id}, status {status_kwarg}: {e}", exc_info=True)
         else:
-            logger.debug(f"No matching Jira rule found for alert group {fingerprint} (Status: {status})")
+            logger.info(f"Integrations Handler (FP: {fingerprint_for_log}): No matching Jira rule found. Status: {status_kwarg}, Silenced: {is_silenced}")
     else:
         # Log why we didn't check for rules
         reason = "alert is silenced" if is_silenced else \
                  "resolved alert has no existing Jira key" if is_resolved else \
-                 f"alert status is '{status}'"
-        logger.debug(f"Not checking Jira rules for alert group {fingerprint} because {reason}.")
+                 f"alert status is '{status_kwarg}'"
+        logger.info(f"Integrations Handler (FP: {fingerprint_for_log}): Not checking Jira rules because {reason}.")

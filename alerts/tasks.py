@@ -1,5 +1,5 @@
 import logging
-import json # Keep json import for logging
+import json
 from celery import shared_task
 from django.db import transaction
 
@@ -56,8 +56,7 @@ def process_alert_payload_task(self, payload_json: str): # Expect a JSON string 
             for alert_data in alerts:
                 alert_name = alert_data.get('labels', {}).get('alertname', 'N/A')
                 fingerprint = alert_data.get('fingerprint', 'N/A')
-                logger.info(f"Processing alert: Name='{alert_name}', Fingerprint='{fingerprint}'")
-                logger.debug(f"Alert data before update_alert_state: {alert_data}") 
+                logger.info(f"Task {self.request.id if hasattr(self, 'request') else 'N/A_REQ'} (FP: {fingerprint}): Processing alert payload. Alertname: {alert_name}")
                 
                 # Update alert state in database
                 alert_group, alert_instance = update_alert_state(alert_data)
@@ -66,6 +65,7 @@ def process_alert_payload_task(self, payload_json: str): # Expect a JSON string 
                     group_id = getattr(alert_group, 'id', 'N/A')
                     instance_id = getattr(alert_instance, 'id', 'N/A')
                     logger.info(f"Successfully processed alert. AlertGroup ID: {group_id}, AlertInstance ID: {instance_id}")
+                    logger.info(f"Task {self.request.id if hasattr(self, 'request') else 'N/A_REQ'} (FP: {alert_group.fingerprint}): Dispatching 'alert_processed' signal. AlertGroup ID: {alert_group.id}, Status: {alert_group.current_status}")
                     # Send signal after processing alert
                     alert_processed.send(
                         sender=alert_group.__class__,
