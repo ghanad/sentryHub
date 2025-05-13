@@ -92,6 +92,12 @@ class AlertListView(LoginRequiredMixin, ListView):
                 Q(fingerprint__icontains=search) |
                 Q(instance__icontains=search)
             )
+
+        # --- Apply Source Filter ---
+        source_filter_value = self.request.GET.get('source')
+        if source_filter_value:
+            queryset = queryset.filter(source=source_filter_value)
+        # --- End Apply Source Filter ---
         # --- End Apply Filters ---
 
         # --- Ordering ---
@@ -113,6 +119,12 @@ class AlertListView(LoginRequiredMixin, ListView):
         context['acknowledged'] = self.request.GET.get('acknowledged', '')
         context['silenced_filter'] = self.request.GET.get('silenced', '') # Add silenced filter to context
         context['search'] = self.request.GET.get('search', '')
+        
+        # Add source filter parameter to context
+        context['source_filter_value'] = self.request.GET.get('source', '')
+
+        # Query for available sources for the filter dropdown
+        context['available_sources'] = AlertGroup.objects.filter(source__isnull=False).values_list('source', flat=True).distinct().order_by('source')
 
         # Calculate statistics counts for the filtered results (before pagination)
         # Note: These counts reflect the total matching alerts, not just the current page.

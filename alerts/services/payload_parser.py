@@ -38,6 +38,9 @@ def parse_alertmanager_payload(payload: dict) -> List[Dict[str, Any]]:
         
         generator_url = alert_data.get('generatorURL')
         
+        # Get the 'source' label
+        source_identifier = alert_data.get('labels', {}).get('source')
+
         alerts.append({
             'fingerprint': fingerprint,
             'status': status,
@@ -45,7 +48,8 @@ def parse_alertmanager_payload(payload: dict) -> List[Dict[str, Any]]:
             'annotations': annotations,
             'starts_at': starts_at,
             'ends_at': ends_at,
-            'generator_url': generator_url
+            'generator_url': generator_url,
+            'source': source_identifier  # Add the new source field
         })
     
     return alerts

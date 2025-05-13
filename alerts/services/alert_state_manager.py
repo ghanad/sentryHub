@@ -33,6 +33,7 @@ def update_alert_state(parsed_alert_data: dict) -> Tuple[Optional[AlertGroup], O
             ends_at = parsed_alert_data['ends_at'] # This might be None for firing alerts
             annotations = parsed_alert_data['annotations']
             generator_url = parsed_alert_data['generator_url']
+            source_identifier = parsed_alert_data.get('source') # Extract source
 
             # Get or create AlertGroup
             alert_group, created = AlertGroup.objects.get_or_create(
@@ -43,6 +44,7 @@ def update_alert_state(parsed_alert_data: dict) -> Tuple[Optional[AlertGroup], O
                     'severity': labels.get('severity', 'warning'),
                     'current_status': status,
                     'instance': labels.get('instance'),
+                    'source': source_identifier, # Add source
                     'first_occurrence': timezone.now(), # Set on creation
                     'last_occurrence': timezone.now()  # Initial value
                 }
@@ -59,12 +61,19 @@ def update_alert_state(parsed_alert_data: dict) -> Tuple[Optional[AlertGroup], O
                 # alert_group.severity = labels.get('severity', 'warning')
                 # alert_group.instance = labels.get('instance')
 
+                fields_to_update = ['current_status', 'last_occurrence']
+
+                # Update source if it has changed
+                if alert_group.source != source_identifier:
+                    alert_group.source = source_identifier
+                    fields_to_update.append('source')
+
                 # Increment firing count ONLY if transitioning TO firing
                 if status == 'firing' and original_status != 'firing': # Use original_status in condition
                      alert_group.total_firing_count = F('total_firing_count') + 1 # Use F() for atomic update
-                     alert_group.save(update_fields=['current_status', 'last_occurrence', 'total_firing_count'])
-                else:
-                     alert_group.save(update_fields=['current_status', 'last_occurrence'])
+                     fields_to_update.append('total_firing_count') # Add total_firing_count to update fields
+
+                alert_group.save(update_fields=fields_to_update)
             else:
                 # total_firing_count defaults to 1, which is correct.
                 pass

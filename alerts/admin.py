@@ -10,12 +10,12 @@ from .models import (
 
 @admin.register(AlertGroup)
 class AlertGroupAdmin(admin.ModelAdmin):
-    list_display = ('name', 'instance', 'fingerprint', 'severity',
+    list_display = ('name', 'instance', 'source', 'fingerprint', 'severity',
                     'current_status', 'total_firing_count',
                     'first_occurrence', 'last_occurrence', 'acknowledged',
                     'jira_issue_key_link')
-    list_filter = ('severity', 'current_status', 'acknowledged')
-    search_fields = ('name', 'fingerprint', 'instance', 'jira_issue_key')
+    list_filter = ('severity', 'current_status', 'acknowledged', 'source')
+    search_fields = ('name', 'fingerprint', 'instance', 'jira_issue_key', 'source')
     date_hierarchy = 'first_occurrence'
     readonly_fields = ('jira_issue_key_link',)
 

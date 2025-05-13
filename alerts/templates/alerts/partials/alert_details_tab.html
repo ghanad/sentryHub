@@ -146,6 +146,10 @@
                     <th>Total Firing Count</th>
                     <td>{{ alert.total_firing_count }}</td>
                 </tr>
+                <tr> {# Added Source Row #}
+                    <th>Source</th>
+                    <td>{{ alert.source|default:"-" }}</td>
+                </tr>
                 {% with last_instance=instances.first %}
                 {% if last_instance and last_instance.generator_url %}
                 <tr>

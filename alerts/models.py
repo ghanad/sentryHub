@@ -21,6 +21,14 @@ class AlertGroup(models.Model):
     instance = models.CharField(max_length=255, blank=True, null=True, db_index=True,
         help_text="Instance address (IP or hostname) extracted from labels")
     
+    source = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="Identifier for the source Alertmanager instance"
+    )
+
     first_occurrence = models.DateTimeField(auto_now_add=True)
     last_occurrence = models.DateTimeField(auto_now=True)
     current_status = models.CharField(

@@ -55,9 +55,18 @@
                         <option value="no" {% if silenced_filter == 'no' %}selected{% endif %}>Hide Silenced</option>
                         <option value="yes" {% if silenced_filter == 'yes' %}selected{% endif %}>Only Silenced</option>
                     </select>
-                </div>
-                <div class="col-lg-6 col-md-6">
-                     <label for="instance" class="form-label">Instance</label>
+                 </div>
+                 <div class="col-lg-3 col-md-6"> {# Adjust column classes as needed #}
+                     <label for="source_filter" class="form-label">Source</label>
+                     <select class="form-select form-select-sm" id="source_filter" name="source">
+                         <option value="" {% if not source_filter_value %}selected{% endif %}>All Sources</option>
+                         {% for src in available_sources %}
+                             <option value="{{ src }}" {% if source_filter_value == src %}selected{% endif %}>{{ src }}</option>
+                         {% endfor %}
+                     </select>
+                 </div>
+                 <div class="col-lg-6 col-md-6">
+                      <label for="instance" class="form-label">Instance</label>
                      <input type="text" class="form-control form-control-sm" id="instance" name="instance" value="{{ instance }}" placeholder="e.g., server1:9100">
                 </div>
                 <div class="col-lg-6 col-md-6">
@@ -96,6 +105,7 @@
                             <th>Status</th>
                             <th>Name</th>
                             <th>Instance</th>
+                            <th>Source</th> {# Added Source Column Header #}
                             <th>Severity</th>
                             <th>Age</th>
                             <th>Start Time</th>
@@ -129,6 +139,9 @@
                                         {{ alert.instance|default:"-" }}
                                     {% endif %}
                                 </span>
+                            </td>
+                            <td> {# Source #}
+                                {{ alert.source|default:"-" }}
                             </td>
                             <td> {# Severity #}
                                 {% if alert.severity == 'critical' %}
@@ -196,13 +209,13 @@
                             </td>
                         </tr>
                         <tr class="collapse alert-details-row" id="details-{{ alert.fingerprint }}">
-                            <td colspan="9"> {# Adjusted colspan #}
+                            <td colspan="10"> {# Adjusted colspan for Source #}
                                 {% include "alerts/partials/alert_row_details.html" with alert=alert %}
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="9" class="text-center p-5"> {# Adjusted colspan #}
+                            <td colspan="10" class="text-center p-5"> {# Adjusted colspan for Source #}
                                 <i class='bx bx-info-circle fs-1 text-muted mb-3 d-block'></i>
                                 <p class="text-muted mb-0">No alerts found matching your criteria.</p>
                             </td>
