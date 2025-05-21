@@ -2,7 +2,7 @@
 
 import logging
 import json
-import re
+import re 
 import pytz
 from typing import Optional, Dict, Any
 from celery import shared_task, Task
@@ -10,24 +10,23 @@ from django.conf import settings
 from django.utils import timezone
 from django.urls import reverse
 from django.core.exceptions import ObjectDoesNotExist
-from django.template import Context, Template, TemplateSyntaxError # Import Template components
+from django.template import Context, Template, TemplateSyntaxError
 
-# Import models and service correctly
 from integrations.models import JiraIntegrationRule
-from alerts.models import AlertGroup, AlertInstance
+from alerts.models import AlertGroup, AlertInstance # AlertInstance is imported
 from integrations.services.jira_service import JiraService
 
 
 logger = logging.getLogger(__name__)
 
-# Base task with retry logic
+# Base task with retry logic (unchanged)
 class JiraTaskBase(Task):
     autoretry_for = (Exception,)
     retry_kwargs = {'max_retries': 3, 'countdown': 15}
     retry_backoff = True
     retry_jitter = True
 
-# --- Helper Function for Template Rendering ---
+# --- Helper Function for Template Rendering --- (unchanged)
 def render_template_safe(template_string: str, context_dict: Dict[str, Any], default_value: str = "") -> str:
     """
     Safely renders a Django template string with the given context.
@@ -39,7 +38,7 @@ def render_template_safe(template_string: str, context_dict: Dict[str, Any], def
     try:
         template = Template(template_string)
         rendered = template.render(Context(context_dict))
-        return rendered.strip() # Remove leading/trailing whitespace
+        return rendered.strip()
     except TemplateSyntaxError as e:
         logger.warning(f"Template syntax error during rendering: {e}. Using default value.", exc_info=True)
         return default_value
@@ -48,18 +47,16 @@ def render_template_safe(template_string: str, context_dict: Dict[str, Any], def
         return default_value
 
 @shared_task(bind=True, base=JiraTaskBase)
-def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_status: str):
+def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_status: str, triggering_instance_id: Optional[int] = None): # New parameter
     """
     Celery task to handle Jira integration logic for an alert group using templates.
+    Uses the specific triggering_instance if provided.
     """
-    # Add a line to get the fingerprint and modify the initial log
     try:
-        # Fetch objects from DB
         alert_group = AlertGroup.objects.get(pk=alert_group_id)
         rule = JiraIntegrationRule.objects.get(pk=rule_id)
-        latest_instance = alert_group.instances.order_by('-started_at').first()
-        fingerprint_for_log = alert_group.fingerprint # Extract for logging
-        logger.info(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Starting for AlertGroup ID: {alert_group_id}, Rule ID: {rule_id}, Status: {alert_status}")
+        fingerprint_for_log = alert_group.fingerprint
+        logger.info(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Starting for AlertGroup ID: {alert_group_id}, Rule ID: {rule_id}, Status: {alert_status}, TriggeringInstanceID: {triggering_instance_id}")
     except AlertGroup.DoesNotExist:
         logger.error(f"Task {self.request.id}: AlertGroup with ID {alert_group_id} not found. Aborting Jira task.")
         return
@@ -67,46 +64,64 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
         logger.error(f"Task {self.request.id}: JiraIntegrationRule with ID {rule_id} not found. Aborting Jira task.")
         return
     except Exception as e:
-        logger.error(f"Task {self.request.id}: Error fetching objects for AlertGroup {alert_group_id}: {e}", exc_info=True)
-        raise
+        logger.error(f"Task {self.request.id}: Error fetching base objects for AlertGroup {alert_group_id}: {e}", exc_info=True)
+        raise # Re-raise to allow Celery retry
 
-    # Instantiate JiraService
+    # Fetch the instance that triggered this event
+    current_event_instance = None
+    if triggering_instance_id:
+        try:
+            current_event_instance = AlertInstance.objects.get(pk=triggering_instance_id)
+            logger.info(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Successfully fetched Triggering AlertInstance ID: {triggering_instance_id}")
+        except AlertInstance.DoesNotExist:
+            logger.warning(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Triggering AlertInstance with ID {triggering_instance_id} not found. Will rely on latest_instance or group data.")
+    
+    # Get the latest overall instance for fallback or general info
+    latest_overall_instance = alert_group.instances.order_by('-started_at').first()
+
+    # Determine the instance to use for context (annotations, occurred_at)
+    # Prioritize the specific current_event_instance
+    instance_for_context = current_event_instance if current_event_instance else latest_overall_instance
+
     jira_service = JiraService()
     if jira_service.client is None:
-        logger.error(f"Task {self.request.id}: Jira service client not initialized. Aborting Jira task.")
+        logger.error(f"Task {self.request.id} (FP: {fingerprint_for_log}): Jira service client not initialized. Aborting Jira task.")
+        # Consider raising an exception here to utilize Celery's retry mechanism
+        # For example: raise ConnectionError("Jira client not initialized, retrying task.")
         return
 
     existing_issue_key = alert_group.jira_issue_key
     issue_status_category = None
 
     if existing_issue_key:
-        # Check existing issue status
         logger.info(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): AlertGroup has existing Jira key: {existing_issue_key}. Checking status.")
         try:
             issue_status_category = jira_service.get_issue_status_category(existing_issue_key)
         except Exception as e:
             logger.error(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Failed to get status for Jira issue {existing_issue_key}: {e}", exc_info=True)
-            raise e
+            raise e # Re-raise for retry
 
-        if issue_status_category is None and jira_service.client is not None:
-            logger.warning(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Could not get status for Jira issue {existing_issue_key}. Assuming deleted. Clearing local key.")
+        if issue_status_category is None and jira_service.client is not None: # Ensure client is not None
+            logger.warning(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Could not get status for Jira issue {existing_issue_key} (it might have been deleted). Clearing local key.")
             alert_group.jira_issue_key = None
             try:
                 alert_group.save(update_fields=['jira_issue_key'])
             except Exception as db_err:
                 logger.error(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Failed to clear jira_issue_key for AlertGroup {alert_group_id}: {db_err}", exc_info=True)
-                raise db_err
+                raise db_err # Re-raise for retry
             existing_issue_key = None
 
     # --- Prepare Template Context ---
     alert_name = alert_group.labels.get('alertname', 'N/A')
     severity = alert_group.labels.get('severity', 'default').capitalize()
-    summary_anno = latest_instance.annotations.get('summary', alert_name) if latest_instance else alert_name
-    description_anno = latest_instance.annotations.get('description', 'No description provided.') if latest_instance else 'No description provided.'
+    
+    # Use instance_for_context for annotations
+    annotations_dict = instance_for_context.annotations if instance_for_context else {}
+    summary_anno = annotations_dict.get('summary', alert_name)
+    description_anno = annotations_dict.get('description', 'No description provided.')
+    
     labels_dict = alert_group.labels or {}
-    annotations_dict = latest_instance.annotations if latest_instance else {}
 
-    # SentryHub URL
     try:
         sentryhub_url_path = reverse('alerts:alert-detail', args=[alert_group.fingerprint])
         site_base_url = str(settings.SITE_URL).rstrip('/')
@@ -115,19 +130,22 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
         logger.warning(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Could not generate SentryHub URL: {url_err}")
         full_sentryhub_url = "N/A"
 
-    # Occurred At Time (Formatted)
-    occurred_at_time = latest_instance.started_at if latest_instance else alert_group.last_occurrence
+    # Use instance_for_context for occurred_at_time
+    occurred_at_time = instance_for_context.started_at if instance_for_context else alert_group.last_occurrence
     occurred_at_str = "N/A"
     if occurred_at_time:
         try:
+            # Ensure datetime is aware
             if timezone.is_naive(occurred_at_time):
-                 occurred_at_time = timezone.make_aware(occurred_at_time, pytz.utc)
-            tehran_tz = pytz.timezone('Asia/Tehran')
+                 occurred_at_time = timezone.make_aware(occurred_at_time, pytz.utc) # Assuming DB times are UTC
+            tehran_tz = pytz.timezone('Asia/Tehran') # Or your target timezone from settings
             occurred_at_local = timezone.localtime(occurred_at_time, tehran_tz)
             occurred_at_str = occurred_at_local.strftime('%Y-%m-%d %H:%M:%S')
         except Exception as tz_err:
-             logger.warning(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Could not convert timestamp to Tehran time: {tz_err}. Falling back to ISO.")
-             occurred_at_str = occurred_at_time.isoformat()
+             logger.warning(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Could not convert occurred_at_time to target timezone: {tz_err}. Falling back to ISO.", exc_info=True)
+             occurred_at_str = occurred_at_time.isoformat() if occurred_at_time else "N/A"
+
+    current_task_time = timezone.now()
 
     template_context = {
         'alert_group': alert_group,
@@ -137,104 +155,65 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
         'annotations': annotations_dict,
         'alertname': alert_name,
         'fingerprint': alert_group.fingerprint,
-        'latest_instance': latest_instance,
-        'occurred_at': occurred_at_time, # Raw datetime object
-        'occurred_at_str': occurred_at_str, # Formatted string
+        'current_event_instance': current_event_instance,
+        'latest_instance': latest_overall_instance,
+        'occurred_at': occurred_at_time,
+        'occurred_at_str': occurred_at_str,
         'sentryhub_url': full_sentryhub_url,
         'severity': severity,
-        'summary_annotation': summary_anno, # Specific annotation for convenience
-        'description_annotation': description_anno, # Specific annotation
-        'now': timezone.now(), # Current time if needed in templates
+        'summary_annotation': summary_anno,
+        'description_annotation': description_anno,
+        'now': current_task_time, 
+        'resolved_time': current_task_time if alert_status == 'resolved' else None, # Meaningful only for 'resolved'
     }
     # --- End Template Context Preparation ---
 
-    # Read open/closed categories from settings
     open_categories = settings.JIRA_CONFIG.get('open_status_categories', ['To Do', 'In Progress'])
     closed_categories = settings.JIRA_CONFIG.get('closed_status_categories', ['Done'])
 
     try:
-        # Logic based on alert status
         if alert_status == 'firing':
             if existing_issue_key:
-                # Existing issue found, check if comment needs to be added
                  if issue_status_category in open_categories:
-                    # Render comment using template
-                    default_comment = f"Alert group '{alert_group.fingerprint}' is firing again at {timezone.now().isoformat()}."
-                    comment_body = render_template_safe(
-                        rule.jira_update_comment_template,
-                        template_context,
-                        default_comment
-                    )
+                    default_comment = f"Alert group '{alert_group.fingerprint}' is firing again (task run at {current_task_time.isoformat()})."
+                    comment_body = render_template_safe(rule.jira_update_comment_template, template_context, default_comment)
                     logger.info(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Adding 'firing again' comment to open Jira issue: {existing_issue_key}")
                     success = jira_service.add_comment(existing_issue_key, comment_body)
-                    logger.info(f"Task {self.request.id}: Successfully added 'firing again' comment to Jira issue {existing_issue_key} for AlertGroup {alert_group_id}.")
-                    if not success: raise Exception(f"Failed to add comment to {existing_issue_key}")
-
+                    if not success: raise Exception(f"Failed to add 'firing again' comment to {existing_issue_key}")
                  elif issue_status_category in closed_categories:
-                    # Issue is closed, clear key to create a new one
                     logger.info(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Existing Jira issue {existing_issue_key} is closed. Clearing local key to create a new issue.")
                     alert_group.jira_issue_key = None
                     alert_group.save(update_fields=['jira_issue_key'])
-                    existing_issue_key = None # Ensure we proceed to create new issue below
-
-                 else:
-                    # Unknown status, add comment anyway (using template)
-                    logger.warning(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Jira issue {existing_issue_key} has unknown status category '{issue_status_category}'. Adding 'firing again' comment.")
-                    default_comment = f"Alert firing again (Jira status category '{issue_status_category}') for group '{alert_group.fingerprint}' at {timezone.now().isoformat()}."
-                    comment_body = render_template_safe(
-                        rule.jira_update_comment_template,
-                        template_context,
-                        default_comment
-                    )
+                    existing_issue_key = None 
+                 else: # Unknown or None status
+                    logger.warning(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Jira issue {existing_issue_key} has unknown status category '{issue_status_category}'. Adding 'firing again' comment as precaution.")
+                    default_comment = f"Alert firing again (Jira status category '{issue_status_category}', task run at {current_task_time.isoformat()}) for group '{alert_group.fingerprint}'."
+                    comment_body = render_template_safe(rule.jira_update_comment_template, template_context, default_comment)
                     success = jira_service.add_comment(existing_issue_key, comment_body)
-                    logger.info(f"Task {self.request.id}: Successfully added comment (firing, Jira status category '{issue_status_category}') to Jira issue {existing_issue_key} for AlertGroup {alert_group_id}.")
-                    if not success: raise Exception(f"Failed to add comment to {existing_issue_key}")
-
-            # If no existing key (or was cleared above), create a new issue
-            if not existing_issue_key:
+                    if not success: raise Exception(f"Failed to add comment (unknown status) to {existing_issue_key}")
+            
+            if not existing_issue_key: # If no key existed or was cleared
                 logger.info(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Creating new Jira issue in project {rule.jira_project_key} for AlertGroup ID: {alert_group_id}.")
-
-                # --- Use Templates for Title and Description ---
-                # Render Title
                 default_title = f"[{severity}] SentryHub Alert: {summary_anno}"[:250]
-                jira_summary = render_template_safe(
-                    rule.jira_title_template,
-                    template_context,
-                    default_title
-                )[:255] # Ensure max length for summary
+                jira_summary = render_template_safe(rule.jira_title_template, template_context, default_title)[:255]
 
-                # Render Description
-                default_desc_parts = [ # Fallback similar to old logic if template fails
+                default_desc_parts = [
                     f"*Alert Group Fingerprint:* {alert_group.fingerprint}",
                     f"*Status:* Firing",
-                    f"*Occurred At:* {occurred_at_str}",
-                    "\\n*Labels:*",
-                    "{code:json}",
-                    json.dumps(labels_dict, indent=2, ensure_ascii=False),
-                    "{code}",
-                    "\\n*Annotations:*",
-                    "{code:json}",
-                    json.dumps(annotations_dict, indent=2, ensure_ascii=False),
-                    "{code}",
+                    f"*Occurred At (Instance/Group):* {occurred_at_str}", # Uses calculated occurred_at_str
+                    "\\n*Labels:*", "{code:json}", json.dumps(labels_dict, indent=2, ensure_ascii=False), "{code}",
+                    "\\n*Annotations (from relevant instance):*", "{code:json}", json.dumps(annotations_dict, indent=2, ensure_ascii=False), "{code}",
                     f"\\n[View in SentryHub|{full_sentryhub_url}]"
                 ]
                 default_description = "\\n".join(default_desc_parts).strip()
-
-                jira_description = render_template_safe(
-                    rule.jira_description_template,
-                    template_context,
-                    default_description
-                )
-                # --- Start: Append SentryHub URL ---
-                # Ensure the link is always added, regardless of the template content
+                jira_description = render_template_safe(rule.jira_description_template, template_context, default_description)
+                
                 sentryhub_link_text = f"\n\n[View in SentryHub|{full_sentryhub_url}]"
                 if sentryhub_link_text not in jira_description:
                      jira_description += sentryhub_link_text
-                # --- End: Append SentryHub URL ---
 
                 assignee_username = rule.assignee
 
-                # Create issue using rendered content
                 new_issue_key = jira_service.create_issue(
                     project_key=rule.jira_project_key,
                     issue_type=rule.jira_issue_type,
@@ -247,8 +226,7 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
                     alert_group.jira_issue_key = new_issue_key
                     alert_group.save(update_fields=['jira_issue_key'])
                     logger.info(f"Task {self.request.id} (FP: {fingerprint_for_log}): Associated AlertGroup with new Jira issue {new_issue_key}")
-
-                    # Add Watchers (logic remains the same)
+                    
                     watchers_string = rule.watchers
                     if watchers_string:
                         watcher_usernames = [w.strip() for w in watchers_string.split(',') if w.strip()]
@@ -256,12 +234,10 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
                             logger.info(f"Task {self.request.id} (FP: {fingerprint_for_log}): Attempting to add watchers {watcher_usernames} to issue {new_issue_key}")
                             for username in watcher_usernames:
                                 try:
-                                    success = jira_service.add_watcher(new_issue_key, username)
-                                    if success:
-                                        logger.info(f"Task {self.request.id} (FP: {fingerprint_for_log}): Successfully added watcher '{username}' to issue {new_issue_key}")
-                                    else:
-                                        logger.warning(f"Task {self.request.id} (FP: {fingerprint_for_log}): Failed to add watcher '{username}' to issue {new_issue_key} (API call returned false)")
-                                except Exception as watcher_err:
+                                    # jira_service.add_watcher returns True/False
+                                    if not jira_service.add_watcher(new_issue_key, username):
+                                        logger.warning(f"Task {self.request.id} (FP: {fingerprint_for_log}): Failed to add watcher '{username}' to issue {new_issue_key} (API call returned false or error)")
+                                except Exception as watcher_err: # Catch more general errors here
                                     logger.error(f"Task {self.request.id} (FP: {fingerprint_for_log}): Error adding watcher '{username}' to issue {new_issue_key}: {watcher_err}", exc_info=True)
                 else:
                     logger.error(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Failed to create Jira issue for AlertGroup {alert_group_id}.")
@@ -269,31 +245,19 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
 
         elif alert_status == 'resolved':
             if existing_issue_key and issue_status_category in open_categories:
-                # Render resolved comment using template
-                resolved_time_iso = timezone.now().isoformat()
-                default_comment = f"Alert group '{alert_group.fingerprint}' was resolved at {resolved_time_iso}."
-
-                # Update context slightly for resolved state if needed (e.g., add resolved_time)
-                template_context['resolved_time'] = timezone.now()
-                template_context['resolved_time_iso'] = resolved_time_iso
-
-                comment_body = render_template_safe(
-                    rule.jira_update_comment_template, # Use the same update template
-                    template_context,
-                    default_comment
-                )
+                default_comment = f"Alert group '{alert_group.fingerprint}' was resolved (task run at {current_task_time.isoformat()})."
+                # The template_context already has 'resolved_time' set to current_task_time
+                comment_body = render_template_safe(rule.jira_update_comment_template, template_context, default_comment)
                 logger.info(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Adding 'resolved' comment to open Jira issue: {existing_issue_key}")
                 success = jira_service.add_comment(existing_issue_key, comment_body)
-                logger.info(f"Task {self.request.id}: Successfully added 'resolved' comment to Jira issue {existing_issue_key} for AlertGroup {alert_group_id}.")
-                if not success: raise Exception(f"Failed to add resolved comment to {existing_issue_key}")
-
+                if not success: raise Exception(f"Failed to add 'resolved' comment to {existing_issue_key}")
             elif existing_issue_key:
-                logger.info(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): AlertGroup resolved, but Jira issue {existing_issue_key} has status '{issue_status_category}'. No comment added.")
+                logger.info(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): AlertGroup resolved, but Jira issue {existing_issue_key} has status '{issue_status_category}' (not open). No comment added.")
             else:
                 logger.info(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): AlertGroup resolved, but no associated Jira issue found. No action taken.")
 
-    except Exception as e:
-        logger.error(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): An error occurred during Jira processing logic for AlertGroup {alert_group_id}: {e}", exc_info=True)
-        raise e
+    except Exception as e: # Catch general error at the end of the main try block
+        logger.error(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): An unhandled error occurred during Jira processing logic for AlertGroup {alert_group_id}: {e}", exc_info=True)
+        raise e # Re-raise for Celery retry
 
     logger.info(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Finished processing for AlertGroup ID: {alert_group_id}")
