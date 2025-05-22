@@ -39,14 +39,14 @@ This document tracks the testing progress for different parts of the SentryHub a
 | **Views**         |                                           |        |                                                              |
 |                   | `AlertListView` (`views.py`)              |   🟢   | GET (status, template), filters, context, pagination        |
 |                   | `AlertDetailView` (`views.py`)            |   🟢   | GET (status, template), context, POST (ack, comment), AJAX  |
-|                   | `acknowledge_alert_from_list` (`views.py`)|   ⚪️   | POST handling, form validation, messages, redirects        |
+|                   | `acknowledge_alert_from_list` (`views.py`)|   🟢   | POST handling, form validation, messages, redirects        |
 |                   | `SilenceRuleListView` (`views.py`)        |   🟢   | GET (auth, status, template), filters, context, pagination |
 |                   | `SilenceRuleCreateView` (`views.py`)      |   🟢   | GET (auth, initial data), POST (valid/invalid form), service calls |
 |                   | `SilenceRuleUpdateView` (`views.py`)      |   🟢   | GET, POST (valid/invalid), permissions, service calls      |
 |                   | `SilenceRuleDeleteView` (`views.py`)      |   🟢   | GET (confirmation), POST (deletion), permissions, service calls |
 |                   | `login_view` (`views.py`)                 |   🟢   | Basic GET/POST handling, authentication, redirects           |
 | **API Views**     |                                           |        |                                                              |
-|                   | `AlertWebhookView` (`api/views.py`)       |   ⚪️   | POST (valid/invalid serializer), calls task, status codes    |
+|                   | `AlertWebhookView` (`api/views.py`)       |   🟢   | POST (valid/invalid serializer), calls task, status codes    |
 |                   | `AlertGroupViewSet` (`api/views.py`)      |   ⚪️   | List/Retrieve (GET), filters, actions (ack, history, comments) |
 |                   | `AlertHistoryViewSet` (`api/views.py`)    |   ⚪️   | List (GET), filters (fingerprint, dates)                     |
 | **API Serializers**|                                          |        |                                                              |
