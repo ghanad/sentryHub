@@ -1,4 +1,6 @@
 from rest_framework import serializers
+from rest_framework.settings import api_settings
+from django.utils import timezone # Import timezone
 from ..models import AlertGroup, AlertInstance, AlertComment, AlertAcknowledgementHistory
 
 
@@ -17,10 +19,14 @@ class AlertAcknowledgementHistorySerializer(serializers.ModelSerializer):
     acknowledged_by_name = serializers.SerializerMethodField()
     instance_details = serializers.SerializerMethodField()
     
+    # Explicitly define acknowledged_at to ensure UTC output
+    acknowledged_at = serializers.DateTimeField(format='%Y-%m-%dT%H:%M:%S.%fZ', default_timezone=timezone.utc)
+
     class Meta:
         model = AlertAcknowledgementHistory
-        fields = ['id', 'acknowledged_by', 'acknowledged_by_name', 'acknowledged_at', 
+        fields = ['id', 'acknowledged_by', 'acknowledged_by_name', 'acknowledged_at',
                   'comment', 'alert_instance', 'instance_details']
+        # extra_kwargs for acknowledged_at is removed as it's now defined explicitly
     
     def get_acknowledged_by_name(self, obj):
         if obj.acknowledged_by:
@@ -31,8 +37,8 @@ class AlertAcknowledgementHistorySerializer(serializers.ModelSerializer):
         if obj.alert_instance:
             return {
                 'id': obj.alert_instance.id,
-                'started_at': obj.alert_instance.started_at,
-                'ended_at': obj.alert_instance.ended_at,
+                'started_at': obj.alert_instance.started_at.astimezone(timezone.utc).isoformat().replace('+00:00', 'Z'),
+                'ended_at': obj.alert_instance.ended_at.astimezone(timezone.utc).isoformat().replace('+00:00', 'Z') if obj.alert_instance.ended_at else None,
                 'status': obj.alert_instance.status
             }
         return None
