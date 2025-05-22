@@ -52,7 +52,7 @@ This document tracks the testing progress for different parts of the SentryHub a
 | **API Serializers**|                                          |        |                                                              |
 |                   | `AlertInstanceSerializer` (`api/serializers.py`) | 🟢 | Serialization structure                                      |
 |                   | `AlertAcknowledgementHistorySerializer` (`api/serializers.py`) | 🟢 | Serialization, MethodFields                        |
-|                   | `AlertGroupSerializer` (`api/serializers.py`) | ⚪️ | Serialization, MethodFields                        |
+|                   | `AlertGroupSerializer` (`api/serializers.py`) | 🟢 | Serialization, MethodFields                        |
 |                   | `AlertCommentSerializer` (`api/serializers.py`) | ⚪️ | Serialization, MethodFields                        |
 |                   | `AlertmanagerWebhookSerializer` (`api/serializers.py`) | ⚪️ | Validation (required fields)                             |
 |                   | `AcknowledgeAlertSerializer` (`api/serializers.py`) | ⚪️ | Validation                                                   |

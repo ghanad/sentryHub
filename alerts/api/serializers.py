@@ -6,11 +6,13 @@ from ..models import AlertGroup, AlertInstance, AlertComment, AlertAcknowledgeme
 
 class AlertInstanceSerializer(serializers.ModelSerializer):
     alert_group_fingerprint = serializers.SerializerMethodField()
-
+    started_at = serializers.DateTimeField(format='%Y-%m-%dT%H:%M:%S.%fZ', default_timezone=timezone.utc)
+    ended_at = serializers.DateTimeField(format='%Y-%m-%dT%H:%M:%S.%fZ', default_timezone=timezone.utc, allow_null=True)
+ 
     class Meta:
         model = AlertInstance
         fields = ['id', 'status', 'started_at', 'ended_at', 'annotations', 'generator_url', 'alert_group_fingerprint']
-
+ 
     def get_alert_group_fingerprint(self, obj):
         return obj.alert_group.fingerprint if obj.alert_group else None
 
@@ -48,14 +50,17 @@ class AlertGroupSerializer(serializers.ModelSerializer):
     instances = AlertInstanceSerializer(many=True, read_only=True)
     acknowledged_by_name = serializers.SerializerMethodField()
     acknowledgement_history = AlertAcknowledgementHistorySerializer(many=True, read_only=True)
+    first_occurrence = serializers.DateTimeField(format='%Y-%m-%dT%H:%M:%S.%fZ', default_timezone=timezone.utc)
+    last_occurrence = serializers.DateTimeField(format='%Y-%m-%dT%H:%M:%S.%fZ', default_timezone=timezone.utc)
+    acknowledgement_time = serializers.DateTimeField(format='%Y-%m-%dT%H:%M:%S.%fZ', default_timezone=timezone.utc, allow_null=True)
     
     class Meta:
         model = AlertGroup
-        fields = ['id', 'fingerprint', 'name', 'labels', 'severity', 
-                 'instance', 'first_occurrence', 'last_occurrence', 'current_status', 
-                 'total_firing_count', 'acknowledged', 'acknowledged_by', 
+        fields = ['id', 'fingerprint', 'name', 'labels', 'severity',
+                 'instance', 'source', 'first_occurrence', 'last_occurrence', 'current_status',
+                 'total_firing_count', 'acknowledged', 'acknowledged_by',
                  'acknowledged_by_name', 'acknowledgement_time', 'instances',
-                 'acknowledgement_history']
+                 'acknowledgement_history', 'documentation', 'is_silenced', 'silenced_until', 'jira_issue_key']
     
     def get_acknowledged_by_name(self, obj):
         if obj.acknowledged_by:
