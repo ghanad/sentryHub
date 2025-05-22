@@ -47,7 +47,7 @@ This document tracks the testing progress for different parts of the SentryHub a
 |                   | `login_view` (`views.py`)                 |   🟢   | Basic GET/POST handling, authentication, redirects           |
 | **API Views**     |                                           |        |                                                              |
 |                   | `AlertWebhookView` (`api/views.py`)       |   🟢   | POST (valid/invalid serializer), calls task, status codes    |
-|                   | `AlertGroupViewSet` (`api/views.py`)      |   ⚪️   | List/Retrieve (GET), filters, actions (ack, history, comments) |
+|                   | `AlertGroupViewSet` (`api/views.py`)      |   🟢   | List/Retrieve (GET), filters, actions (ack, history, comments) |
 |                   | `AlertHistoryViewSet` (`api/views.py`)    |   ⚪️   | List (GET), filters (fingerprint, dates)                     |
 | **API Serializers**|                                          |        |                                                              |
 |                   | `AlertInstanceSerializer` (`api/serializers.py`) | ⚪️ | Serialization structure                                      |

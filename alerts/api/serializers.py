@@ -57,7 +57,8 @@ class AlertCommentSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = AlertComment
-        fields = ['id', 'alert_group', 'user', 'user_name', 'content', 'created_at']
+        fields = ['id', 'user_name', 'content', 'created_at']
+        read_only_fields = ['alert_group', 'user'] # These are set by the view
     
     def get_user_name(self, obj):
         return obj.user.get_full_name() or obj.user.username

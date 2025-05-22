@@ -79,9 +79,9 @@ class AlertGroupViewSet(viewsets.ReadOnlyModelViewSet):
         if status_filter:
             queryset = queryset.filter(current_status=status_filter)
 
-        # Only show active (firing) alerts by default
+        # Only show active (firing) alerts by default, unless a specific status filter is applied
         active_only = self.request.query_params.get('active_only', 'true')
-        if active_only.lower() == 'true':
+        if active_only.lower() == 'true' and not status_filter: # Apply only if no status filter
             queryset = queryset.filter(current_status='firing')
 
         # Filter by instance
@@ -89,25 +89,25 @@ class AlertGroupViewSet(viewsets.ReadOnlyModelViewSet):
         if instance:
             queryset = queryset.filter(instance__icontains=instance)
 
-        # Filter by service
+        # Filter by service (within labels JSONField)
         service = self.request.query_params.get('service', None)
         if service:
-            queryset = queryset.filter(service__icontains=service)
+            queryset = queryset.filter(labels__service__icontains=service)
 
-        # Filter by job
+        # Filter by job (within labels JSONField)
         job = self.request.query_params.get('job', None)
         if job:
-            queryset = queryset.filter(job__icontains=job)
+            queryset = queryset.filter(labels__job__icontains=job)
 
-        # Filter by cluster
+        # Filter by cluster (within labels JSONField)
         cluster = self.request.query_params.get('cluster', None)
         if cluster:
-            queryset = queryset.filter(cluster__icontains=cluster)
+            queryset = queryset.filter(labels__cluster__icontains=cluster)
 
-        # Filter by namespace
+        # Filter by namespace (within labels JSONField)
         namespace = self.request.query_params.get('namespace', None)
         if namespace:
-            queryset = queryset.filter(namespace__icontains=namespace)
+            queryset = queryset.filter(labels__namespace__icontains=namespace)
 
         return queryset
 
