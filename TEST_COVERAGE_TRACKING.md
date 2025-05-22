@@ -44,7 +44,7 @@ This document tracks the testing progress for different parts of the SentryHub a
 |                   | `SilenceRuleCreateView` (`views.py`)      |   🟢   | GET (auth, initial data), POST (valid/invalid form), service calls |
 |                   | `SilenceRuleUpdateView` (`views.py`)      |   🟢   | GET, POST (valid/invalid), permissions, service calls      |
 |                   | `SilenceRuleDeleteView` (`views.py`)      |   🟢   | GET (confirmation), POST (deletion), permissions, service calls |
-|                   | `login_view` (`views.py`)                 |   ⚪️   | Basic GET/POST handling, authentication, redirects           |
+|                   | `login_view` (`views.py`)                 |   🟢   | Basic GET/POST handling, authentication, redirects           |
 | **API Views**     |                                           |        |                                                              |
 |                   | `AlertWebhookView` (`api/views.py`)       |   ⚪️   | POST (valid/invalid serializer), calls task, status codes    |
 |                   | `AlertGroupViewSet` (`api/views.py`)      |   ⚪️   | List/Retrieve (GET), filters, actions (ack, history, comments) |

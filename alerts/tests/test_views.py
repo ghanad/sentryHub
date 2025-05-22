@@ -6,7 +6,8 @@ from django.conf import settings # Import settings
 from datetime import timedelta, datetime
 import json
 from unittest.mock import patch, call
-from django.contrib import messages # Import messages
+from django.contrib import messages
+from django.contrib.auth.forms import AuthenticationForm
 
 from ..models import AlertGroup, AlertInstance, AlertComment, SilenceRule, AlertAcknowledgementHistory
 from ..forms import AlertAcknowledgementForm, AlertCommentForm, SilenceRuleForm
@@ -683,12 +684,53 @@ class SilenceRuleCreateViewTest(TestCase):
         self.assertEqual(SilenceRule.objects.count(), 0) # No rule created
 
 
-# --- Placeholder for future tests ---
-# class SilenceRuleUpdateViewTest(TestCase):
-#     pass
+# --- Tests for LoginView ---
+class LoginViewTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username='testuser', password='password')
+        self.login_url = reverse('login')
+        self.alert_list_url = reverse('alerts:alert-list')
 
-# class SilenceRuleDeleteViewTest(TestCase):
-#     pass
+    def test_get_request(self):
+        """Test GET request to the login view."""
+        response = self.client.get(self.login_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'registration/login.html')
+        self.assertIn('form', response.context)
+        self.assertIsInstance(response.context['form'], AuthenticationForm)
 
-# class LoginViewTest(TestCase):
-#     pass
+    def test_post_valid_credentials_no_next(self):
+        """Test POST with valid credentials and no 'next' parameter."""
+        response = self.client.post(self.login_url, {
+            'username': 'testuser',
+            'password': 'password'
+        })
+        self.assertRedirects(response, reverse('dashboard:dashboard'), status_code=302, target_status_code=200)
+        self.assertTrue(self.user.is_authenticated) # Check if user is logged in
+
+    def test_post_valid_credentials_with_next(self):
+        """Test POST with valid credentials and a 'next' parameter."""
+        next_url = reverse('alerts:alert-detail', kwargs={'fingerprint': 'some_fingerprint'})
+        # Create a dummy alert group for the next_url to be valid
+        AlertGroup.objects.create(fingerprint='some_fingerprint', name='Dummy Alert', current_status='firing', labels={})
+
+        response = self.client.post(f"{self.login_url}?next={next_url}", {
+            'username': 'testuser',
+            'password': 'password'
+        })
+        self.assertRedirects(response, next_url, status_code=302, target_status_code=200)
+        self.assertTrue(self.user.is_authenticated) # Check if user is logged in
+
+    def test_post_invalid_credentials(self):
+        """Test POST with invalid credentials."""
+        response = self.client.post(self.login_url, {
+            'username': 'testuser',
+            'password': 'wrongpassword'
+        })
+        self.assertEqual(response.status_code, 200) # Should re-render the form
+        self.assertTemplateUsed(response, 'registration/login.html')
+        self.assertIn('form', response.context)
+        self.assertTrue(response.context['form'].errors)
+        self.assertFalse(response.wsgi_request.user.is_authenticated) # User should not be logged in
+        self.assertContains(response, "Please enter a correct username and password.") # Check for error message
