@@ -248,3 +248,200 @@ class AlertGroupViewSetTests(APITestCase):
         response = self.client.post(self.comments_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('content', response.data)
+
+class AlertHistoryViewSetTests(APITestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(username='testuser', password='testpassword')
+        self.client.force_authenticate(user=self.user)
+
+        self.alert_group_1 = AlertGroup.objects.create(
+            fingerprint='fg_history_1',
+            name='History Test Alert 1',
+            labels={}, # Added labels field
+            severity='critical',
+            current_status='firing',
+            instance='host_history_1',
+            source='alertmanager',
+            total_firing_count=1
+        )
+        self.alert_group_2 = AlertGroup.objects.create(
+            fingerprint='fg_history_2',
+            name='History Test Alert 2',
+            labels={}, # Added labels field
+            severity='warning',
+            current_status='resolved',
+            instance='host_history_2',
+            source='alertmanager',
+            total_firing_count=1
+        )
+
+        # Instances for alert_group_1
+        self.instance_1_firing = AlertInstance.objects.create(
+            alert_group=self.alert_group_1,
+            status='firing',
+            started_at=timezone.make_aware(timezone.datetime(2025, 5, 18, 0, 0, 0)) - timedelta(days=5),
+            annotations={'summary': 'Instance 1 firing'}
+        )
+        self.instance_1_resolved_old = AlertInstance.objects.create(
+            alert_group=self.alert_group_1,
+            status='resolved',
+            started_at=timezone.make_aware(timezone.datetime(2025, 5, 18, 0, 0, 0)) - timedelta(days=10),
+            ended_at=timezone.make_aware(timezone.datetime(2025, 5, 18, 0, 0, 0)) - timedelta(days=9),
+            annotations={'summary': 'Instance 1 resolved old'}
+        )
+        self.instance_1_resolved_recent = AlertInstance.objects.create(
+            alert_group=self.alert_group_1,
+            status='resolved',
+            started_at=timezone.make_aware(timezone.datetime(2025, 5, 18, 0, 0, 0)) - timedelta(days=2),
+            ended_at=timezone.make_aware(timezone.datetime(2025, 5, 18, 0, 0, 0)) - timedelta(days=1),
+            annotations={'summary': 'Instance 1 resolved recent'}
+        )
+
+        # Instances for alert_group_2
+        self.instance_2_firing = AlertInstance.objects.create(
+            alert_group=self.alert_group_2,
+            status='firing',
+            started_at=timezone.make_aware(timezone.datetime(2025, 5, 18, 0, 0, 0)) - timedelta(days=3),
+            annotations={'summary': 'Instance 2 firing'}
+        )
+        self.instance_2_resolved = AlertInstance.objects.create(
+            alert_group=self.alert_group_2,
+            status='resolved',
+            started_at=timezone.make_aware(timezone.datetime(2025, 5, 18, 0, 0, 0)) - timedelta(days=7),
+            ended_at=timezone.make_aware(timezone.datetime(2025, 5, 18, 0, 0, 0)) - timedelta(days=6),
+            annotations={'summary': 'Instance 2 resolved'}
+        )
+
+        self.list_url = reverse('alerts:history-list')
+
+    def test_list_all_alert_instances(self):
+        """
+        Ensure we can retrieve a list of all alert instances.
+        """
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), AlertInstance.objects.count())
+        # Verify that the serializer is working as expected
+        serializer = AlertInstanceSerializer(AlertInstance.objects.all().order_by('-started_at'), many=True)
+        self.assertEqual(response.data['results'], serializer.data)
+
+    def test_filter_by_status(self):
+        """
+        Ensure we can filter alert instances by status.
+        """
+        response = self.client.get(self.list_url + '?status=firing')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 2) # instance_1_firing, instance_2_firing
+        statuses = [inst['status'] for inst in response.data['results']]
+        self.assertTrue(all(s == 'firing' for s in statuses))
+
+        response = self.client.get(self.list_url + '?status=resolved')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 3) # instance_1_resolved_old, instance_1_resolved_recent, instance_2_resolved
+        statuses = [inst['status'] for inst in response.data['results']]
+        self.assertTrue(all(s == 'resolved' for s in statuses))
+
+    def test_filter_by_fingerprint(self):
+        """
+        Ensure we can filter alert instances by alert group fingerprint.
+        """
+        response = self.client.get(self.list_url + f'?fingerprint={self.alert_group_1.fingerprint}')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 3) # All instances for alert_group_1
+        alert_group_fingerprints = [inst['alert_group_fingerprint'] for inst in response.data['results']]
+        self.assertTrue(all(f == self.alert_group_1.fingerprint for f in alert_group_fingerprints))
+
+        response = self.client.get(self.list_url + f'?fingerprint={self.alert_group_2.fingerprint}')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 2) # All instances for alert_group_2
+        alert_group_fingerprints = [inst['alert_group_fingerprint'] for inst in response.data['results']]
+        self.assertTrue(all(f == self.alert_group_2.fingerprint for f in alert_group_fingerprints))
+
+    def test_filter_by_start_date(self):
+        """
+        Ensure we can filter alert instances by started_at (gte).
+        """
+        # Get instances started on or after 2025-05-14 (instance_1_resolved_recent, instance_2_firing)
+        start_datetime = timezone.make_aware(timezone.datetime(2025, 5, 18, 0, 0, 0)) - timedelta(days=4)
+        response = self.client.get(self.list_url, {'start_date': start_datetime})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 2) # Corrected expected count
+        instance_ids = {inst['id'] for inst in response.data['results']}
+        self.assertNotIn(self.instance_1_firing.id, instance_ids) # Corrected assertion
+        self.assertIn(self.instance_2_firing.id, instance_ids)
+        self.assertIn(self.instance_1_resolved_recent.id, instance_ids)
+        self.assertNotIn(self.instance_1_resolved_old.id, instance_ids)
+        self.assertNotIn(self.instance_2_resolved.id, instance_ids)
+
+    def test_filter_by_end_date(self):
+        """
+        Ensure we can filter alert instances by started_at (lte).
+        """
+        # Get instances started on or before 2025-05-12 (instance_1_resolved_old, instance_2_resolved)
+        end_datetime = timezone.make_aware(timezone.datetime(2025, 5, 18, 0, 0, 0)) - timedelta(days=6)
+        response = self.client.get(self.list_url, {'end_date': end_datetime})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 2)
+        instance_ids = {inst['id'] for inst in response.data['results']}
+        self.assertIn(self.instance_1_resolved_old.id, instance_ids)
+        self.assertIn(self.instance_2_resolved.id, instance_ids)
+        self.assertNotIn(self.instance_1_firing.id, instance_ids)
+        self.assertNotIn(self.instance_1_resolved_recent.id, instance_ids)
+        self.assertNotIn(self.instance_2_firing.id, instance_ids)
+
+    def test_filter_by_fingerprint_and_status(self):
+        """
+        Ensure we can filter by both fingerprint and status.
+        """
+        response = self.client.get(self.list_url + f'?fingerprint={self.alert_group_1.fingerprint}&status=firing')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 1)
+        self.assertEqual(response.data['results'][0]['id'], self.instance_1_firing.id)
+
+        response = self.client.get(self.list_url + f'?fingerprint={self.alert_group_1.fingerprint}&status=resolved')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 2)
+        instance_ids = {inst['id'] for inst in response.data['results']}
+        self.assertIn(self.instance_1_resolved_old.id, instance_ids)
+        self.assertIn(self.instance_1_resolved_recent.id, instance_ids)
+
+    def test_filter_by_date_range(self):
+        """
+        Ensure we can filter by a date range (start_date and end_date).
+        """
+        # Instances started between 2025-05-12 and 2025-05-15 (instance_1_firing, instance_2_firing)
+        start_datetime = timezone.make_aware(timezone.datetime(2025, 5, 18, 0, 0, 0)) - timedelta(days=6)
+        end_datetime = timezone.make_aware(timezone.datetime(2025, 5, 18, 0, 0, 0)) - timedelta(days=3)
+        response = self.client.get(self.list_url, {
+            'start_date': start_datetime,
+            'end_date': end_datetime
+        })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 2) # Corrected expected count
+        instance_ids = {inst['id'] for inst in response.data['results']}
+        self.assertIn(self.instance_1_firing.id, instance_ids)
+        self.assertIn(self.instance_2_firing.id, instance_ids)
+        self.assertNotIn(self.instance_2_resolved.id, instance_ids) # Corrected assertion
+        self.assertNotIn(self.instance_1_resolved_old.id, instance_ids)
+        self.assertNotIn(self.instance_1_resolved_recent.id, instance_ids)
+
+    def test_no_matching_results(self):
+        """
+        Ensure an empty list is returned when no instances match the filters.
+        """
+        response = self.client.get(self.list_url + '?status=nonexistent')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('status', response.data) # Expecting validation error details
+
+        response = self.client.get(self.list_url + '?fingerprint=nonexistent_fg')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 0)
+
+    def test_unauthenticated_access(self):
+        """
+        Ensure unauthenticated users cannot access the AlertHistoryViewSet.
+        """
+        self.client.force_authenticate(user=None) # Unauthenticate the client
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

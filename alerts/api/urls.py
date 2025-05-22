@@ -4,7 +4,7 @@ from .views import AlertWebhookView, AlertGroupViewSet, AlertHistoryViewSet
 
 router = DefaultRouter()
 router.register(r'alerts', AlertGroupViewSet)
-router.register(r'history', AlertHistoryViewSet)
+router.register(r'history', AlertHistoryViewSet, basename='history')
 
 urlpatterns = [
     path('', include(router.urls)),

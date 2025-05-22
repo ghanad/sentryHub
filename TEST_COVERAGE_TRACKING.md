@@ -48,7 +48,7 @@ This document tracks the testing progress for different parts of the SentryHub a
 | **API Views**     |                                           |        |                                                              |
 |                   | `AlertWebhookView` (`api/views.py`)       |   🟢   | POST (valid/invalid serializer), calls task, status codes    |
 |                   | `AlertGroupViewSet` (`api/views.py`)      |   🟢   | List/Retrieve (GET), filters, actions (ack, history, comments) |
-|                   | `AlertHistoryViewSet` (`api/views.py`)    |   ⚪️   | List (GET), filters (fingerprint, dates)                     |
+|                   | `AlertHistoryViewSet` (`api/views.py`)    |   🟢   | List (GET), filters (status, fingerprint, start_date, end_date) |
 | **API Serializers**|                                          |        |                                                              |
 |                   | `AlertInstanceSerializer` (`api/serializers.py`) | ⚪️ | Serialization structure                                      |
 |                   | `AlertAcknowledgementHistorySerializer` (`api/serializers.py`) | ⚪️ | Serialization, MethodFields                        |

@@ -3,9 +3,14 @@ from ..models import AlertGroup, AlertInstance, AlertComment, AlertAcknowledgeme
 
 
 class AlertInstanceSerializer(serializers.ModelSerializer):
+    alert_group_fingerprint = serializers.SerializerMethodField()
+
     class Meta:
         model = AlertInstance
-        fields = ['id', 'status', 'started_at', 'ended_at', 'annotations', 'generator_url']
+        fields = ['id', 'status', 'started_at', 'ended_at', 'annotations', 'generator_url', 'alert_group_fingerprint']
+
+    def get_alert_group_fingerprint(self, obj):
+        return obj.alert_group.fingerprint if obj.alert_group else None
 
 
 class AlertAcknowledgementHistorySerializer(serializers.ModelSerializer):
