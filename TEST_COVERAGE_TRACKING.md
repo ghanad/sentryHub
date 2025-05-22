@@ -50,7 +50,7 @@ This document tracks the testing progress for different parts of the SentryHub a
 |                   | `AlertGroupViewSet` (`api/views.py`)      |   🟢   | List/Retrieve (GET), filters, actions (ack, history, comments) |
 |                   | `AlertHistoryViewSet` (`api/views.py`)    |   🟢   | List (GET), filters (status, fingerprint, start_date, end_date) |
 | **API Serializers**|                                          |        |                                                              |
-|                   | `AlertInstanceSerializer` (`api/serializers.py`) | ⚪️ | Serialization structure                                      |
+|                   | `AlertInstanceSerializer` (`api/serializers.py`) | 🟢 | Serialization structure                                      |
 |                   | `AlertAcknowledgementHistorySerializer` (`api/serializers.py`) | ⚪️ | Serialization, MethodFields                        |
 |                   | `AlertGroupSerializer` (`api/serializers.py`) | ⚪️ | Serialization, MethodFields                        |
 |                   | `AlertCommentSerializer` (`api/serializers.py`) | ⚪️ | Serialization, MethodFields                        |
