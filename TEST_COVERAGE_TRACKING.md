@@ -33,8 +33,8 @@ This document tracks the testing progress for different parts of the SentryHub a
 |                   | `get_active_firing_instance` (`alerts_processor.py`) | 🟢 | Logic for finding active instance                        |
 |                   | `update_alert_state` (`alert_state_manager.py`) | 🟢 | Main logic for group/instance creation/update, status transitions |
 |                   | `parse_alertmanager_payload` (`payload_parser.py`) | 🟢 | Parsing different payload versions, date handling, missing fields |
-|                   | `jira_service.py`                         |   ⚪️   | (Also in integrations) API calls, connection handling         |
-|                   | `jira_matcher.py`                         |   ⚪️   | (Also in integrations) Rule matching logic                   |
+|                   | `jira_service.py`                         |   🟢   | (Also in integrations) API calls, connection handling         |
+|                   | `jira_matcher.py`                         |   🟢   | (Also in integrations) Rule matching logic                   |
 |                   | `alert_logger.py`                         |   ⚫️   | File writing (might need integration test or mock `open`) |
 | **Views**         |                                           |        |                                                              |
 |                   | `AlertListView` (`views.py`)              |   🟢   | GET (status, template), filters, context, pagination        |
@@ -42,8 +42,8 @@ This document tracks the testing progress for different parts of the SentryHub a
 |                   | `acknowledge_alert_from_list` (`views.py`)|   ⚪️   | POST handling, form validation, messages, redirects        |
 |                   | `SilenceRuleListView` (`views.py`)        |   🟢   | GET (auth, status, template), filters, context, pagination |
 |                   | `SilenceRuleCreateView` (`views.py`)      |   🟢   | GET (auth, initial data), POST (valid/invalid form), service calls |
-|                   | `SilenceRuleUpdateView` (`views.py`)      |   ⚪️   | GET, POST (valid/invalid), permissions, service calls      |
-|                   | `SilenceRuleDeleteView` (`views.py`)      |   ⚪️   | GET (confirmation), POST (deletion), permissions, service calls |
+|                   | `SilenceRuleUpdateView` (`views.py`)      |   🟢   | GET, POST (valid/invalid), permissions, service calls      |
+|                   | `SilenceRuleDeleteView` (`views.py`)      |   🟢   | GET (confirmation), POST (deletion), permissions, service calls |
 |                   | `login_view` (`views.py`)                 |   ⚪️   | Basic GET/POST handling, authentication, redirects           |
 | **API Views**     |                                           |        |                                                              |
 |                   | `AlertWebhookView` (`api/views.py`)       |   ⚪️   | POST (valid/invalid serializer), calls task, status codes    |

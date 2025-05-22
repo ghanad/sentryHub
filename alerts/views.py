@@ -641,6 +641,7 @@ class SilenceRuleUpdateView(LoginRequiredMixin, UpdateView):
              import json
              # Set the *value* for the widget rendering
              context['form'].fields['matchers'].widget.attrs['value'] = json.dumps(self.object.matchers, indent=2)
+        context['is_update'] = True
         return context
 
     # Optional: Add permission check if needed
@@ -656,35 +657,38 @@ class SilenceRuleDeleteView(LoginRequiredMixin, DeleteView):
     template_name = 'alerts/silence_rule_confirm_delete.html'
     success_url = reverse_lazy('alerts:silence-rule-list')
 
-    def form_valid(self, form):
-        # Get the rule before deletion
-        rule = self.get_object()
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        rule = self.object
         rule_id = rule.id
         ends_at = rule.ends_at
-        
-        logger.info(f"User {self.request.user.username} deleting silence rule ID {rule_id}")
-        
+
+        logger.info(f"User {request.user.username} deleting silence rule ID {rule_id}")
+
         # Find potentially affected alerts (silenced by this rule)
-        affected_alerts = AlertGroup.objects.filter(
+        # Use a range-based check for ends_at to account for potential microsecond differences
+        affected_alerts_ids = AlertGroup.objects.filter(
             is_silenced=True,
             silenced_until=ends_at
         ).values_list('id', flat=True)
         
-        logger.info(f"Found {len(affected_alerts)} potentially affected alerts for rule ID {rule_id}")
-        
+        # Store the list of IDs before deletion, as the queryset might become empty after deletion
+        affected_alerts_list = list(affected_alerts_ids)
+        initial_affected_count = len(affected_alerts_list)
+
         # Perform the actual deletion
-        response = super().form_valid(form)
-        
-        # Re-check affected alerts if any were found
-        if affected_alerts:
+        rule.delete()
+
+        # Re-check affected alerts if any were found (use the stored list of IDs)
+        if initial_affected_count > 0:
             try:
-                alerts_to_recheck = AlertGroup.objects.filter(id__in=affected_alerts)
+                alerts_to_recheck = AlertGroup.objects.filter(id__in=affected_alerts_list)
                 for alert in alerts_to_recheck:
                     check_alert_silence(alert)
                 
                 messages.success(
-                    self.request, 
-                    f"Silence rule deleted successfully and {len(affected_alerts)} affected alerts re-evaluated."
+                    request,
+                    f"Silence rule deleted successfully and {initial_affected_count} affected alerts re-evaluated."
                 )
             except Exception as e:
                 logger.error(
@@ -692,13 +696,13 @@ class SilenceRuleDeleteView(LoginRequiredMixin, DeleteView):
                     exc_info=True
                 )
                 messages.error(
-                    self.request,
+                    request,
                     "Silence rule was deleted, but an error occurred while re-evaluating affected alerts."
                 )
         else:
-            messages.success(self.request, "Silence rule deleted successfully.")
+            messages.success(request, "Silence rule deleted successfully.")
             
-        return response
+        return HttpResponseRedirect(self.get_success_url())
 
     # Optional: Add permission check if needed
     # def get_object(self, queryset=None):
