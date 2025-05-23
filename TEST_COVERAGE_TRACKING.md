@@ -53,15 +53,15 @@ This document tracks the testing progress for different parts of the SentryHub a
 |                   | `AlertInstanceSerializer` (`api/serializers.py`) | 🟢 | Serialization structure                                      |
 |                   | `AlertAcknowledgementHistorySerializer` (`api/serializers.py`) | 🟢 | Serialization, MethodFields                        |
 |                   | `AlertGroupSerializer` (`api/serializers.py`) | 🟢 | Serialization, MethodFields                        |
-|                   | `AlertCommentSerializer` (`api/serializers.py`) | ⚪️ | Serialization, MethodFields                        |
-|                   | `AlertmanagerWebhookSerializer` (`api/serializers.py`) | ⚪️ | Validation (required fields)                             |
-|                   | `AcknowledgeAlertSerializer` (`api/serializers.py`) | ⚪️ | Validation                                                   |
+|                   | `AlertCommentSerializer` (`api/serializers.py`) | 🟢 | Serialization, MethodFields                        |
+|                   | `AlertmanagerWebhookSerializer` (`api/serializers.py`) | 🟢 | Validation (required fields)                             |
+|                   | `AcknowledgeAlertSerializer` (`api/serializers.py`) | 🟢 | Validation                                                   |
 | **Admin**         |                                           |        |                                                              |
-|                   | `AlertGroupAdmin` (`admin.py`)            |   ⚪️   | `jira_issue_key_link` method                              |
+|                   | `AlertGroupAdmin` (`admin.py`)            |   🟢   | `jira_issue_key_link` method                              |
 |                   | `AlertInstanceAdmin` (`admin.py`)         |   ⚫️   | Basic registration checks                                    |
 |                   | `AlertCommentAdmin` (`admin.py`)          |   ⚫️   | Basic registration checks                                    |
 |                   | `AlertAcknowledgementHistoryAdmin` (`admin.py`) | ⚫️ | Basic registration checks                                    |
-|                   | `SilenceRuleAdmin` (`admin.py`)           |   ⚪️   | Custom methods, `save_model`                               |
+|                   | `SilenceRuleAdmin` (`admin.py`)           |   🟢   | Custom methods, `save_model`                               |
                   | `JiraRuleMatcherAdmin` (`admin.py`)       |   ⚪️   | Custom methods (`get_criteria_preview`)                     |
 | **Signals**       | `signals.py`                              |   ⚪️   | Test `handle_silence_rule_save/delete` trigger `_rescan_alerts_for_silence` |
 | **Handlers**      | `handlers.py`                             |   ⚪️   | Test `handle_silence_check` receiver logic                 |
