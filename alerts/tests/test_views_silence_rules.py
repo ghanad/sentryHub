@@ -50,7 +50,7 @@ class SilenceRuleUpdateViewTests(TestCase):
 
         # Should redirect to login page
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, f'/users/login/?next={self.update_url}')
+        self.assertEqual(response.url, f'/accounts/login/?next={self.update_url}')
 
     @patch('alerts.views.messages')
     def test_update_view_post_valid_data(self, mock_messages):
@@ -153,7 +153,7 @@ class SilenceRuleUpdateViewTests(TestCase):
 
         # Should redirect to login page
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, f'/users/login/?next={self.update_url}')
+        self.assertEqual(response.url, f'/accounts/login/?next={self.update_url}')
 
 
 class SilenceRuleDeleteViewTests(TestCase):
@@ -188,7 +188,7 @@ class SilenceRuleDeleteViewTests(TestCase):
         self.client.logout()
         response = self.client.get(self.delete_url)
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, f'/users/login/?next={self.delete_url}')
+        self.assertEqual(response.url, f'/accounts/login/?next={self.delete_url}')
 
     @patch('alerts.views.messages')
     @patch('alerts.views.check_alert_silence')
@@ -232,4 +232,4 @@ class SilenceRuleDeleteViewTests(TestCase):
         self.client.logout()
         response = self.client.post(self.delete_url)
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, f'/users/login/?next={self.delete_url}')
+        self.assertEqual(response.url, f'/accounts/login/?next={self.delete_url}')
