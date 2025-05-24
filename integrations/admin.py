@@ -37,6 +37,8 @@ class JiraIntegrationRuleAdmin(admin.ModelAdmin):
 
     def get_match_criteria_preview(self, obj):
         """Formatted preview of match criteria."""
+        if not isinstance(obj.match_criteria, dict):
+            return "Invalid JSON"
         try:
             pretty_json = json.dumps(obj.match_criteria, indent=2, ensure_ascii=False)
             return format_html('<pre style="white-space: pre-wrap; max-width: 400px;">{}</pre>', pretty_json)

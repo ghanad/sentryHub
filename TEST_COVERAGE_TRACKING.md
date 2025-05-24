@@ -62,7 +62,7 @@ This document tracks the testing progress for different parts of the SentryHub a
 |                   | `AlertCommentAdmin` (`admin.py`)          |   ⚫️   | Basic registration checks                                    |
 |                   | `AlertAcknowledgementHistoryAdmin` (`admin.py`) | ⚫️ | Basic registration checks                                    |
 |                   | `SilenceRuleAdmin` (`admin.py`)           |   🟢   | Custom methods, `save_model`                               |
-                  | `JiraRuleMatcherAdmin` (`admin.py`)       |   ⚪️   | Custom methods (`get_criteria_preview`)                     |
+                  | `JiraRuleMatcherAdmin` (`admin.py`)       |   🟢   | Custom methods (`get_criteria_preview`)                     |
 | **Signals**       | `signals.py`                              |   🟢   | Test `handle_silence_rule_save/delete` trigger `_rescan_alerts_for_silence` |
 | **Handlers**      | `handlers.py`                             |   🟢   | Test `handle_silence_check` receiver logic                 |
 | **Tasks**         | `process_alert_payload_task` (`tasks.py`) |   🟢   | Task logic, exception handling, signal sending             |
@@ -77,8 +77,8 @@ This document tracks the testing progress for different parts of the SentryHub a
 | **Middleware**       | `AdminAccessMiddleware` (`middleware.py`) |   🟢   | Staff/non-staff access, redirects           |
 | **Context Processors**| `notifications` (`context_processors.py`) |   🟢   | Message extraction into context             |
 | **Template Tags**    |                                      |        |                                             |
-|                      | `core_tags.py`                       |   ⚪️   | All filters (`time_ago`, `status_badge`, `jsonify`, `format_datetime`, `has_group`, `add_class`, `calculate_duration`) are tested. `format_datetime` mocking for `force_jalali` is handled. |
-|                      | `date_format_tags.py`                |   ⚪️   | `to_jalali`, `to_jalali_datetime`, `force_jalali`, `force_gregorian` |
+|                      | `core_tags.py`                       |   ⚫️   | All filters (`time_ago`, `status_badge`, `jsonify`, `format_datetime`, `has_group`, `add_class`, `calculate_duration`) are tested. `format_datetime` mocking for `force_jalali` is handled. |
+|                      | `date_format_tags.py`                |   ⚫️   | `to_jalali`, `to_jalali_datetime`, `force_jalali`, `force_gregorian` |
 
 ### `docs` App
 
