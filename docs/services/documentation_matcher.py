@@ -43,6 +43,12 @@ def match_documentation_to_alert(alert_group, user=None):
         if created:
             logger.info(f"Successfully linked documentation {documentation.id} to alert {alert_group.id}")
         else:
+            # If the link already exists, update linked_by if a user is provided
+            if user and link.linked_by != user:
+                link.linked_by = user
+                link.linked_at = timezone.now() # Update timestamp as well
+                link.save(update_fields=['linked_by', 'linked_at'])
+                logger.info(f"Updated linked_by for existing link {link.id} to user {user.username}")
             logger.info(f"Documentation {documentation.id} was already linked to alert {alert_group.id}")
         
         return documentation

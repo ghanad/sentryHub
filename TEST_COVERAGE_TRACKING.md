@@ -88,8 +88,8 @@ This document tracks the testing progress for different parts of the SentryHub a
 |                   | `DocumentationAlertGroup` (`models.py`)   |   🟢   | Creation, relations, `unique_together` (tested in `test_models.py`) |
 | **Forms**         | `AlertDocumentationForm` (`forms.py`)     |   🟢   | Validation, saving (TinyMCE might need specific handling) |
 |                   | `DocumentationSearchForm` (`forms.py`)    |   🟢   | Basic validation (optional field)                            |
-| **Services**      | `match_documentation_to_alert` (`documentation_matcher.py`) | ⚪️ | Matching logic (match/no match), Link creation          |
-|                   | `get_documentation_for_alert` (`documentation_matcher.py`) | ⚪️ | Query logic                                                |
+| **Services**      | `match_documentation_to_alert` (`documentation_matcher.py`) |   🟢   | Matching logic (match/no match), Link creation          |
+|                   | `get_documentation_for_alert` (`documentation_matcher.py`) |   🟢   | Query logic                                                |
 | **Views**         | `DocumentationListView` (`views.py`)      |   ⚪️   | GET, search, context, pagination                             |
 |                   | `DocumentationDetailView` (`views.py`)    |   ⚪️   | GET, context (linked alerts)                                 |
 |                   | `DocumentationCreateView` (`views.py`)    |   ⚪️   | GET (initial), POST (valid/invalid), permissions                       |
