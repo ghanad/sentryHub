@@ -244,3 +244,57 @@ class LinkDocumentationToAlertViewTest(TestCase):
         response = self.client.post(self.link_url, {'documentation_id': 999}) # Non-existent ID
         self.assertEqual(response.status_code, 404) # Should return 404 for non-existent doc
         self.assertFalse(DocumentationAlertGroup.objects.filter(alert_group=self.alert_group).exists())
+
+
+class UnlinkDocumentationFromAlertViewTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username='testuser', password='testpassword')
+        self.admin_user = User.objects.create_superuser(username='adminuser', password='adminpassword', email='admin@example.com')
+        
+        self.alert_group = AlertGroup.objects.create(
+            fingerprint='test_fp_unlink',
+            name='Test Alert Group for Unlinking',
+            labels={'job': 'test'},
+            severity='critical',
+            current_status='firing'
+        )
+        self.documentation = AlertDocumentation.objects.create(
+            title='Doc to Unlink', description='<p>Desc to unlink</p>', created_by=self.user
+        )
+        self.doc_alert_group_link = DocumentationAlertGroup.objects.create(
+            documentation=self.documentation, alert_group=self.alert_group, linked_by=self.user
+        )
+        self.unlink_url = reverse(
+            'docs:unlink-documentation',
+            kwargs={
+                'alert_group_id': self.alert_group.pk,
+                'documentation_id': self.documentation.pk
+            }
+        )
+
+    def test_unlink_documentation_from_alert_view_post_authenticated(self):
+        self.client.login(username='testuser', password='testpassword')
+        self.assertTrue(DocumentationAlertGroup.objects.filter(pk=self.doc_alert_group_link.pk).exists())
+        response = self.client.post(self.unlink_url)
+        self.assertEqual(response.status_code, 302) # Should redirect on successful unlinking
+        self.assertFalse(DocumentationAlertGroup.objects.filter(pk=self.doc_alert_group_link.pk).exists())
+        self.assertRedirects(response, reverse('alerts:alert-detail', args=[self.alert_group.fingerprint]))
+
+        # Check for success message
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), f'Alert unlinked from "{self.documentation.title}" documentation.')
+
+    def test_unlink_documentation_from_alert_view_post_ajax(self):
+        self.client.login(username='testuser', password='testpassword')
+        self.assertTrue(DocumentationAlertGroup.objects.filter(pk=self.doc_alert_group_link.pk).exists())
+        response = self.client.post(self.unlink_url, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['content-type'], 'application/json')
+        data = response.json()
+        self.assertEqual(data['status'], 'success')
+        self.assertFalse(DocumentationAlertGroup.objects.filter(pk=self.doc_alert_group_link.pk).exists())
+
+        # Messages are not typically handled for AJAX responses in the same way,
+        # so we don't assert for them here.
