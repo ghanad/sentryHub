@@ -35,6 +35,7 @@ urlpatterns = [
     path('dashboard/', include('dashboard.urls', namespace='dashboard')),
     # path('api/v1/', include('alerts.api.urls')), # Removed redundant include; already in alerts.urls
     path('api-auth/', include('rest_framework.urls')),
+    path('api/docs/', include('docs.api.urls')), # Add this line for the API views
     path('docs/', include('docs.urls', namespace='docs')),
     path('tinymce/', include('tinymce.urls')),
     # path('admin-dashboard/', include('admin_dashboard.urls', namespace='admin_dashboard')),  # Disabled old admin dashboard URLs

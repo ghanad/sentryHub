@@ -97,7 +97,7 @@ This document tracks the testing progress for different parts of the SentryHub a
 |                   | `DocumentationDeleteView` (`views.py`)    |   🟢   | GET, POST, permissions                                       |
 |                   | `LinkDocumentationToAlertView` (`views.py`)|   🟢   | GET (context), POST (link creation/check existing)         |
 |                   | `UnlinkDocumentationFromAlertView` (`views.py`)| 🟢 | POST (deletion), AJAX response                               |
-| **API Views**     | `DocumentationViewSet` (`api/views.py`)   |   ⚪️   | CRUD, search, filters, actions (link/unlink)               |
+| **API Views**     | `DocumentationViewSet` (`api/views.py`)   |   🟢   | CRUD, search, filters, actions (link/unlink)               |
 |                   | `AlertDocumentationLinkViewSet` (`api/views.py`)| ⚪️ | List (GET), filters                                          |
 | **API Serializers**| `AlertDocumentationSerializer` (`api/serializers.py`) | ⚪️ | Serialization, MethodFields                        |
 |                   | `DocumentationAlertGroupSerializer` (`api/serializers.py`) | ⚪️ | Serialization, MethodFields                        |
