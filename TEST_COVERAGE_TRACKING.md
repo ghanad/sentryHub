@@ -91,8 +91,8 @@ This document tracks the testing progress for different parts of the SentryHub a
 | **Services**      | `match_documentation_to_alert` (`documentation_matcher.py`) |   🟢   | Matching logic (match/no match), Link creation          |
 |                   | `get_documentation_for_alert` (`documentation_matcher.py`) |   🟢   | Query logic                                                |
 | **Views**         | `DocumentationListView` (`views.py`)      |   🟢   | GET, search, context, pagination                             |
-|                   | `DocumentationDetailView` (`views.py`)    |   ⚪️   | GET, context (linked alerts)                                 |
-|                   | `DocumentationCreateView` (`views.py`)    |   ⚪️   | GET (initial), POST (valid/invalid), permissions                       |
+|                   | `DocumentationDetailView` (`views.py`)    |   🟡   | GET, context (linked alerts) - Failed to assert linked_alerts order after 6 attempts. Needs human review. |
+|                   | `DocumentationCreateView` (`views.py`)    |   🟢   | GET (initial), POST (valid/invalid), permissions                       |
 |                   | `DocumentationUpdateView` (`views.py`)    |   ⚪️   | GET, POST (valid/invalid), permissions                       |
 |                   | `DocumentationDeleteView` (`views.py`)    |   ⚪️   | GET, POST, permissions                                       |
 |                   | `LinkDocumentationToAlertView` (`views.py`)|   ⚪️   | GET (context), POST (link creation/check existing)         |

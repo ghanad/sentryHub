@@ -40,3 +40,46 @@ class DocumentationListViewTest(TestCase):
         self.assertEqual(len(response.context['documentations']), 3)
         self.assertIsInstance(response.context['search_form'], DocumentationSearchForm)
         self.assertEqual(response.context['search_query'], '')
+
+class DocumentationCreateViewTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username='testuser', password='testpassword')
+        self.admin_user = User.objects.create_superuser(username='adminuser', password='adminpassword', email='admin@example.com')
+
+    def test_documentation_create_view_get_authenticated(self):
+        self.client.login(username='testuser', password='testpassword')
+        response = self.client.get(reverse('docs:documentation-create'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'docs/documentation_form.html')
+        self.assertIn('form', response.context)
+
+    def test_documentation_create_view_get_unauthenticated(self):
+        response = self.client.get(reverse('docs:documentation-create'))
+        self.assertEqual(response.status_code, 302) # Redirect to login
+        self.assertRedirects(response, f'/accounts/login/?next=/docs/new/')
+
+    def test_documentation_create_view_post_valid_data(self):
+        self.client.login(username='testuser', password='testpassword')
+        response = self.client.post(reverse('docs:documentation-create'), {
+            'title': 'New Test Doc',
+            'description': 'Description for new test doc',
+        })
+        self.assertEqual(response.status_code, 302) # Redirect on success
+        new_doc = AlertDocumentation.objects.get(title='New Test Doc')
+        self.assertRedirects(response, reverse('docs:documentation-detail', args=[new_doc.pk]))
+        self.assertTrue(AlertDocumentation.objects.filter(title='New Test Doc').exists())
+        self.assertEqual(AlertDocumentation.objects.get(title='New Test Doc').created_by, self.user)
+
+    def test_documentation_create_view_post_invalid_data(self):
+        self.client.login(username='testuser', password='testpassword')
+        response = self.client.post(reverse('docs:documentation-create'), {
+            'title': '', # Invalid: title is required
+            'description': 'Description for invalid doc',
+        })
+        self.assertEqual(response.status_code, 200) # Should render form with errors
+        self.assertTemplateUsed(response, 'docs/documentation_form.html')
+        self.assertIn('form', response.context)
+        self.assertFalse(response.context['form'].is_valid())
+        self.assertIn('title', response.context['form'].errors)
+        self.assertFalse(AlertDocumentation.objects.filter(description='Description for invalid doc').exists())
