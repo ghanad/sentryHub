@@ -176,3 +176,71 @@ class DocumentationDeleteViewTest(TestCase):
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertEqual(str(messages[0]), 'Documentation deleted successfully.')
+
+
+class LinkDocumentationToAlertViewTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username='testuser', password='testpassword')
+        self.admin_user = User.objects.create_superuser(username='adminuser', password='adminpassword', email='admin@example.com')
+        
+        self.alert_group = AlertGroup.objects.create(
+            fingerprint='test_fp_link',
+            name='Test Alert Group for Linking',
+            labels={'job': 'test'},
+            severity='critical',
+            current_status='firing'
+        )
+        self.doc1 = AlertDocumentation.objects.create(
+            title='Doc A', description='<p>Desc A</p>', created_by=self.user
+        )
+        self.doc2 = AlertDocumentation.objects.create(
+            title='Doc B', description='<p>Desc B</p>', created_by=self.user
+        )
+        self.link_url = reverse('docs:link-documentation', kwargs={'pk': self.alert_group.pk})
+
+    def test_link_documentation_to_alert_view_get_authenticated(self):
+        self.client.login(username='testuser', password='testpassword')
+        response = self.client.get(self.link_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'docs/link_documentation.html')
+        self.assertIn('documentations', response.context)
+        self.assertIn('current_docs', response.context)
+        self.assertEqual(len(response.context['documentations']), 2)
+        self.assertEqual(len(response.context['current_docs']), 0) # Initially no docs linked
+        self.assertEqual(list(response.context['documentations']), [self.doc1, self.doc2]) # Check ordering
+
+    def test_link_documentation_to_alert_view_post_valid_data(self):
+        self.client.login(username='testuser', password='testpassword')
+        response = self.client.post(self.link_url, {'documentation_id': self.doc1.pk})
+        self.assertEqual(response.status_code, 302) # Redirect on success
+        self.assertTrue(DocumentationAlertGroup.objects.filter(
+            documentation=self.doc1, alert_group=self.alert_group, linked_by=self.user
+        ).exists())
+        self.assertRedirects(response, reverse('alerts:alert-detail', args=[self.alert_group.fingerprint]))
+
+        # Check for success message
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), f'Alert linked to "{self.doc1.title}" documentation.')
+
+    def test_link_documentation_to_alert_view_post_already_linked(self):
+        # Link it first
+        DocumentationAlertGroup.objects.create(
+            documentation=self.doc1, alert_group=self.alert_group, linked_by=self.user
+        )
+        self.client.login(username='testuser', password='testpassword')
+        response = self.client.post(self.link_url, {'documentation_id': self.doc1.pk})
+        self.assertEqual(response.status_code, 302) # Redirect on success
+        self.assertEqual(DocumentationAlertGroup.objects.filter(alert_group=self.alert_group).count(), 1) # Still only one link
+
+        # Check for info message
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), f'Alert was already linked to this documentation.')
+
+    def test_link_documentation_to_alert_view_post_invalid_documentation_id(self):
+        self.client.login(username='testuser', password='testpassword')
+        response = self.client.post(self.link_url, {'documentation_id': 999}) # Non-existent ID
+        self.assertEqual(response.status_code, 404) # Should return 404 for non-existent doc
+        self.assertFalse(DocumentationAlertGroup.objects.filter(alert_group=self.alert_group).exists())
