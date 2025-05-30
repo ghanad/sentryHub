@@ -20,14 +20,14 @@ def handle_alert_processed(sender, **kwargs):
     """
     alert_group = kwargs.get('alert_group')
     status = kwargs.get('status') # 'firing' or 'resolved'
-    triggering_instance: AlertInstance = kwargs.get('instance') # instance را از kwargs دریافت کنید
+    triggering_instance: AlertInstance = kwargs.get('instance')
 
     if not alert_group:
         logger.warning("Integrations Handler: Received alert_processed signal without alert_group. Cannot process for Jira.")
         return
 
     fingerprint_for_log = alert_group.fingerprint
-    is_silenced = alert_group.is_silenced # وضعیت سکوت را مستقیماً از AlertGroup بخوانید
+    is_silenced = alert_group.is_silenced 
 
     logger.info(f"Integrations Handler (FP: {fingerprint_for_log}): Received 'alert_processed'. Status: {status}. AlertGroup is_silenced: {is_silenced}")
 
