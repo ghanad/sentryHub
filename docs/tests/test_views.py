@@ -142,3 +142,37 @@ class DocumentationUpdateViewTest(TestCase):
         self.documentation.refresh_from_db()
         self.assertEqual(self.documentation.title, 'Original Title')
         self.assertEqual(self.documentation.description, '<p>Original Description</p>')
+
+
+class DocumentationDeleteViewTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username='testuser', password='testpassword')
+        self.admin_user = User.objects.create_superuser(username='adminuser', password='adminpassword', email='admin@example.com')
+        
+        self.documentation = AlertDocumentation.objects.create(
+            title='Doc to Delete',
+            description='<p>Description of doc to delete</p>',
+            created_by=self.user
+        )
+        self.delete_url = reverse('docs:documentation-delete', kwargs={'pk': self.documentation.pk})
+
+    def test_documentation_delete_view_get_authenticated(self):
+        self.client.login(username='testuser', password='testpassword')
+        response = self.client.get(self.delete_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'docs/documentation_confirm_delete.html')
+        self.assertIn('object', response.context)
+        self.assertEqual(response.context['object'], self.documentation)
+
+    def test_documentation_delete_view_post_authenticated(self):
+        self.client.login(username='testuser', password='testpassword')
+        response = self.client.post(self.delete_url)
+        self.assertEqual(response.status_code, 302) # Should redirect on successful deletion
+        self.assertFalse(AlertDocumentation.objects.filter(pk=self.documentation.pk).exists())
+        self.assertRedirects(response, reverse('docs:documentation-list'))
+
+        # Check for success message
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), 'Documentation deleted successfully.')
