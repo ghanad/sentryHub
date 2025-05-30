@@ -93,7 +93,7 @@ This document tracks the testing progress for different parts of the SentryHub a
 | **Views**         | `DocumentationListView` (`views.py`)      |   🟢   | GET, search, context, pagination                             |
 |                   | `DocumentationDetailView` (`views.py`)    |   🟡   | GET, context (linked alerts) - Failed to assert linked_alerts order after 6 attempts. Needs human review. |
 |                   | `DocumentationCreateView` (`views.py`)    |   🟢   | GET (initial), POST (valid/invalid), permissions                       |
-|                   | `DocumentationUpdateView` (`views.py`)    |   ⚪️   | GET, POST (valid/invalid), permissions                       |
+|                   | `DocumentationUpdateView` (`views.py`)    |   🟢   | GET, POST (valid/invalid), permissions                       |
 |                   | `DocumentationDeleteView` (`views.py`)    |   ⚪️   | GET, POST, permissions                                       |
 |                   | `LinkDocumentationToAlertView` (`views.py`)|   ⚪️   | GET (context), POST (link creation/check existing)         |
 |                   | `UnlinkDocumentationFromAlertView` (`views.py`)| ⚪️ | POST (deletion), AJAX response                               |
