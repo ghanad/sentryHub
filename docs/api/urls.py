@@ -6,7 +6,7 @@ from .views import DocumentationViewSet, AlertDocumentationLinkViewSet
 
 router = DefaultRouter()
 router.register(r'docs', DocumentationViewSet, basename='documentation')
-router.register(r'links', AlertDocumentationLinkViewSet)
+router.register(r'links', AlertDocumentationLinkViewSet, basename='documentationalertgroup')
 
 urlpatterns = [
     path('', include(router.urls)),
