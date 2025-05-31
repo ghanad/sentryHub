@@ -16,6 +16,8 @@ from integrations.models import JiraIntegrationRule
 from alerts.models import AlertGroup, AlertInstance # AlertInstance is imported
 from integrations.services.jira_service import JiraService
 
+# jira created time: https://aistudio.google.com/prompts/11xHhaYXIUhCDXxiYOsnUnByzQfZTtZWk
+
 
 logger = logging.getLogger(__name__)
 
