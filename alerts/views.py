@@ -90,8 +90,9 @@ class AlertListView(LoginRequiredMixin, ListView):
             queryset = queryset.filter(
                 Q(name__icontains=search) |
                 Q(fingerprint__icontains=search) |
-                Q(instance__icontains=search)
-            )
+                Q(instance__icontains=search) |
+                Q(instances__annotations__icontains=search)
+            ).distinct()
 
         # --- Apply Source Filter ---
         source_filter_value = self.request.GET.get('source')
