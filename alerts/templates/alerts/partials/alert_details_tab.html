@@ -146,6 +146,18 @@
                     <th>Total Firing Count</th>
                     <td>{{ alert.total_firing_count }}</td>
                 </tr>
+                <tr>
+                    <th>Jira Issue</th>
+                    <td>
+                        {% if alert.jira_issue_key %}
+                            <a href="https://jira.tsetmc.com/browse/{{ alert.jira_issue_key }}" target="_blank" rel="noopener noreferrer">
+                                {{ alert.jira_issue_key }}
+                            </a>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                </tr>
                 <tr> {# Added Source Row #}
                     <th>Source</th>
                     <td>{{ alert.source|default:"-" }}</td>
