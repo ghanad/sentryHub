@@ -95,4 +95,5 @@ else:
 
 # Production 
 export PYTHONPATH=/etc/sentryhub
-python manage.py shell --settings=settings
+python3 manage.py shell --settings=settings
+python3 manage.py collectstatic --settings=settings
