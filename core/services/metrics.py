@@ -3,6 +3,7 @@ import threading
 import os
 import tempfile
 import logging
+import time
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
@@ -57,6 +58,9 @@ class MetricManager:
         logger.info("Writing metrics to file")
         temp_file = None
         try:
+            # Update the timestamp metric for the last write operation
+            self.set_gauge('sentryhub_last_metrics_write_timestamp', value=time.time())
+
             # Use mkstemp for atomic file creation
             fd, temp_path = tempfile.mkstemp(suffix=".prom", dir=os.path.dirname(settings.METRICS_FILE_PATH))
             with os.fdopen(fd, 'w') as f:

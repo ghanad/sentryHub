@@ -93,6 +93,7 @@ The `integrations/services/jira_service.py` file provides a practical example of
 
 The following metrics are currently implemented:
 
+*   `sentryhub_last_metrics_write_timestamp` (Gauge): Unix timestamp of the last time metrics were successfully written to the file.
 *   `sentryhub_component_initialization_errors_total{component="jira"}` (Counter): Incremented when the JiraService fails to initialize or connect.
 *   `sentryhub_jira_api_calls_total{status="success", method="..."}` (Counter): Incremented on successful Jira API calls (e.g., `create_issue`, `add_comment`).
 *   `sentryhub_jira_api_calls_total{status="failure", method="..."}` (Counter): Incremented on failed Jira API calls.
@@ -106,6 +107,15 @@ These rules can be added to your Prometheus configuration to monitor the SentryH
 groups:
 - name: SentryHub.Internal.Jira
   rules:
+  - alert: SentryHubMetricsWriteFailure
+    expr: time() - sentryhub_last_metrics_write_timestamp > 300
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "SentryHub metrics are not being written"
+      description: "The SentryHub application has not written metrics to the textfile collector for over 5 minutes. This indicates a potential issue with the metrics framework or the application itself. Value: {{ $value }}"
+      
   - alert: SentryHubJiraIntegrationFailure
     expr: rate(sentryhub_jira_api_calls_total{component="jira", status="failure"}[5m]) > 0
     for: 1m
