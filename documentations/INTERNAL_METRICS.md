@@ -98,6 +98,9 @@ The following metrics are currently implemented:
 *   `sentryhub_jira_api_calls_total{status="success", method="..."}` (Counter): Incremented on successful Jira API calls (e.g., `create_issue`, `add_comment`).
 *   `sentryhub_jira_api_calls_total{status="failure", method="..."}` (Counter): Incremented on failed Jira API calls.
 *   `sentryhub_component_last_successful_api_call_timestamp{component="jira"}` (Gauge): Unix timestamp of the last successful Jira API call.
+*   `sentryhub_alerts_received_total{status="firing|resolved", source="..."}` (Counter): Incremented every time an alert is received via the webhook.
+    *   `status` (label): The status of the alert (e.g., 'firing', 'resolved').
+    *   `source` (label): An identifier for the Alertmanager instance or source that sent the alert. Defaults to 'unknown' if not specified.
 
 ## Prometheus Alerting Rules
 
@@ -124,6 +127,7 @@ groups:
     annotations:
       summary: "SentryHub is failing to communicate with Jira"
       description: "There are active errors in API calls from SentryHub to Jira. This may prevent ticket creation or updates. Check SentryHub logs for details. Value: {{ $value }}"
+      
   - alert: SentryHubJiraNoRecentSuccess
     expr: time() - sentryhub_component_last_successful_api_call_timestamp{component="jira"} > 3600
     for: 5m
@@ -132,3 +136,12 @@ groups:
     annotations:
       summary: "SentryHub has not had a successful communication with Jira for over 1 hour"
       description: "No successful API calls have been made to Jira recently. This could indicate a silent failure, a network issue, or that no alerts have triggered the Jira integration. Please verify the integration is healthy."
+
+  - alert: SentryHubNoAlertsFromSource
+    expr: absent(sentryhub_alerts_received_total{source="your_source_name"}[1h])
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "No alerts received from a specific source for 1 hour"
+      description: "No alerts have been received from the source '{{ $labels.source }}' for the last hour. This could indicate a misconfiguration, a network issue, or that the Alertmanager instance is down. Value: {{ $value }}"
