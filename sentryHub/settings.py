@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     # Third-party apps
     'rest_framework',
     'tinymce',
+    'django_celery_beat',
     
     # Project apps
     'core.apps.CoreConfig',
@@ -257,6 +258,19 @@ CELERY_TASK_ROUTES = {
 }
 # Removed redundant serializer settings
 CELERY_TIMEZONE = TIME_ZONE
+
+# Celery Beat Schedule for periodic tasks
+from datetime import timedelta
+CELERY_BEAT_SCHEDULE = {
+    'flush-metrics-every-15-seconds': {
+        'task': 'core.tasks.flush_metrics_to_file',
+        'schedule': timedelta(seconds=15),
+    },
+}
+# Internal Metrics Framework Settings
+METRICS_ENABLED = os.environ.get('SENTRYHUB_METRICS_ENABLED', 'True').lower() == 'true'
+METRICS_FILE_PATH = os.environ.get('SENTRYHUB_METRICS_FILE_PATH', "/var/lib/node_exporter/textfile_collector/sentryhub.prom")
+
 
 # RabbitMQ Configuration for External Alerts
 RABBITMQ_CONFIG = {

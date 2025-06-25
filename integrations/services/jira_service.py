@@ -7,6 +7,9 @@ from jira import JIRA, JIRAError
 from django.conf import settings
 from requests.exceptions import ConnectionError
 import json
+import time # Import time for timestamp metric
+
+from core.services.metrics import metrics_manager # Import metrics_manager
 
 logger = logging.getLogger(__name__)
 
@@ -39,12 +42,27 @@ class JiraService:
                 except (JIRAError, ConnectionError, Exception) as jira_init_error:
                     logger.error(f"Jira client initialization or connection test failed: {jira_init_error}", exc_info=True)
                     self.client = None
+                    if settings.METRICS_ENABLED:
+                        metrics_manager.inc_counter(
+                            'sentryhub_component_initialization_errors_total',
+                            labels={'component': 'jira'}
+                        )
             else:
                 logger.warning("Jira integration is not fully configured in settings (missing server_url, username, or password).")
                 self.client = None
+                if settings.METRICS_ENABLED:
+                    metrics_manager.inc_counter(
+                        'sentryhub_component_initialization_errors_total',
+                        labels={'component': 'jira'}
+                    )
         except Exception as settings_error:
             logger.error(f"Error accessing Jira settings during JiraService initialization: {settings_error}", exc_info=True)
             self.client = None
+            if settings.METRICS_ENABLED:
+                metrics_manager.inc_counter(
+                    'sentryhub_component_initialization_errors_total',
+                    labels={'component': 'jira'}
+                )
 
     def check_connection(self) -> bool:
         """Checks if the Jira client was initialized and attempts a basic API call."""
@@ -88,12 +106,28 @@ class JiraService:
             # First attempt: Create with assignee if provided
             issue = self.client.create_issue(fields=field_dict)
             logger.info(f"Successfully created Jira issue: {issue.key} in project {project_key}")
+            if settings.METRICS_ENABLED:
+                metrics_manager.inc_counter(
+                    'sentryhub_jira_api_calls_total',
+                    labels={'status': 'success', 'method': 'create_issue'}
+                )
+                metrics_manager.set_gauge(
+                    'sentryhub_component_last_successful_api_call_timestamp',
+                    labels={'component': 'jira'},
+                    value=time.time()
+                )
             return issue.key
         except JIRAError as e:
             status_code = getattr(e, 'status_code', 'N/A')
             simple_text = getattr(e, 'text', str(e))
             response = getattr(e, 'response', None)
             response_text = getattr(response, 'text', None)
+
+            if settings.METRICS_ENABLED:
+                metrics_manager.inc_counter(
+                    'sentryhub_jira_api_calls_total',
+                    labels={'status': 'failure', 'method': 'create_issue'}
+                )
 
             is_assignee_error = False
             if status_code == 400 and assignee_name and response_text and response_text.strip().startswith('{'):
@@ -115,12 +149,27 @@ class JiraService:
                 try:
                     issue = self.client.create_issue(fields=field_dict)
                     logger.info(f"Successfully created Jira issue without assignee: {issue.key} in project {project_key}")
+                    if settings.METRICS_ENABLED:
+                        metrics_manager.inc_counter(
+                            'sentryhub_jira_api_calls_total',
+                            labels={'status': 'success', 'method': 'create_issue_no_assignee_retry'}
+                        )
+                        metrics_manager.set_gauge(
+                            'sentryhub_component_last_successful_api_call_timestamp',
+                            labels={'component': 'jira'},
+                            value=time.time()
+                        )
                     return issue.key
                 except (JIRAError, ConnectionError) as retry_error:
                     retry_status = getattr(retry_error, 'status_code', 'N/A')
                     retry_text = getattr(retry_error, 'text', str(retry_error))
                     logger.error(f"Failed to create Jira issue in project {project_key} even after removing assignee: Status {retry_status} - {retry_text}", exc_info=True)
                     logger.error(f"Data sent on retry: {field_dict}")
+                    if settings.METRICS_ENABLED:
+                        metrics_manager.inc_counter(
+                            'sentryhub_jira_api_calls_total',
+                            labels={'status': 'failure', 'method': 'create_issue_no_assignee_retry'}
+                        )
                     return None
             else:
                 logger.error(f"Failed to create Jira issue in project {project_key}: Status {status_code} - {simple_text}", exc_info=True)
@@ -129,9 +178,19 @@ class JiraService:
                 return None
         except ConnectionError as e:
             logger.error(f"Connection error creating Jira issue in project {project_key}: {e}", exc_info=True)
+            if settings.METRICS_ENABLED:
+                metrics_manager.inc_counter(
+                    'sentryhub_jira_api_calls_total',
+                    labels={'status': 'failure', 'method': 'create_issue_connection_error'}
+                )
             return None
         except Exception as e:
              logger.error(f"An unexpected error occurred creating Jira issue in project {project_key}", exc_info=True)
+             if settings.METRICS_ENABLED:
+                metrics_manager.inc_counter(
+                    'sentryhub_jira_api_calls_total',
+                    labels={'status': 'failure', 'method': 'create_issue_unexpected_error'}
+                )
              return None
 
     def add_comment(self, issue_key: str, comment_body: str) -> bool:
@@ -148,10 +207,25 @@ class JiraService:
         try:
             comment = self.client.add_comment(issue_key, body=plain_comment)
             logger.info(f"Successfully added comment to Jira issue: {issue_key} (Comment ID: {comment.id})")
+            if settings.METRICS_ENABLED:
+                metrics_manager.inc_counter(
+                    'sentryhub_jira_api_calls_total',
+                    labels={'status': 'success', 'method': 'add_comment'}
+                )
+                metrics_manager.set_gauge(
+                    'sentryhub_component_last_successful_api_call_timestamp',
+                    labels={'component': 'jira'},
+                    value=time.time()
+                )
             return True
         except (JIRAError, ConnectionError) as e:
             status_code = getattr(e, 'status_code', 'N/A')
             text = getattr(e, 'text', str(e))
+            if settings.METRICS_ENABLED:
+                metrics_manager.inc_counter(
+                    'sentryhub_jira_api_calls_total',
+                    labels={'status': 'failure', 'method': 'add_comment'}
+                )
             if status_code == 404:
                  logger.error(f"Failed to add comment: Jira issue {issue_key} not found.")
             else:
@@ -161,6 +235,11 @@ class JiraService:
             return False
         except Exception as e:
              logger.error(f"An unexpected error occurred adding comment to Jira issue {issue_key}", exc_info=True)
+             if settings.METRICS_ENABLED:
+                metrics_manager.inc_counter(
+                    'sentryhub_jira_api_calls_total',
+                    labels={'status': 'failure', 'method': 'add_comment_unexpected_error'}
+                )
              return False
 
     def get_issue_status_category(self, issue_key: str) -> Optional[str]:
