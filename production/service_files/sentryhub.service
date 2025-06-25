@@ -1,0 +1,14 @@
+[Unit]
+Description=Gunicorn daemon for SentryHub
+After=network.target
+
+[Service]
+WorkingDirectory=/opt/sentryhub/sentryHub
+Environment="PYTHONPATH=/etc/sentryhub"
+Environment="DJANGO_SETTINGS_MODULE=settings"
+RuntimeDirectory=gunicorn
+ExecStart=/opt/sentryhub/venvn/bin/gunicorn --workers 3 --bind unix:/run/gunicorn.sock sentryHub.wsgi:application
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

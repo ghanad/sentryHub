@@ -1,0 +1,15 @@
+[Unit]
+Description=SentryHub RabbitMQ Alerts Consumer
+After=network.target rabbitmq-server.service
+
+[Service]
+WorkingDirectory=/opt/sentryhub/sentryHub
+Environment="PYTHONPATH=/etc/sentryhub"
+Environment="DJANGO_SETTINGS_MODULE=settings"
+#ExecStart=/opt/sentryhub/vevn/bin/python3 manage.py consume_rabbitmq_alerts
+ExecStart=/opt/sentryhub/venvn/bin/python3 manage.py consume_rabbitmq_alerts
+Restart=always
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target
