@@ -8,8 +8,7 @@ Type=simple
 WorkingDirectory=/opt/sentryhub/sentryHub
 Environment="PYTHONPATH=/etc/sentryhub"
 Environment="DJANGO_SETTINGS_MODULE=settings"
-#ExecStart=/opt/sentryhub/venvn/bin/celery -A sentryHub worker -Q alerts -c 4 --loglevel=INFO --logfile=/var/log/sentryHub/celery/sentryhub_celery.log
-ExecStart=/opt/sentryhub/venvn/bin/celery -A sentryHub worker -Q alerts -c 4 --loglevel=INFO --logfile=/var/log/sentryHub/celery/sentryhub_worker.log --pidfile=/run/sentryhub/celery_worker.pid
+ExecStart=/opt/sentryhub/venvn/bin/celery -A sentryHub worker -Q alerts,integrations -c 4 --loglevel=INFO
 
 
 Restart=on-failure

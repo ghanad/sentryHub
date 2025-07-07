@@ -8,7 +8,7 @@ Type=simple
 WorkingDirectory=/opt/sentryhub/sentryHub
 Environment="PYTHONPATH=/etc/sentryhub"
 Environment="DJANGO_SETTINGS_MODULE=settings"
-ExecStart=/opt/sentryhub/venvn/bin/celery -A sentryHub beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler --pidfile=/run/sentryhub/celery_beat.pid --logfile=/var/log/sentryHub/celery/sentryhub_beat.log
+ExecStart=/opt/sentryhub/venvn/bin/celery -A sentryHub beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
 Restart=on-failure
 RestartSec=5s
 
