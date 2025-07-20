@@ -81,7 +81,8 @@ class AlertInstance(models.Model):
     alert_group = models.ForeignKey(
         'AlertGroup',
         on_delete=models.CASCADE,
-        related_name='instances'
+        related_name='instances',
+        db_index=True
     )
     status = models.CharField(
         max_length=20,
@@ -90,7 +91,7 @@ class AlertInstance(models.Model):
             ('resolved', 'Resolved'),
         ]
     )
-    started_at = models.DateTimeField()
+    started_at = models.DateTimeField(db_index=True)
     ended_at = models.DateTimeField(null=True, blank=True)
     annotations = models.JSONField()
     generator_url = models.URLField(max_length=500, null=True, blank=True)

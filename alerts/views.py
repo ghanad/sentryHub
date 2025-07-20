@@ -51,13 +51,17 @@ class AlertListView(LoginRequiredMixin, ListView):
             status='firing'
         ).order_by('started_at').values('started_at')[:1]
 
+        latest_instance_subquery = AlertInstance.objects.filter(
+            alert_group=OuterRef('pk')
+        ).order_by('-started_at').values('started_at')[:1]
+
         queryset = AlertGroup.objects.annotate(
             first_instance_start_time=Subquery(first_instance_subquery),
             current_problem_start_time=Coalesce(
                 Subquery(active_instances_subquery),
                 None
             ),
-            latest_instance_start=Max('instances__started_at')
+            latest_instance_start=Subquery(latest_instance_subquery)
         )
 
         # --- Apply Filters ---
@@ -90,16 +94,13 @@ class AlertListView(LoginRequiredMixin, ListView):
             queryset = queryset.filter(
                 Q(name__icontains=search) |
                 Q(fingerprint__icontains=search) |
-                Q(instance__icontains=search) |
-                Q(instances__annotations__icontains=search)
-            ).distinct()
+                Q(instance__icontains=search)
+            )
 
         # --- Apply Source Filter ---
         source_filter_value = self.request.GET.get('source')
         if source_filter_value:
             queryset = queryset.filter(source=source_filter_value)
-        # --- End Apply Source Filter ---
-        # --- End Apply Filters ---
 
         # --- Ordering ---
         # Order all alerts by most recent instance start time (newest first)

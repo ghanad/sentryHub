@@ -95,5 +95,9 @@ else:
 
 # Production 
 export PYTHONPATH=/etc/sentryhub
-python3 manage.py shell --settings=settings
-python3 manage.py collectstatic --settings=settings
+export DJANGO_SETTINGS_MODULE=settings
+python manage.py migrate
+
+# Or use --settings like this
+python manage.py shell --settings=settings
+python manage.py collectstatic --settings=settings
