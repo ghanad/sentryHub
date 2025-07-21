@@ -245,7 +245,7 @@
                             <div class="modal-body">
                                 <div class="mb-3">
                                     <label for="comment-{{ alert.fingerprint }}" class="form-label">Comment (Required)</label>
-                                    <textarea class="form-control" id="comment-{{ alert.fingerprint }}" name="comment" rows="3" required></textarea>
+                                    <textarea class="form-control ack-comment-textarea" id="comment-{{ alert.fingerprint }}" name="comment" rows="3" required></textarea>
                                 </div>
                             </div>
                             <div class="modal-footer">
@@ -294,6 +294,27 @@
             tooltipTriggerList.map(function (tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl);
             });
+        });
+
+        // JavaScript for handling RTL text in acknowledge comment textarea
+        const ackCommentTextareas = document.querySelectorAll('.ack-comment-textarea');
+
+        ackCommentTextareas.forEach(textarea => {
+            // Initial check and event listener for input
+            textarea.addEventListener('input', function() {
+                handleInputDirection(this);
+            });
+
+            // Event listener for modal shown event
+            const modalId = textarea.closest('.modal').id;
+            const acknowledgeModal = document.getElementById(modalId);
+
+            if (acknowledgeModal) {
+                acknowledgeModal.addEventListener('shown.bs.modal', function () {
+                    handleInputDirection(textarea);
+                    textarea.focus();
+                });
+            }
         });
     </script>
     <style>
