@@ -9,4 +9,5 @@ class DocsConfig(AppConfig):
     
     def ready(self):
         # Import and register signal handlers
-        from . import signals  # noqa
+        # from . import signals  # noqa
+        from . import handlers
