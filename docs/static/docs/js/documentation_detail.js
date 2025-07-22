@@ -54,7 +54,24 @@ document.addEventListener('DOMContentLoaded', function () {
     // Apply RTL/LTR detection to the main description content
     const descriptionElement = document.getElementById('description-content');
     if (descriptionElement) {
-        setTextDirection(descriptionElement);
+        // Select all relevant block-level children
+        const blockElements = descriptionElement.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, blockquote, div');
+
+        blockElements.forEach(element => {
+            const dirAttribute = element.getAttribute('dir');
+            if (dirAttribute === 'rtl') {
+                element.style.direction = 'rtl';
+                element.style.textAlign = 'right';
+                element.classList.add('rtl-text');
+            } else if (dirAttribute === 'ltr') {
+                element.style.direction = 'ltr';
+                element.style.textAlign = 'left';
+                element.classList.remove('rtl-text');
+            } else {
+                // Fallback to setTextDirection if no explicit dir attribute
+                setTextDirection(element);
+            }
+        });
     }
 
     // Add confirmation for unlink buttons (using event delegation)
