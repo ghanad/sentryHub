@@ -52,3 +52,16 @@ class DocumentationAlertGroup(models.Model):
         unique_together = ('documentation', 'alert_group')
         verbose_name = "Documentation-Alert Link"
         verbose_name_plural = "Documentation-Alert Links"
+
+
+class Macro(models.Model):
+    """Simple key/value store for reusable documentation snippets."""
+
+    key = models.CharField(max_length=100, unique=True)
+    value = models.TextField()
+
+    def __str__(self):
+        return self.key
+
+    class Meta:
+        ordering = ["key"]

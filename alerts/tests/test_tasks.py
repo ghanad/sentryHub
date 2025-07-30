@@ -51,7 +51,7 @@ class ProcessAlertPayloadTaskTests(TestCase):
             instance=self.mock_alert_instance,
             status=self.mock_alert_group.current_status
         )
-        self.assertEqual(result, "Processed alerts successfully (Direct Call)")
+        self.assertEqual(result, "Processed alerts successfully")
         # Check if the log message exists in any of the calls
         log_messages = [call.args[0] for call in self.log_stream.write.call_args_list]
         self.assertTrue(any("Successfully processed alert. AlertGroup ID: 1, AlertInstance ID: 101" in msg for msg in log_messages))
@@ -127,5 +127,5 @@ class ProcessAlertPayloadTaskTests(TestCase):
         mock_parse_payload.assert_called_once_with(self.mock_payload)
         mock_update_alert_state.assert_called_once_with(self.mock_payload['alerts'][0])
         mock_signal_send.assert_not_called()
-        self.assertEqual(result, "Processed alerts successfully (Direct Call)")
+        self.assertEqual(result, "Processed alerts successfully")
         self.assertIn("update_alert_state returned None for alert:", self.log_stream.write.call_args[0][0])

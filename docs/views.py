@@ -9,8 +9,8 @@ from django.contrib import messages
 from django.http import JsonResponse
 from urllib.parse import unquote # Import unquote from urllib.parse
 
-from .models import AlertDocumentation, DocumentationAlertGroup
-from .forms import AlertDocumentationForm, DocumentationSearchForm
+from .models import AlertDocumentation, DocumentationAlertGroup, Macro
+from .forms import AlertDocumentationForm, DocumentationSearchForm, MacroForm
 from alerts.models import AlertGroup
 
 
@@ -191,3 +191,30 @@ class UnlinkDocumentationFromAlertView(LoginRequiredMixin, DeleteView):
     
     def post(self, request, *args, **kwargs):
         return self.delete(request, *args, **kwargs)
+
+
+class MacroListView(LoginRequiredMixin, ListView):
+    model = Macro
+    template_name = 'docs/macro_list.html'
+    context_object_name = 'macros'
+    paginate_by = 20
+
+
+class MacroCreateView(LoginRequiredMixin, CreateView):
+    model = Macro
+    form_class = MacroForm
+    template_name = 'docs/macro_form.html'
+    success_url = reverse_lazy('docs:macro-list')
+
+
+class MacroUpdateView(LoginRequiredMixin, UpdateView):
+    model = Macro
+    form_class = MacroForm
+    template_name = 'docs/macro_form.html'
+    success_url = reverse_lazy('docs:macro-list')
+
+
+class MacroDeleteView(LoginRequiredMixin, DeleteView):
+    model = Macro
+    template_name = 'docs/macro_confirm_delete.html'
+    success_url = reverse_lazy('docs:macro-list')
