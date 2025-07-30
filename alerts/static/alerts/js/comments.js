@@ -7,6 +7,17 @@ function updateCharCount(textarea) {
     handleInputDirection(textarea);
 }
 
+// Helper to get the alert fingerprint from URL path or query string
+function getAlertFingerprint() {
+    const params = new URLSearchParams(window.location.search);
+    let fp = params.get('fingerprint');
+    if (!fp) {
+        const parts = window.location.pathname.split('/').filter(Boolean);
+        fp = parts[parts.length - 1];
+    }
+    return fp;
+}
+
 // Form validation
 function validateCommentForm(form) {
     form.classList.add('was-validated');
@@ -64,9 +75,10 @@ function submitComment(form) {
                 // If we're not on page 1, offer to navigate there
                 const viewNewCommentLink = document.createElement('div');
                 viewNewCommentLink.className = 'alert alert-info mt-3';
+                const fingerprint = getAlertFingerprint();
                 viewNewCommentLink.innerHTML = `
-                    <p class="mb-0">Your comment was added successfully. 
-                    <a href="?fingerprint=${window.location.href.split('fingerprint=')[1].split('&')[0]}&tab=comments&comments_page=1">
+                    <p class="mb-0">Your comment was added successfully.
+                    <a href="?fingerprint=${fingerprint}&tab=comments&comments_page=1">
                         View your comment on the first page
                     </a>.</p>
                 `;
