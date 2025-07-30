@@ -1,7 +1,7 @@
 # docs/admin.py
 
 from django.contrib import admin
-from .models import AlertDocumentation, DocumentationAlertGroup
+from .models import AlertDocumentation, DocumentationAlertGroup, Macro
 
 
 class DocumentationAlertGroupInline(admin.TabularInline):
@@ -36,3 +36,9 @@ class DocumentationAlertGroupAdmin(admin.ModelAdmin):
     search_fields = ('documentation__title', 'alert_group__name')
     readonly_fields = ('linked_at',)
     date_hierarchy = 'linked_at'
+
+
+@admin.register(Macro)
+class MacroAdmin(admin.ModelAdmin):
+    list_display = ('key', 'value')
+    search_fields = ('key', 'value')

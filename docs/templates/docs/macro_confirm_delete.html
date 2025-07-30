@@ -1,0 +1,23 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block title %}Delete Macro{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'dashboard/css/modern_dashboard.css' %}">
+{% endblock %}
+
+{% block main_content %}
+<header class="page-header">
+    <h1 class="page-title">Delete Macro</h1>
+</header>
+
+<div class="content-card">
+    <p>Are you sure you want to delete "{{ object.key }}"?</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Delete</button>
+        <a href="{% url 'docs:macro-list' %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

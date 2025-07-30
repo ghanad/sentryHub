@@ -2,7 +2,7 @@
 
 from django import forms
 from tinymce.widgets import TinyMCE
-from .models import AlertDocumentation
+from .models import AlertDocumentation, Macro
 
 
 class AlertDocumentationForm(forms.ModelForm):
@@ -62,3 +62,13 @@ class DocumentationSearchForm(forms.Form):
             'placeholder': 'Search title or content...'
         })
     )
+
+
+class MacroForm(forms.ModelForm):
+    class Meta:
+        model = Macro
+        fields = ["key", "value"]
+        widgets = {
+            "key": forms.TextInput(attrs={"class": "form-control"}),
+            "value": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
+        }

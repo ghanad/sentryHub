@@ -1,0 +1,36 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block title %}{% if form.instance.pk %}Edit Macro{% else %}Create Macro{% endif %}{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'dashboard/css/modern_dashboard.css' %}">
+{% endblock %}
+
+{% block main_content %}
+<header class="page-header">
+    <h1 class="page-title">{% if form.instance.pk %}Edit Macro{% else %}Create Macro{% endif %}</h1>
+</header>
+
+<div class="content-card">
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            {{ form.key.label_tag }}
+            {{ form.key }}
+            {% for error in form.key.errors %}
+            <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+        </div>
+        <div class="mb-3">
+            {{ form.value.label_tag }}
+            {{ form.value }}
+            {% for error in form.value.errors %}
+            <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+        </div>
+        <button type="submit" class="btn btn-primary">Save</button>
+        <a href="{% url 'docs:macro-list' %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

@@ -1,5 +1,5 @@
 {% extends "dashboard/base.html" %}
-{% load static core_tags date_format_tags %}
+{% load static core_tags date_format_tags macro_tags %}
 
 {% block title %}{{ documentation.title }} - Documentation{% endblock %}
 
@@ -49,7 +49,7 @@
         </div>
         {# Add ID for JS targeting and data-rtl for automatic direction handling #}
         <div id="description-content" class="description-content" data-rtl="true">
-            {{ documentation.description|safe }}
+            {{ documentation.description|apply_macros }}
         </div>
     </div>
 

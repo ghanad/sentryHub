@@ -7,11 +7,16 @@ from django.shortcuts import get_object_or_404, redirect
 from django.db.models import Q, Count
 from django.contrib import messages
 from django.http import JsonResponse
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+import logging
 from urllib.parse import unquote # Import unquote from urllib.parse
 
-from .models import AlertDocumentation, DocumentationAlertGroup
-from .forms import AlertDocumentationForm, DocumentationSearchForm
+from .models import AlertDocumentation, DocumentationAlertGroup, Macro
+from .forms import AlertDocumentationForm, DocumentationSearchForm, MacroForm
 from alerts.models import AlertGroup
+
+logger = logging.getLogger(__name__)
 
 
 class DocumentationListView(LoginRequiredMixin, ListView):
@@ -191,3 +196,48 @@ class UnlinkDocumentationFromAlertView(LoginRequiredMixin, DeleteView):
     
     def post(self, request, *args, **kwargs):
         return self.delete(request, *args, **kwargs)
+
+
+class MacroListView(LoginRequiredMixin, ListView):
+    model = Macro
+    template_name = 'docs/macro_list.html'
+    context_object_name = 'macros'
+    paginate_by = 20
+
+
+class MacroCreateView(LoginRequiredMixin, CreateView):
+    model = Macro
+    form_class = MacroForm
+    template_name = 'docs/macro_form.html'
+    success_url = reverse_lazy('docs:macro-list')
+
+
+class MacroUpdateView(LoginRequiredMixin, UpdateView):
+    model = Macro
+    form_class = MacroForm
+    template_name = 'docs/macro_form.html'
+    success_url = reverse_lazy('docs:macro-list')
+
+
+class MacroDeleteView(LoginRequiredMixin, DeleteView):
+    model = Macro
+    template_name = 'docs/macro_confirm_delete.html'
+    success_url = reverse_lazy('docs:macro-list')
+
+
+@login_required
+def macro_guide_view(request):
+    """Display Markdown guide content for macros."""
+    guide_content_md = "Error loading guide."
+    try:
+        with open('documentations/MACRO_GUIDE.md', 'r', encoding='utf-8') as f:
+            guide_content_md = f.read()
+    except FileNotFoundError:
+        logger.error('Macro guide file not found.')
+        guide_content_md = 'Error loading guide: File not found.'
+    except Exception as e:
+        logger.error(f'Error reading Macro guide file: {e}')
+        guide_content_md = 'Error loading guide.'
+
+    context = {'guide_content_md': guide_content_md}
+    return render(request, 'docs/macro_guide.html', context)
