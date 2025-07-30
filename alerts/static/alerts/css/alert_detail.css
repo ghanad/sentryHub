@@ -76,3 +76,88 @@
 .tab-content .tab-pane {
     padding: 0;
 }
+
+/* Documentation Content Styles */
+.documentation-content {
+    font-family: 'IranSansX', system-ui, -apple-system, 'Segoe UI', Tahoma, Arial, sans-serif;
+    font-weight: 400;
+    line-height: 1.8;
+    letter-spacing: 0;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "ss01", "ss02", "ss03", "ss04";
+    color: var(--bs-body-color);
+}
+
+.documentation-content.rtl-text {
+    direction: rtl;
+    text-align: right;
+}
+
+.documentation-content pre,
+.documentation-content code,
+.documentation-content kbd,
+.documentation-content samp {
+    direction: ltr !important;
+    text-align: left !important;
+    font-family: var(--bs-font-monospace) !important;
+    background-color: rgba(var(--bs-secondary-rgb, 108, 117, 125), 0.1);
+    padding: 0.1em 0.4em;
+    border-radius: 0.25rem;
+    font-size: 0.9em;
+}
+
+[data-bs-theme="dark"] .documentation-content pre,
+[data-bs-theme="dark"] .documentation-content code,
+[data-bs-theme="dark"] .documentation-content kbd,
+[data-bs-theme="dark"] .documentation-content samp {
+    background-color: rgba(var(--bs-secondary-rgb, 108, 117, 125), 0.2);
+    color: var(--bs-light);
+}
+
+.documentation-content pre {
+    padding: 1rem;
+    overflow-x: auto;
+    display: block;
+}
+
+.documentation-content table {
+    direction: ltr !important;
+    width: 100%;
+    margin-bottom: 1rem;
+    border-collapse: collapse;
+    border: 1px solid var(--bs-border-color);
+}
+.documentation-content th,
+.documentation-content td {
+    padding: 0.75rem;
+    border: 1px solid var(--bs-border-color);
+    text-align: left;
+}
+.documentation-content th {
+    background-color: var(--bs-light);
+}
+.documentation-content.rtl-text table {
+    /* Keep table structure in RTL */
+}
+
+.documentation-content blockquote {
+    margin: 1rem 0;
+    padding: 0.5rem 1rem;
+    border-left: 4px solid var(--bs-border-color);
+    color: var(--gray-600);
+    background-color: var(--bs-light);
+}
+.documentation-content.rtl-text blockquote {
+    border-left: none;
+    border-right: 4px solid var(--bs-border-color);
+    padding-left: 0.5rem;
+    padding-right: 1rem;
+}
+
+.documentation-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--border-radius);
+}

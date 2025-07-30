@@ -65,6 +65,32 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Run duration calculations on load
     calculateAndDisplayDurations();
+
+    // Apply RTL/LTR handling for documentation sections similar to docs page
+    document.querySelectorAll('.documentation-content').forEach(section => {
+        // Detect direction for standard block elements
+        section.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, blockquote, div').forEach(el => {
+            const dirAttr = el.getAttribute('dir');
+            if (dirAttr === 'rtl') {
+                el.style.direction = 'rtl';
+                el.style.textAlign = 'right';
+                el.classList.add('rtl-text');
+            } else if (dirAttr === 'ltr') {
+                el.style.direction = 'ltr';
+                el.style.textAlign = 'left';
+                el.classList.remove('rtl-text');
+            } else if (typeof setTextDirection === 'function') {
+                setTextDirection(el);
+            }
+        });
+
+        // Force LTR for code blocks
+        section.querySelectorAll('pre, code, kbd, samp').forEach(el => {
+            el.setAttribute('dir', 'ltr');
+            el.style.direction = 'ltr';
+            el.style.textAlign = 'left';
+        });
+    });
 });
 
 // Function to update tab content if needed (called from included JS files)
