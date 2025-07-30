@@ -13,6 +13,7 @@ from .views import (
     MacroCreateView,
     MacroUpdateView,
     MacroDeleteView,
+    macro_guide_view,
 )
 
 app_name = 'docs'
@@ -36,4 +37,5 @@ urlpatterns = [
     path('macros/new/', MacroCreateView.as_view(), name='macro-create'),
     path('macros/<int:pk>/edit/', MacroUpdateView.as_view(), name='macro-update'),
     path('macros/<int:pk>/delete/', MacroDeleteView.as_view(), name='macro-delete'),
+    path('macros/guide/', macro_guide_view, name='macro-guide'),
 ]

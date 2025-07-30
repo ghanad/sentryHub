@@ -1,0 +1,48 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block title %}Macros Guide - SentryHub{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'dashboard/css/modern_dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'docs/css/documentation_detail.css' %}">
+{% endblock %}
+
+{% block main_content %}
+    <header class="page-header">
+        <h1 class="page-title">Macros Guide</h1>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'docs:macro-list' %}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+                <i class='bx bx-arrow-back'></i> Back to Macros
+            </a>
+        </div>
+    </header>
+
+    <div class="content-card mb-4">
+        <div id="description-content" class="description-content" data-rtl="true">
+            {% if guide_content_md %}
+                <div id="markdown-content">{{ guide_content_md }}</div>
+            {% else %}
+                <p>Could not load guide content.</p>
+            {% endif %}
+        </div>
+    </div>
+{% endblock main_content %}
+
+{% block extra_js %}
+    <script src="https://cdn.jsdelivr.net/npm/marked@4.0.10/marked.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const markdownDiv = document.getElementById('markdown-content');
+            if (markdownDiv) {
+                const markdownText = markdownDiv.textContent;
+                markdownDiv.innerHTML = marked.parse(markdownText);
+            }
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
+    </script>
+    <script src="{% static 'docs/js/documentation_detail.js' %}"></script>
+{% endblock %}

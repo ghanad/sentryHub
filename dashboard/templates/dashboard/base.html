@@ -58,6 +58,7 @@
             {% url 'alerts:silence-rule-list' as silences_url %}
             {% url 'integrations:jira-rule-list' as jira_url %}
             {% url 'docs:documentation-list' as docs_url %}
+            {% url 'docs:macro-list' as macros_url %}
 
             <!-- Dashboards Dropdown -->
             <li class="nav-item">
@@ -109,6 +110,12 @@
                  <a href="{{ docs_url }}" class="nav-link {% if request.resolver_match.namespace == 'docs' and request.resolver_match.url_name == 'documentation-list' %}active{% endif %}">
                     <i class='bx bxs-book-content nav-icon'></i>
                     <span class="nav-text">Documentation</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                 <a href="{{ macros_url }}" class="nav-link {% if request.resolver_match.namespace == 'docs' and request.resolver_match.url_name == 'macro-list' %}active{% endif %}">
+                    <i class='bx bx-code-block nav-icon'></i>
+                    <span class="nav-text">Macros</span>
                 </a>
             </li>
              {% if user.is_authenticated and user.is_staff %}
