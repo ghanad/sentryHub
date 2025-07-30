@@ -112,18 +112,12 @@
                     <span class="nav-text">Documentation</span>
                 </a>
             </li>
-            <li class="nav-item">
-                 <a href="{{ macros_url }}" class="nav-link {% if request.resolver_match.namespace == 'docs' and request.resolver_match.url_name == 'macro-list' %}active{% endif %}">
-                    <i class='bx bx-code-block nav-icon'></i>
-                    <span class="nav-text">Macros</span>
-                </a>
-            </li>
              {% if user.is_authenticated and user.is_staff %}
              <!-- Admin Dropdown -->
              <li class="nav-item">
-                 <a class="nav-link collapsed {% if request.resolver_match.url_name in 'admin_dashboard_summary,user_list,jira-admin' %}active{% endif %}"
+                 <a class="nav-link collapsed {% if request.resolver_match.url_name in 'admin_dashboard_summary,user_list,jira-admin,macro-list' %}active{% endif %}"
                     href="#adminSubmenu" data-bs-toggle="collapse" role="button"
-                    aria-expanded="{% if request.resolver_match.url_name in 'admin_dashboard_summary,user_list,jira-admin' %}true{% else %}false{% endif %}"
+                    aria-expanded="{% if request.resolver_match.url_name in 'admin_dashboard_summary,user_list,jira-admin,macro-list' %}true{% else %}false{% endif %}"
                     aria-controls="adminSubmenu">
                      <i class='bx bxs-cog nav-icon'></i>
                      <span class="nav-text">Admin</span>
@@ -147,6 +141,12 @@
                          <a href="{% url 'integrations:jira-admin' %}" class="nav-link {% if request.resolver_match.namespace == 'integrations' and request.resolver_match.url_name == 'jira-admin' %}active{% endif %}">
                              <i class='bx bxl-jira nav-icon-sub'></i>
                              <span class="nav-text">Jira Admin</span>
+                         </a>
+                     </li>
+                     <li class="nav-item">
+                         <a href="{{ macros_url }}" class="nav-link {% if request.resolver_match.namespace == 'docs' and request.resolver_match.url_name == 'macro-list' %}active{% endif %}">
+                             <i class='bx bx-radio-circle nav-icon-sub'></i>
+                             <span class="nav-text">Macros</span>
                          </a>
                      </li>
                  </ul>
