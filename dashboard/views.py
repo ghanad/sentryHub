@@ -6,6 +6,8 @@ from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from datetime import timedelta
 import logging
+from django.template.loader import render_to_string
+from django.http import JsonResponse
 import json
 from alerts.models import AlertGroup, AlertComment, AlertAcknowledgementHistory
 from alerts.views import AlertListView
@@ -99,7 +101,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
 
 class Tier1AlertListView(AlertListView):
     """List view of unacknowledged alerts for Tier 1 users"""
-    paginate_by = None  # Disable pagination
+    paginate_by = 20  # Enable pagination to avoid loading all alerts at once
     template_name = 'dashboard/tier1_unacked.html'
 
     def get_queryset(self):
@@ -119,13 +121,21 @@ class Tier1AlertListView(AlertListView):
         filter_keys = ['status', 'severity', 'instance', 'acknowledged', 'silenced_filter', 'search']
         for key in filter_keys:
             context.pop(key, None)
-        # Remove pagination context
-        context.pop('paginator', None)
-        context.pop('page_obj', None)
-        context.pop('is_paginated', None)
         # Add the acknowledgement form
         context['acknowledge_form'] = AlertAcknowledgementForm()
         return context
+
+    def render_to_response(self, context, **response_kwargs):
+        """Return JSON with table rows when requested via AJAX"""
+        if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            html = render_to_string(
+                'dashboard/partials/tier1_alert_rows.html',
+                context,
+                request=self.request
+            )
+            alert_count = context.get('paginator').count if context.get('paginator') else len(context.get('alerts', []))
+            return JsonResponse({'html': html, 'alert_count': alert_count})
+        return super().render_to_response(context, **response_kwargs)
 
 
 class AdminDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
