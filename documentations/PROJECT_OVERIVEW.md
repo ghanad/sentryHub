@@ -43,7 +43,7 @@
 *   **Background Processing:** Celery
 *   **Message Queue & Celery Result Backend:** Redis
 *   **Database:** SQLite (development), PostgreSQL (recommended for production)
-*   **Frontend:** Bootstrap 5, JavaScript (Vanilla JS, likely jQuery for libraries like Toastr), Chart.js
+*   **Frontend:** Bootstrap 5, JavaScript (Vanilla JS, likely jQuery for libraries like Toastr), Chart.js, Lucide Icons (for modern UI icons)
 *   **Text Editor:** TinyMCE (for documentation)
 *   **Deployment:** Docker, Docker Compose
 
