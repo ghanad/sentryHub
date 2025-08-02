@@ -23,7 +23,7 @@ All data tables should follow this basic HTML structure, utilizing Bootstrap 5 c
 <div class="chart-card">
     <div class="chart-card-header">
         <h5 class="chart-title d-flex align-items-center gap-2">
-            <i class='bx bx-list-ul'></i> <!-- Use relevant BoxIcon -->
+            <i data-lucide="list-ul"></i> <!-- Use relevant Lucide icon -->
             Table Title
             {% if is_paginated %}
                <span class="badge bg-secondary rounded-pill fw-normal ms-2">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
@@ -63,7 +63,7 @@ All data tables should follow this basic HTML structure, utilizing Bootstrap 5 c
                     {% empty %}
                     <tr>
                         <td colspan="[NUMBER_OF_COLUMNS]" class="text-center p-5"> {# Standard empty state #}
-                            <i class='bx bx-info-circle fs-1 text-muted mb-3 d-block'></i> {# Use relevant icon #}
+                            <i data-lucide="info" class="fs-1 text-muted mb-3 d-block"></i> {# Use relevant icon #}
                             <p class="text-muted mb-0">No items found.</p> {# Adjust text as needed #}
                         </td>
                     </tr>
@@ -94,14 +94,14 @@ All data tables should follow this basic HTML structure, utilizing Bootstrap 5 c
 *   Place user actions (View, Edit, Delete, etc.) in the last column (`th/td.col-actions`).
 *   Group actions within a `div.action-menu`. This div should use Flexbox (`d-flex`, `gap-2`, etc.) for layout, defined globally or in `modern_dashboard.css`.
 *   Represent actions as links (`<a>`) styled as icon buttons using the `action-btn` class.
-*   Use BoxIcons (`<i>` tags) within the action buttons.
+*   Use Lucide icons (`<i>` tags with `data-lucide` attribute) within the action buttons.
 *   Always include tooltips (`data-bs-toggle="tooltip" title="..."`) to clarify the action button's purpose.
 *   For destructive actions like "Delete", use a confirmation mechanism (e.g., a JavaScript confirmation dialog or a Bootstrap modal) triggered by the button/link. Refer to `users/templates/users/user_list.html` for a modal example.
 *   **Combining Tooltips and Modals:** If an action button needs to *both* trigger a modal (`data-bs-toggle="modal"`) and display a tooltip (`data-bs-toggle="tooltip"`), place the tooltip attributes on a wrapper `<span>` element around the button. This avoids conflicts between the two Bootstrap JavaScript triggers.
     ```html
     <span data-bs-toggle="tooltip" title="Your Tooltip Text">
         <button type="button" class="action-btn" data-bs-toggle="modal" data-bs-target="#yourModalId">
-            <i class='bx bx-your-icon'></i>
+            <i data-lucide="your-icon"></i>
         </button>
     </span>
     ```
@@ -111,7 +111,7 @@ All data tables should follow this basic HTML structure, utilizing Bootstrap 5 c
 *   Use Bootstrap badges (`span.badge`) for concise status indicators (e.g., Firing/Resolved, Active/Expired, Yes/No, severity levels, counts).
 *   Prefer `rounded-pill` for badge shape (`span.badge.rounded-pill`).
 *   Define consistent, application-specific status classes (e.g., `status-badge status-critical`, `status-badge status-active`, `status-badge status-resolved`) in a shared CSS file (`modern_dashboard.css` or similar) to ensure uniform appearance.
-*   Include relevant icons within badges where appropriate (e.g., `<i class='bx bxs-circle'></i> Firing`).
+*   Include relevant icons within badges where appropriate (e.g., `<i data-lucide="circle"></i> Firing`).
 
 ## 5. Dates and Times
 
@@ -141,7 +141,7 @@ All data tables should follow this basic HTML structure, utilizing Bootstrap 5 c
 *   Use the `{% empty %}` tag within the loop or conditional logic in the view to render this state.
 *   The empty state should be a single row spanning all columns (`<td colspan="[NUMBER_OF_COLUMNS]">`).
 *   Center the content (`text-center`) and add padding (`p-5`).
-*   Include a relevant BoxIcon and a descriptive text message (e.g., "No alerts found matching your criteria.", "No users available.").
+*   Include a relevant Lucide icon and a descriptive text message (e.g., "No alerts found matching your criteria.", "No users available.").
 
 By adhering to these guidelines, we can ensure all tables across the application share a consistent look, feel, and behavior, improving the overall user experience.
 
@@ -168,3 +168,12 @@ Whether creating a new page or migrating an existing one, follow these standards
    *   Structure filters/search using the patterns in Section 7.
 5.  **Rely on Standard CSS:** Ensure styling primarily comes from the CSS included via `base_modern.html` (like Bootstrap and `modern_dashboard.css`). Avoid adding page-specific CSS files unless absolutely necessary for unique components not covered by the standard styles. If migrating, remove links to old, redundant CSS files.
 6.  **Verify Consistency:** Review the updated page against other modern pages (like Acknowledgements or the Main Dashboard) to ensure visual and functional consistency.
+
+## 10. Iconography
+
+SentryHub utilizes **Lucide Icons** for all modern UI icons. When adding new icons or replacing existing ones, always use Lucide icons.
+
+*   **Integration:** Lucide icons are integrated via a script tag in `dashboard/templates/dashboard/base.html`.
+*   **Usage:** Icons are typically used with the `data-lucide="icon-name"` attribute on an `<i>` tag or directly as an SVG.
+*   **Sizing:** Ensure icons are appropriately sized using CSS classes like `nav-icon` or `fs-4`, or by directly setting `width` and `height` on the SVG element if necessary. Refer to `dashboard/static/dashboard/css/modern_dashboard_base.css` for icon sizing rules.
+*   **Accessibility:** Always consider accessibility when using icons. If an icon conveys meaning without accompanying text, ensure it has an appropriate `aria-label` or `title` attribute.
