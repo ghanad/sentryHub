@@ -85,21 +85,23 @@
                         <input type="text" class="form-control form-control-sm" id="instance" name="instance" value="{{ instance }}" placeholder="e.g., server1:9100">
                     </div>
 
-                    <div class="col-lg-6 col-md-8">
-                        <label for="search" class="form-label">Search</label>
-                        <input type="text" class="form-control form-control-sm" id="search" name="search" value="{{ search }}" placeholder="Name, Fingerprint...">
+                    <!-- Search + Buttons in one row -->
+                    <div class="col-lg-6 col-md-8 d-flex align-items-end gap-2">
+                        <div class="flex-grow-1">
+                            <label for="search" class="form-label">Search</label>
+                            <input type="text" class="form-control form-control-sm" id="search" name="search" value="{{ search }}" placeholder="Name, Fingerprint...">
+                        </div>
+                        <div class="d-flex align-items-end pb-1 gap-2">
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                <i class='bx bx-filter-alt me-1'></i> Apply Filters
+                            </button>
+                            <a href="{% url 'alerts:alert-list' %}" class="btn btn-outline-secondary btn-sm">
+                                <i class='bx bx-x me-1'></i> Reset
+                            </a>
+                        </div>
                     </div>
 
-                    <!-- Action Buttons -->
-                    <div class="col-12 d-flex justify-content-end gap-2 mt-1">
-                        <button type="submit" class="btn btn-primary btn-sm">
-                            <i class='bx bx-filter-alt me-1'></i> Apply Filters
-                        </button>
-                        <a href="{% url 'alerts:alert-list' %}" class="btn btn-outline-secondary btn-sm">
-                            <i class='bx bx-x me-1'></i> Reset
-                        </a>
-                    </div>
-                    
+
                 </form>
             </div>
         </div>
