@@ -47,3 +47,18 @@
 }
 .silenced-row .alert-name-link {
 }
+/* Styles extracted from alerts/templates/alerts/alert_list.html */
+.alert-row { cursor: pointer; transition: background-color 0.2s ease; }
+.alert-row:hover { background-color: rgba(0, 0, 0, 0.02); }
+.alert-row:active { background-color: rgba(0, 0, 0, 0.05); }
+.alert-details-row { background-color: #f8f9fa; }
+[data-bs-theme="dark"] .alert-details-row { background-color: rgba(255, 255, 255, 0.03); }
+.alert-details-content { padding: 15px; }
+.label-container, .annotation-container { display: flex; flex-direction: column; gap: 4px; }
+.label-item, .annotation-item { padding: 4px 0; }
+.label-key, .annotation-key { font-weight: 500; color: #495057; }
+.label-value, .annotation-value { color: #6c757d; }
+[data-bs-theme="dark"] .label-key, [data-bs-theme="dark"] .annotation-key { color: var(--bs-secondary-color); }
+[data-bs-theme="dark"] .label-value, [data-bs-theme="dark"] .annotation-value { color: var(--bs-tertiary-color); }
+/* Ensure Name column can wrap */
+.alert-table td:nth-child(2) a { white-space: normal; }
