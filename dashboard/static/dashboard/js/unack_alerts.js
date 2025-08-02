@@ -114,7 +114,11 @@ document.addEventListener('DOMContentLoaded', function() {
     async function fetchAndUpdateAlerts() {
         console.log("Fetching alerts..."); // For debugging
         try {
-            const response = await fetch(apiURL);
+            const response = await fetch(apiURL, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -146,9 +150,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // Update current state
             currentFingerprints = newFingerprints;
 
-            // Play sound if new alerts were detected
+            // Play sound and show notification if new alerts were detected
             if (hasNewAlerts) {
                 playNotificationSound();
+                if (window.SentryNotification) {
+                    SentryNotification.info('New alert received', { timeOut: 8000 });
+                }
             }
 
             // Re-initialize tooltips and event listeners for the new content
