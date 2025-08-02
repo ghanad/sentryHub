@@ -16,204 +16,100 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- BoxIcons -->
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
-    <!-- IranSansX (assuming core/fonts.css includes it) -->
+    <!-- IranSansX -->
     <link rel="stylesheet" href="{% static 'core/css/fonts.css' %}">
     <!-- Toastr CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
-
     <!-- Modern Base CSS -->
     <link rel="stylesheet" href="{% static 'dashboard/css/modern_dashboard_base.css' %}">
+    <!-- Lucide Sidebar CSS -->
+    <link rel="stylesheet" href="{% static 'dashboard/css/lucide_sidebar.css' %}">
 
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <script>
-        // Apply sidebar state immediately to prevent flicker
-        (function() {
-            try {
-                const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-                if (isCollapsed) {
-                    document.documentElement.classList.add('sidebar-is-initially-collapsed');
-                }
-            } catch (e) {
-                console.error("Error reading sidebar state from localStorage", e);
-            }
-        })();
-    </script>
 
     <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <a href="{% url 'dashboard:dashboard' %}" class="sidebar-logo">
-                <i class='bx bx-shield-quarter'></i>
-                <span>SentryHub</span>
-            </a>
-            <button class="sidebar-toggle" id="sidebarToggle" title="Toggle Sidebar (Hold to Pin)">
-                <i class='bx bx-pin'></i>
-            </button>
-        </div>
-
-        <ul class="sidebar-nav">
-            {% url 'alerts:alert-list' as alerts_url %}
-            {% url 'alerts:silence-rule-list' as silences_url %}
-            {% url 'integrations:jira-rule-list' as jira_url %}
-            {% url 'docs:documentation-list' as docs_url %}
-            {% url 'docs:macro-list' as macros_url %}
-
-            <!-- Dashboards Dropdown -->
-            <li class="nav-item">
-                <a class="nav-link collapsed {% if request.resolver_match.namespace == 'dashboard' %}active{% endif %}"
-                   href="#dashboardsSubmenu" data-bs-toggle="collapse" role="button"
-                   aria-expanded="{% if request.resolver_match.namespace == 'dashboard' %}true{% else %}false{% endif %}"
-                   aria-controls="dashboardsSubmenu">
-                    <i class='bx bxs-dashboard nav-icon'></i>
-                    <span class="nav-text">Dashboards</span>
-                    <i class='bx bx-chevron-down ms-auto sidebar-arrow'></i>
-                </a>
-                <ul class="nav-submenu collapse {% if request.resolver_match.namespace == 'dashboard' %}show{% endif %}"
-                    id="dashboardsSubmenu" data-bs-parent=".sidebar-nav">
-                    <li class="nav-item">
-                        <a href="{% url 'dashboard:dashboard' %}" class="nav-link {% if request.resolver_match.namespace == 'dashboard' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
-                            <i class='bx bx-radio-circle nav-icon-sub'></i>
-                            <span class="nav-text">Main Dashboard</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{% url 'dashboard:tier1_dashboard_new' %}" class="nav-link {% if request.resolver_match.url_name == 'tier1_dashboard_new' %}active{% endif %}">
-                            <i class='bx bx-bell-off nav-icon-sub'></i>
-                            <span class="nav-text">Tier 1 Unacked</span>
-                        </a>
-                    </li>
-                </ul>
-            </li>
-            <!-- End Dashboards Dropdown -->
-
-            <li class="nav-item">
-                 <a href="{{ alerts_url }}" class="nav-link {% if request.resolver_match.namespace == 'alerts' and request.resolver_match.url_name == 'alert-list' %}active{% endif %}">
-                    <i class='bx bxs-bell nav-icon'></i>
-                    <span class="nav-text">Alerts</span>
+    <nav id="sidebar" class="d-flex flex-column vh-100 bg-white border-end">
+        <button id="sidebar-toggle" class="btn btn-link align-self-end mt-2">
+            <i data-lucide="menu"></i>
+        </button>
+        <ul class="list-unstyled mt-2">
+            <li class="sidebar-item {% if request.resolver_match.namespace == 'dashboard' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                <a href="{% url 'dashboard:dashboard' %}" class="d-flex align-items-center">
+                    <i data-lucide="layout-dashboard"></i>
+                    <span class="sidebar-text">Dashboard</span>
                 </a>
             </li>
-             <li class="nav-item">
-                 <a href="{{ silences_url }}" class="nav-link {% if request.resolver_match.namespace == 'alerts' and request.resolver_match.url_name == 'silence-rule-list' %}active{% endif %}">
-                    <i class='bx bxs-volume-mute nav-icon'></i>
-                    <span class="nav-text">Silence Rules</span>
+            <li class="sidebar-item {% if request.resolver_match.namespace == 'alerts' and request.resolver_match.url_name == 'alert-list' %}active{% endif %}">
+                <a href="{% url 'alerts:alert-list' %}" class="d-flex align-items-center">
+                    <i data-lucide="alarm-clock"></i>
+                    <span class="sidebar-text">Alerts</span>
                 </a>
             </li>
-            <li class="nav-item">
-                 <a href="{{ jira_url }}" class="nav-link {% if request.resolver_match.namespace == 'integrations' and request.resolver_match.url_name == 'jira-rule-list' %}active{% endif %}">
-                    <i class='bx bx-link-external nav-icon'></i>
-                    <span class="nav-text">Jira Rules</span>
+            <li class="sidebar-item {% if request.resolver_match.namespace == 'alerts' and request.resolver_match.url_name == 'silence-rule-list' %}active{% endif %}">
+                <a href="{% url 'alerts:silence-rule-list' %}" class="d-flex align-items-center">
+                    <i data-lucide="bell-off"></i>
+                    <span class="sidebar-text">Silence Rules</span>
                 </a>
             </li>
-            <li class="nav-item">
-                 <a href="{{ docs_url }}" class="nav-link {% if request.resolver_match.namespace == 'docs' and request.resolver_match.url_name == 'documentation-list' %}active{% endif %}">
-                    <i class='bx bxs-book-content nav-icon'></i>
-                    <span class="nav-text">Documentation</span>
+            <li class="sidebar-item {% if request.resolver_match.namespace == 'integrations' and request.resolver_match.url_name == 'jira-rule-list' %}active{% endif %}">
+                <a href="{% url 'integrations:jira-rule-list' %}" class="d-flex align-items-center">
+                    <i data-lucide="git-branch"></i>
+                    <span class="sidebar-text">Jira Rules</span>
                 </a>
             </li>
-             {% if user.is_authenticated and user.is_staff %}
-             <!-- Admin Dropdown -->
-             <li class="nav-item">
-                 <a class="nav-link collapsed {% if request.resolver_match.url_name in 'admin_dashboard_summary,user_list,jira-admin,macro-list' %}active{% endif %}"
-                    href="#adminSubmenu" data-bs-toggle="collapse" role="button"
-                    aria-expanded="{% if request.resolver_match.url_name in 'admin_dashboard_summary,user_list,jira-admin,macro-list' %}true{% else %}false{% endif %}"
-                    aria-controls="adminSubmenu">
-                     <i class='bx bxs-cog nav-icon'></i>
-                     <span class="nav-text">Admin</span>
-                     <i class='bx bx-chevron-down ms-auto sidebar-arrow'></i>
-                 </a>
-                 <ul class="nav-submenu collapse {% if request.resolver_match.url_name in 'admin_dashboard_summary,user_list,jira-admin' %}show{% endif %}"
-                     id="adminSubmenu" data-bs-parent=".sidebar-nav">
-                     <li class="nav-item">
-                         <a href="{% url 'dashboard:admin_dashboard_summary' %}" class="nav-link {% if request.resolver_match.url_name == 'admin_dashboard_summary' %}active{% endif %}">
-                             <i class='bx bx-radio-circle nav-icon-sub'></i>
-                             <span class="nav-text">Admin Summary</span>
-                         </a>
-                     </li>
-                     <li class="nav-item">
-                         <a href="{% url 'users:user_list' %}" class="nav-link {% if request.resolver_match.namespace == 'users' and request.resolver_match.url_name == 'user_list' %}active{% endif %}">
-                             <i class='bx bx-radio-circle nav-icon-sub'></i>
-                             <span class="nav-text">User Management</span>
-                         </a>
-                     </li>
-                     <li class="nav-item">
-                         <a href="{% url 'integrations:jira-admin' %}" class="nav-link {% if request.resolver_match.namespace == 'integrations' and request.resolver_match.url_name == 'jira-admin' %}active{% endif %}">
-                             <i class='bx bx-radio-circle nav-icon-sub'></i>
-                             <span class="nav-text">Jira Admin</span>
-                         </a>
-                     </li>
-                     <li class="nav-item">
-                         <a href="{{ macros_url }}" class="nav-link {% if request.resolver_match.namespace == 'docs' and request.resolver_match.url_name == 'macro-list' %}active{% endif %}">
-                             <i class='bx bx-radio-circle nav-icon-sub'></i>
-                             <span class="nav-text">Macros</span>
-                         </a>
-                     </li>
-                 </ul>
-             </li>
-             <!-- End Admin Dropdown -->
-{% endif %}
+            <li class="sidebar-item {% if request.resolver_match.namespace == 'docs' and request.resolver_match.url_name == 'documentation-list' %}active{% endif %}">
+                <a href="{% url 'docs:documentation-list' %}" class="d-flex align-items-center">
+                    <i data-lucide="book-open"></i>
+                    <span class="sidebar-text">Documentation</span>
+                </a>
+            </li>
+            <li class="sidebar-item {% if request.resolver_match.url_name == 'admin_dashboard_summary' %}active{% endif %}">
+                <a href="{% url 'dashboard:admin_dashboard_summary' %}" class="d-flex align-items-center">
+                    <i data-lucide="shield"></i>
+                    <span class="sidebar-text">Admin Summary</span>
+                </a>
+            </li>
+            <li class="sidebar-item {% if request.resolver_match.namespace == 'users' and request.resolver_match.url_name == 'user_list' %}active{% endif %}">
+                <a href="{% url 'users:user_list' %}" class="d-flex align-items-center">
+                    <i data-lucide="users"></i>
+                    <span class="sidebar-text">User Management</span>
+                </a>
+            </li>
+            <li class="sidebar-item {% if request.resolver_match.namespace == 'integrations' and request.resolver_match.url_name == 'jira-admin' %}active{% endif %}">
+                <a href="{% url 'integrations:jira-admin' %}" class="d-flex align-items-center">
+                    <i data-lucide="file-code"></i>
+                    <span class="sidebar-text">Jira Admin</span>
+                </a>
+            </li>
+            <li class="sidebar-item {% if request.resolver_match.namespace == 'docs' and request.resolver_match.url_name == 'macro-list' %}active{% endif %}">
+                <a href="{% url 'docs:macro-list' %}" class="d-flex align-items-center">
+                    <i data-lucide="command"></i>
+                    <span class="sidebar-text">Macros</span>
+                </a>
+            </li>
+            <li class="sidebar-item {% if request.resolver_match.namespace == 'users' and request.resolver_match.url_name == 'profile' %}active{% endif %}">
+                <a href="{% url 'users:profile' %}" class="d-flex align-items-center">
+                    <i data-lucide="user-circle"></i>
+                    <span class="sidebar-text">Profile</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{% url 'logout' %}" class="d-flex align-items-center">
+                    <i data-lucide="log-out"></i>
+                    <span class="sidebar-text">Logout</span>
+                </a>
+            </li>
         </ul>
-
-        <div class="sidebar-footer mt-auto">
-            <!-- Theme Toggle and Account Management sections -->
-            <div class="d-flex align-items-center justify-content-between mb-3 px-3 theme-toggle-wrapper expanded-toggle">
-                <span class="small theme-toggle-label">Theme</span>
-                <button class="custom-theme-toggle" id="themeToggleExpanded" type="button" aria-label="Toggle theme">
-                    <span class="toggle-thumb"></span>
-                    <span class="icon-sun"><i class='bx bx-sun'></i></span>
-                    <span class="icon-moon"><i class='bx bx-moon'></i></span>
-                </button>
-            </div>
-             <div class="text-center mb-3 collapsed-toggle d-none">
-                 <button class="custom-theme-toggle" id="themeToggleCollapsed" type="button" aria-label="Toggle theme">
-                    <span class="toggle-thumb"></span>
-                    <span class="icon-sun"><i class='bx bx-sun'></i></span>
-                    <span class="icon-moon"><i class='bx bx-moon'></i></span>
-                </button>
-            </div>
-            <div class="account-management mb-2">
-                <div class="d-flex align-items-center justify-content-between px-3 account-header">
-                    <div class="d-flex align-items-center">
-                        <i class='bx bxs-user-circle fs-4 me-2'></i>
-                        <span class="profile-text">Account</span>
-                    </div>
-                    <i class='bx bx-chevron-down account-toggle'></i>
-                </div>
-                <div class="account-menu mt-2">
-                    <a href="{% url 'users:profile' %}" class="nav-link d-flex align-items-center px-3 py-1">
-                        <i class='bx bxs-user me-2'></i>
-                        <span>Profile</span>
-                    </a>
-                    <a href="{% url 'logout' %}" class="nav-link d-flex align-items-center px-3 py-1">
-                        <i class='bx bx-log-out me-2'></i>
-                        <span>Logout</span>
-                    </a>
-                </div>
-            </div>
-            <div class="collapsed-account">
-                <a href="#" class="nav-link d-flex justify-content-center py-2 account-collapsed-icon" title="Account">
-                    <i class='bx bxs-user-circle fs-4'></i>
-                </a>
-                <div class="account-menu-collapsed">
-                    <a href="{% url 'users:profile' %}" class="nav-link d-flex justify-content-center py-1" title="Profile">
-                        <i class='bx bxs-user fs-4'></i>
-                    </a>
-                    <a href="{% url 'logout' %}" class="nav-link d-flex justify-content-center py-1" title="Logout">
-                        <i class='bx bx-log-out fs-4'></i>
-                    </a>
-                </div>
-            </div>
-            <span class="small px-3 version-text">Version 1.0.1</span>
-        </div>
-    </aside>
+    </nav>
 
     <!-- Main content Area -->
     <main class="main-content" id="mainContent">
         <!-- Mobile header -->
         <div class="mobile-header d-lg-none">
             <button class="mobile-toggle" id="mobileToggle">
-                <i class='bx bx-menu'></i>
+                <i data-lucide="menu"></i>
             </button>
             <h5 class="mb-0 ms-2">SentryHub</h5>
         </div>
@@ -225,18 +121,25 @@
 
     <!-- Bootstrap JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-     <!-- jQuery (if needed by other scripts, like Toastr) -->
-     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-     <!-- Toastr JS -->
-     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
-     <!-- Custom Core Notifications JS -->
-     <script src="{% static 'core/js/notifications.js' %}"></script>
-     <!-- Modern Base JS -->
-     <script src="{% static 'dashboard/js/modern_dashboard.js' %}"></script>
-     <script src="{% static 'core/js/rtl-text.js' %}"></script> 
+    <!-- jQuery (if needed by other scripts, like Toastr) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Toastr JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <!-- Custom Core Notifications JS -->
+    <script src="{% static 'core/js/notifications.js' %}"></script>
+    <script src="{% static 'core/js/rtl-text.js' %}"></script>
 
-     <!-- Include notifications partial -->
-     {% include 'core/partials/notifications.html' %}
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        lucide.createIcons();
+        document.getElementById('sidebar-toggle').addEventListener('click', function () {
+            document.getElementById('sidebar').classList.toggle('collapsed');
+        });
+    </script>
+
+    <!-- Include notifications partial -->
+    {% include 'core/partials/notifications.html' %}
 
     {% block extra_js %}{% endblock %}
 </body>

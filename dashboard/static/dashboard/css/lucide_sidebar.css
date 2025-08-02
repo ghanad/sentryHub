@@ -1,0 +1,33 @@
+#sidebar {
+  width: 16rem;
+  transition: width 0.2s ease;
+}
+#sidebar.collapsed {
+  width: 4rem;
+}
+#sidebar.collapsed .sidebar-text {
+  display: none;
+}
+.sidebar-item a {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  color: #374151;
+  text-decoration: none;
+}
+.sidebar-item a:hover {
+  color: #2563eb;
+}
+.sidebar-item.active > a {
+  font-weight: 600;
+  color: #2563eb;
+  border-left: 4px solid #2563eb;
+  padding-left: calc(0.75rem - 4px);
+}
+.sidebar-item i {
+  width: 20px;
+  height: 20px;
+}
+.sidebar-text {
+  margin-left: 0.75rem;
+}
