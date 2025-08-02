@@ -28,7 +28,7 @@
             </button>
         </div>
 
-        <div class="collapse" id="filterPanel">
+        <div class="collapse {% if request.GET.status or request.GET.severity or request.GET.acknowledged or request.GET.silenced or request.GET.source or request.GET.instance or request.GET.search or request.GET.search %}show{% endif %}" id="filterPanel">
             <div class="chart-card-body pt-3">
                 <form method="get" class="row g-3">
                     <!-- Row 1 -->
