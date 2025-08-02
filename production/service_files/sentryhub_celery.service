@@ -6,9 +6,11 @@ PartOf=sentryhub.service
 [Service]
 Type=simple
 WorkingDirectory=/opt/sentryhub/sentryHub
-Environment="PYTHONPATH=/etc/sentryhub"
+Environment="PYTHONPATH=/etc/sentryhub:/opt/sentryhub/sentryHub"
 Environment="DJANGO_SETTINGS_MODULE=settings"
-ExecStart=/opt/sentryhub/venvn/bin/celery -A sentryHub worker -Q alerts,integrations -c 4 --loglevel=INFO
+ExecStart=/opt/sentryhub/venvn/bin/celery -A sentryHub.celery worker -Q alerts,integrations,default -c 4 --loglevel=INFO
+Restart=on-failure
+RestartSec=5s
 
 
 Restart=on-failure

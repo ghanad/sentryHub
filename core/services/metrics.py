@@ -58,11 +58,12 @@ class MetricManager:
         logger.info("Writing metrics to file")
         temp_file = None
         try:
-            # Update the timestamp metric for the last write operation
-            self.set_gauge('sentryhub_last_metrics_write_timestamp', value=time.time())
-
             # Use mkstemp for atomic file creation
             fd, temp_path = tempfile.mkstemp(suffix=".prom", dir=os.path.dirname(settings.METRICS_FILE_PATH))
+            
+            # Capture current timestamp as a Unix timestamp
+            current_time = time.time()
+
             with os.fdopen(fd, 'w') as f:
                 # Write counters
                 for name, labels_dict in self.counters.items():
@@ -81,6 +82,10 @@ class MetricManager:
                             f.write(f'{name}{{{label_key}}} {value}\n')
                         else:
                             f.write(f'{name} {value}\n')
+
+                # Manually write the timestamp metric directly to the file
+                f.write(f'# TYPE sentryhub_last_metrics_write_timestamp gauge\n')
+                f.write(f'sentryhub_last_metrics_write_timestamp {current_time}\n')
 
             # Atomically replace the target file
             os.rename(temp_path, settings.METRICS_FILE_PATH)
