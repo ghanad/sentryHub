@@ -97,7 +97,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         return context
 
 
-class Tier1AlertListView(AlertListView):
+class Tier1AlertListView(UserPassesTestMixin, AlertListView):
     """List view of unacknowledged alerts for Tier 1 users"""
     paginate_by = None  # Disable pagination
     template_name = 'dashboard/tier1_unacked.html'

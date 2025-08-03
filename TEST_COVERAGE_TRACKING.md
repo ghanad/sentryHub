@@ -131,15 +131,15 @@ This document tracks the testing progress for different parts of the SentryHub a
 
 ### `dashboard` App
 
-| Component         | File / Functionality                      | Status | Notes                                                        |
-| :---------------- | :---------------------------------------- | :----: | :----------------------------------------------------------- |
-| **Models**        | `models.py`                               |   ⚫️   | Empty file                                                   |
-| **Views**         | `DashboardView` (`views.py`)              |   ⚪️   | GET, context data aggregation (counts, queries, charts)     |
-|                   | `Tier1AlertListView` (`views.py`)         |   ⚪️   | GET, queryset logic (unacked filter), permissions          |
-|                   | `AdminDashboardView` (`views.py`)         |   ⚪️   | GET, permissions, context data aggregation                   |
-|                   | `AdminCommentsView` (`views.py`)          |   ⚪️   | GET, permissions, filters, context, pagination             |
-|                   | `AdminAcknowledgementsView` (`views.py`)  |   ⚪️   | GET, permissions, filters, context, pagination             |
-| **Admin**         | `admin.py`                                |   ⚫️   | Empty file                                                   |
+| Component         | File / Functionality                      | Status | Notes        |
+| :---------------- | :---------------------------------------- | :----: | :------------------------------------------------------------- |
+| **Models**        | `models.py`                               |   ⚫️   | Empty file                |
+| **Views**         | `DashboardView` (`views.py`)              |   🟢   | Stats counts, severity/instance charts, daily trend JSON     |
+|                   | `Tier1AlertListView` (`views.py`)         |   🟢   | Unacknowledged filter, context cleanup, Tier1/staff permission |
+|                   | `AdminDashboardView` (`views.py`)         |   🟢   | Staff-only access with comment, user, and ack counts        |
+|                   | `AdminCommentsView` (`views.py`)          |   🟢   | Staff-only, user/date/alert filters, context parameters      |
+|                   | `AdminAcknowledgementsView` (`views.py`)  |   🟢   | Staff-only, user/date/alert filters, context parameters      |
+| **Admin**         | `admin.py`                                |   ⚫️   | Empty file                |
 
 ### `integrations` App
 
