@@ -143,24 +143,23 @@ This document tracks the testing progress for different parts of the SentryHub a
 
 ### `integrations` App
 
-| Component         | File / Functionality                      | Status | Notes                                                        |
-| :---------------- | :---------------------------------------- | :----: | :----------------------------------------------------------- |
-| **Models**        | `JiraIntegrationRule` (`models.py`)       |   ⚪️   | Creation, relations, `__str__`, ordering                   |
-| **Forms**         | `JiraIntegrationRuleForm` (`forms.py`)    |   ⚪️   | Validation, saving, queryset for matchers                  |
-| **Services**      | `JiraService` (`jira_service.py`)         |   ⚪️   | `__init__`, `check_connection`, `create_issue`, `add_comment`, `get_issue_status_category`, `add_watcher` |
-|                   | `JiraRuleMatcherService` (`jira_matcher.py`) | ⚪️ | `find_matching_rule`, `_does_rule_match`, `_does_criteria_match` |
-| **Views**         | `JiraRuleListView` (`views.py`)           |   ⚪️   | GET, filters, context, pagination                            |
-|                   | `JiraRuleCreateView` (`views.py`)         |   ⚪️   | GET, POST (valid/invalid), permissions                       |
-|                   | `JiraRuleUpdateView` (`views.py`)         |   ⚪️   | GET, POST (valid/invalid), permissions                       |
-|                   | `JiraRuleDeleteView` (`views.py`)         |   ⚪️   | GET, POST, permissions, check for referenced alerts        |
-|                   | `jira_admin_view` (`views.py`)            |   ⚪️   | Connection testing, test issue creation                      |
-|                   | `jira_rule_guide_view` (`views.py`)       |   ⚪️   | Display markdown guide content                             |
-| **Handlers**      | `handle_alert_processed` (`handlers.py`)  |   ⚪️   | Receiver logic, conditions (status, silence), task call     |
-| **Tasks**         | `process_jira_for_alert_group` (`tasks.py`)|   ⚪️   | Task logic, error handling, retry logic, API calls         |
-                  | `JiraTaskBase` (`tasks.py`)               |   ⚪️   | Base class for Jira tasks with retry logic                   |
-                  | `render_template_safe` (`tasks.py`)       |   ⚪️   | Helper function for safe template rendering                  |
-| **Admin**         | `JiraIntegrationRuleAdmin` (`admin.py`)   |   ⚪️   | Custom methods (`matcher_count`), fieldsets                |
-
+| Component         | File / Functionality                      | Status | Notes |
+| :---------------- | :---------------------------------------- | :----: | :---------------------------------------------------------- |
+| **Models**        | `JiraIntegrationRule` (`models.py`)       |   🟢   | Creation, relations, `__str__`, ordering |
+| **Forms**         | `JiraIntegrationRuleForm` (`forms.py`)    |   🟢   | Validation, saving, queryset for matchers |
+| **Services**      | `JiraService` (`jira_service.py`)         |   🟢   | `__init__`, `check_connection`, `create_issue`, `add_comment`, `get_issue_status_category`, `add_watcher` |
+|                   | `JiraRuleMatcherService` (`jira_matcher.py`) | 🟢 | `find_matching_rule`, `_does_rule_match`, `_does_criteria_match` |
+| **Views**         | `JiraRuleListView` (`views.py`)           |   🟢   | GET, filters, context, pagination |
+|                   | `JiraRuleCreateView` (`views.py`)         |   🟢   | GET, POST (valid/invalid), permissions |
+|                   | `JiraRuleUpdateView` (`views.py`)         |   🟢   | GET, POST (valid/invalid), permissions |
+|                   | `JiraRuleDeleteView` (`views.py`)         |   🟢   | GET, POST, permissions, check for referenced alerts |
+|                   | `jira_admin_view` (`views.py`)            |   🟢   | Connection testing, test issue creation |
+|                   | `jira_rule_guide_view` (`views.py`)       |   🟢   | Display markdown guide content |
+| **Handlers**      | `handle_alert_processed` (`handlers.py`)  |   🟢   | Receiver logic, conditions (status, silence), task call |
+| **Tasks**         | `process_jira_for_alert_group` (`tasks.py`) |   🟢   | Task logic, error handling, retry logic, API calls |
+|                   | `JiraTaskBase` (`tasks.py`)               |   🟢   | Base class for Jira tasks with retry logic |
+|                   | `render_template_safe` (`tasks.py`)       |   🟢   | Helper function for safe template rendering |
+| **Admin**         | `JiraIntegrationRuleAdmin` (`admin.py`)   |   🟢   | Custom methods (`matcher_count`), fieldsets |
 ---
 
 ## Frontend Tests (JavaScript)
