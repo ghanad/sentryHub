@@ -115,18 +115,18 @@ This document tracks the testing progress for different parts of the SentryHub a
 
 | Component         | File / Functionality                      | Status | Notes                                                        |
 | :---------------- | :---------------------------------------- | :----: | :----------------------------------------------------------- |
-| **Models**        | `UserProfile` (`models.py`)               |   ⚪️   | Creation, relations, default values, choices                 |
-| **Forms**         | `CustomUserCreationForm` (`forms.py`)     |   ⚪️   | Validation (email, passwords), saving user & profile         |
-|                   | `CustomUserChangeForm` (`forms.py`)       |   ⚪️   | Validation (optional password), saving user & profile update |
-| **Views**         | `UserListView` (`views.py`)               |   ⚪️   | GET, permissions, search, pagination                         |
+| **Models**        | `UserProfile` (`models.py`)               |   🟢   | Creation via signals, defaults, `__str__` |
+| **Forms**         | `CustomUserCreationForm` (`forms.py`)     |   🟢   | Saves user & profile; password mismatch errors |
+|                   | `CustomUserChangeForm` (`forms.py`)       |   🟢   | Updates user & profile; validates password fields |
+| **Views**         | `UserListView` (`views.py`)               |   🟢   | Staff access, non-staff redirect, search filtering|
 |                   | `UserCreateView` (`views.py`)             |   ⚪️   | GET, POST (valid/invalid), permissions, AJAX handling        |
 |                   | `UserUpdateView` (`views.py`)             |   ⚪️   | GET, POST (valid/invalid), permissions, AJAX handling        |
 |                   | `UserDeleteView` (`views.py`)             |   ⚪️   | GET, POST, permissions, AJAX handling                        |
 |                   | `UserProfileView` (`views.py`)            |   ⚪️   | GET, context                                                 |
 |                   | `PreferencesView` (`views.py`)            |   ⚪️   | GET, context                                                 |
-|                   | `update_preferences` (`views.py`)         |   ⚪️   | POST (valid/invalid data), profile update                    |
-|                   | `AdminRequiredMixin` (`views.py`)            |   ⚪️   | Permission mixin for admin access                      |
-| **Signals**       | `create_user_profile`, `save_user_profile` (`signals.py`) | ⚪️ | Check if `UserProfile` exists after `User` save            |
+|                   | `update_preferences` (`views.py`)         |   🟢   | Valid/invalid preference updates profile|
+|                   | `AdminRequiredMixin` (`views.py`)            |   🟢   | Enforced via user list view tests|
+| **Signals**       | `create_user_profile`, `save_user_profile` (`signals.py`) | 🟢 | Profile auto-created and recreated on save |
 | **Admin**         | `admin.py`                                |   ⚫️   | Empty file                                                   |
 
 ### `dashboard` App
