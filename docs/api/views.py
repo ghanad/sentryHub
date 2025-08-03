@@ -139,5 +139,5 @@ class AlertDocumentationLinkViewSet(viewsets.ReadOnlyModelViewSet):
         alert_id = self.request.query_params.get('alert_id', None)
         if alert_id:
             queryset = queryset.filter(alert_group_id=alert_id)
-        
-        return queryset.order_by('-linked_at')
+        # Order by most recent link time, falling back to newest ID for ties
+        return queryset.order_by('-linked_at', '-id')

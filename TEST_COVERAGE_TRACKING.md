@@ -35,7 +35,7 @@ This document tracks the testing progress for different parts of the SentryHub a
 |                   | `parse_alertmanager_payload` (`payload_parser.py`) | 🟢 | Parsing different payload versions, date handling, missing fields |
 |                   | `jira_service.py`                         |   🟢   | (Also in integrations) API calls, connection handling         |
 |                   | `jira_matcher.py`                         |   🟢   | (Also in integrations) Rule matching logic                   |
-|                   | `alert_logger.py`                         |   ⚫️   | File writing (might need integration test or mock `open`) |
+|                   | `alert_logger.py`                         |   🟢   | File writing to Logs directory, timestamped JSON output |
 | **Views**         |                                           |        |                                                              |
 |                   | `AlertListView` (`views.py`)              |   🟢   | GET (status, template), filters, context, pagination        |
 |                   | `AlertDetailView` (`views.py`)            |   🟢   | GET (status, template), context, POST (ack, comment), AJAX  |
@@ -77,8 +77,12 @@ This document tracks the testing progress for different parts of the SentryHub a
 | **Middleware**       | `AdminAccessMiddleware` (`middleware.py`) |   🟢   | Staff/non-staff access, redirects           |
 | **Context Processors**| `notifications` (`context_processors.py`) |   🟢   | Message extraction into context             |
 | **Template Tags**    |                                      |        |                                             |
-|                      | `core_tags.py`                       |   ⚫️   | All filters (`time_ago`, `status_badge`, `jsonify`, `format_datetime`, `has_group`, `add_class`, `calculate_duration`) are tested. `format_datetime` mocking for `force_jalali` is handled. |
+|                      | `core_tags.py`                       |   🟢   | All filters (`time_ago`, `status_badge`, `jsonify`, `format_datetime`, `has_group`, `add_class`, `calculate_duration`) are tested, including Jalali preference handling and import fallbacks. |
 |                      | `date_format_tags.py`                |   ⚫️   | `to_jalali`, `to_jalali_datetime`, `force_jalali`, `force_gregorian` |
+| **Services**         |                                      |        |                                             |
+|                      | `MetricManager` (`services/metrics.py`) |   🟢   | Counter/gauge tracking, metrics file output |
+| **Tasks**            |                                      |        |                                             |
+|                      | `flush_metrics_to_file` (`tasks.py`) |   🟢   | Writes metrics when enabled, skips otherwise |
 
 ### `docs` App
 
@@ -91,18 +95,18 @@ This document tracks the testing progress for different parts of the SentryHub a
 | **Services**      | `match_documentation_to_alert` (`documentation_matcher.py`) |   🟢   | Matching logic (match/no match), Link creation          |
 |                   | `get_documentation_for_alert` (`documentation_matcher.py`) |   🟢   | Query logic                                                |
 | **Views**         | `DocumentationListView` (`views.py`)      |   🟢   | GET, search, context, pagination                             |
-|                   | `DocumentationDetailView` (`views.py`)    |   🟡   | GET, context (linked alerts) - Failed to assert linked_alerts order after 6 attempts. Needs human review. |
+|                   | `DocumentationDetailView` (`views.py`)    |   🟢   | GET, context (linked alerts ordered by `last_occurrence`) |
 |                   | `DocumentationCreateView` (`views.py`)    |   🟢   | GET (initial), POST (valid/invalid), permissions                       |
 |                   | `DocumentationUpdateView` (`views.py`)    |   🟢   | GET, POST (valid/invalid), permissions                       |
 |                   | `DocumentationDeleteView` (`views.py`)    |   🟢   | GET, POST, permissions                                       |
 |                   | `LinkDocumentationToAlertView` (`views.py`)|   🟢   | GET (context), POST (link creation/check existing)         |
 |                   | `UnlinkDocumentationFromAlertView` (`views.py`)| 🟢 | POST (deletion), AJAX response                               |
 | **API Views**     | `DocumentationViewSet` (`api/views.py`)   |   🟢   | CRUD, search, filters, actions (link/unlink)               |
-|                   | `AlertDocumentationLinkViewSet` (`api/views.py`)| 🟢 | List (GET), filters                                          |
-| **API Serializers**| `AlertDocumentationSerializer` (`api/serializers.py`) | ⚪️ | Serialization, MethodFields                        |
+|                   | `AlertDocumentationLinkViewSet` (`api/views.py`)| 🟢 | List (GET), filters, ordering by link time |
+| **API Serializers**| `AlertDocumentationSerializer` (`api/serializers.py`) |   🟢   | Serialization, `created_by_name` variations |
 |                   | `DocumentationAlertGroupSerializer` (`api/serializers.py`) | 🟢 | Serialization, MethodFields                        |
-| **Signals**       | `handle_documentation_save` (`signals.py`)|   ⚪️   | Check if `match_documentation_to_alert` is called logic on save |
-| **Handlers**      | `handle_documentation_matching` (`handlers.py`) | ⚪️ | Test receiver logic for `match_documentation_to_alert` call |
+| **Signals**       | `handle_documentation_save` (`signals.py`)|   🟢   | Automatically links matching alert titles |
+| **Handlers**      | `handle_documentation_matching` (`handlers.py`) |   🟢   | Calls matcher on `alert_processed`, warns when missing alert |
 | **Admin**         | `AlertDocumentationAdmin` (`admin.py`)    |   🟢   | `save_model`, Inline checks (if needed)                      |
 |                   | `DocumentationAlertGroupAdmin` (`admin.py`) | 🟢   | Basic registration checks                                    |
 |                   | `DocumentationAlertGroupInline` (`admin.py`) |   🟢   | Basic inline registration checks                     |
@@ -111,31 +115,31 @@ This document tracks the testing progress for different parts of the SentryHub a
 
 | Component         | File / Functionality                      | Status | Notes                                                        |
 | :---------------- | :---------------------------------------- | :----: | :----------------------------------------------------------- |
-| **Models**        | `UserProfile` (`models.py`)               |   ⚪️   | Creation, relations, default values, choices                 |
-| **Forms**         | `CustomUserCreationForm` (`forms.py`)     |   ⚪️   | Validation (email, passwords), saving user & profile         |
-|                   | `CustomUserChangeForm` (`forms.py`)       |   ⚪️   | Validation (optional password), saving user & profile update |
-| **Views**         | `UserListView` (`views.py`)               |   ⚪️   | GET, permissions, search, pagination                         |
-|                   | `UserCreateView` (`views.py`)             |   ⚪️   | GET, POST (valid/invalid), permissions, AJAX handling        |
-|                   | `UserUpdateView` (`views.py`)             |   ⚪️   | GET, POST (valid/invalid), permissions, AJAX handling        |
-|                   | `UserDeleteView` (`views.py`)             |   ⚪️   | GET, POST, permissions, AJAX handling                        |
-|                   | `UserProfileView` (`views.py`)            |   ⚪️   | GET, context                                                 |
-|                   | `PreferencesView` (`views.py`)            |   ⚪️   | GET, context                                                 |
-|                   | `update_preferences` (`views.py`)         |   ⚪️   | POST (valid/invalid data), profile update                    |
-|                   | `AdminRequiredMixin` (`views.py`)            |   ⚪️   | Permission mixin for admin access                      |
-| **Signals**       | `create_user_profile`, `save_user_profile` (`signals.py`) | ⚪️ | Check if `UserProfile` exists after `User` save            |
+| **Models**        | `UserProfile` (`models.py`)               |   🟢   | Creation via signals, defaults, `__str__` |
+| **Forms**         | `CustomUserCreationForm` (`forms.py`)     |   🟢   | Saves user & profile; password mismatch errors |
+|                   | `CustomUserChangeForm` (`forms.py`)       |   🟢   | Updates user & profile; validates password fields |
+| **Views**         | `UserListView` (`views.py`)               |   🟢   | Staff access, non-staff redirect, search filtering|
+|                   | `UserCreateView` (`views.py`)             |   🟢   | GET/POST create, AJAX invalid data, permissions |
+|                   | `UserUpdateView` (`views.py`)             |   🟢   | GET/POST update, AJAX invalid data, permissions |
+|                   | `UserDeleteView` (`views.py`)             |   🟢   | GET confirm, POST delete, AJAX success/error |
+|                   | `UserProfileView` (`views.py`)            |   🟢   | Staff-only access, profile auto-create, context |
+|                   | `PreferencesView` (`views.py`)            |   🟢   | Staff-only access, profile auto-create, context |
+|                   | `update_preferences` (`views.py`)         |   🟢   | Valid/invalid preference updates profile|
+|                   | `AdminRequiredMixin` (`views.py`)            |   🟢   | Enforced via user list view tests|
+| **Signals**       | `create_user_profile`, `save_user_profile` (`signals.py`) | 🟢 | Profile auto-created and recreated on save |
 | **Admin**         | `admin.py`                                |   ⚫️   | Empty file                                                   |
 
 ### `dashboard` App
 
-| Component         | File / Functionality                      | Status | Notes                                                        |
-| :---------------- | :---------------------------------------- | :----: | :----------------------------------------------------------- |
-| **Models**        | `models.py`                               |   ⚫️   | Empty file                                                   |
-| **Views**         | `DashboardView` (`views.py`)              |   ⚪️   | GET, context data aggregation (counts, queries, charts)     |
-|                   | `Tier1AlertListView` (`views.py`)         |   ⚪️   | GET, queryset logic (unacked filter), permissions          |
-|                   | `AdminDashboardView` (`views.py`)         |   ⚪️   | GET, permissions, context data aggregation                   |
-|                   | `AdminCommentsView` (`views.py`)          |   ⚪️   | GET, permissions, filters, context, pagination             |
-|                   | `AdminAcknowledgementsView` (`views.py`)  |   ⚪️   | GET, permissions, filters, context, pagination             |
-| **Admin**         | `admin.py`                                |   ⚫️   | Empty file                                                   |
+| Component         | File / Functionality                      | Status | Notes        |
+| :---------------- | :---------------------------------------- | :----: | :------------------------------------------------------------- |
+| **Models**        | `models.py`                               |   ⚫️   | Empty file                |
+| **Views**         | `DashboardView` (`views.py`)              |   🟢   | Stats counts, severity/instance charts, daily trend JSON     |
+|                   | `Tier1AlertListView` (`views.py`)         |   🟢   | Unacknowledged filter, context cleanup, Tier1/staff permission |
+|                   | `AdminDashboardView` (`views.py`)         |   🟢   | Staff-only access with comment, user, and ack counts        |
+|                   | `AdminCommentsView` (`views.py`)          |   🟢   | Staff-only, user/date/alert filters, context parameters      |
+|                   | `AdminAcknowledgementsView` (`views.py`)  |   🟢   | Staff-only, user/date/alert filters, context parameters      |
+| **Admin**         | `admin.py`                                |   ⚫️   | Empty file                |
 
 ### `integrations` App
 

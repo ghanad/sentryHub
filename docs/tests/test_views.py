@@ -41,6 +41,45 @@ class DocumentationListViewTest(TestCase):
         self.assertIsInstance(response.context['search_form'], DocumentationSearchForm)
         self.assertEqual(response.context['search_query'], '')
 
+
+class DocumentationDetailViewTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username='testuser', password='testpassword')
+        self.documentation = AlertDocumentation.objects.create(
+            title='Doc', description='Desc', created_by=self.user
+        )
+        self.alert_newer = AlertGroup.objects.create(
+            fingerprint='fp_new', name='New Alert', labels={},
+            severity='critical', current_status='firing'
+        )
+        self.alert_older = AlertGroup.objects.create(
+            fingerprint='fp_old', name='Old Alert', labels={},
+            severity='critical', current_status='firing'
+        )
+        # Manually set last_occurrence to control ordering (use update to bypass auto_now)
+        AlertGroup.objects.filter(pk=self.alert_newer.pk).update(last_occurrence=timezone.now())
+        AlertGroup.objects.filter(pk=self.alert_older.pk).update(
+            last_occurrence=timezone.now() - datetime.timedelta(days=1)
+        )
+        self.alert_newer.refresh_from_db()
+        self.alert_older.refresh_from_db()
+        DocumentationAlertGroup.objects.create(
+            documentation=self.documentation, alert_group=self.alert_newer
+        )
+        DocumentationAlertGroup.objects.create(
+            documentation=self.documentation, alert_group=self.alert_older
+        )
+
+    def test_linked_alerts_ordered_by_last_occurrence(self):
+        self.client.login(username='testuser', password='testpassword')
+        response = self.client.get(
+            reverse('docs:documentation-detail', args=[self.documentation.pk])
+        )
+        self.assertEqual(response.status_code, 200)
+        linked_alerts = list(response.context['linked_alerts'])
+        self.assertEqual(linked_alerts, [self.alert_newer, self.alert_older])
+
 class DocumentationCreateViewTest(TestCase):
     def setUp(self):
         self.client = Client()
