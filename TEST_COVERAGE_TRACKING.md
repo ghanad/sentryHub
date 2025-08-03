@@ -119,11 +119,11 @@ This document tracks the testing progress for different parts of the SentryHub a
 | **Forms**         | `CustomUserCreationForm` (`forms.py`)     |   🟢   | Saves user & profile; password mismatch errors |
 |                   | `CustomUserChangeForm` (`forms.py`)       |   🟢   | Updates user & profile; validates password fields |
 | **Views**         | `UserListView` (`views.py`)               |   🟢   | Staff access, non-staff redirect, search filtering|
-|                   | `UserCreateView` (`views.py`)             |   ⚪️   | GET, POST (valid/invalid), permissions, AJAX handling        |
-|                   | `UserUpdateView` (`views.py`)             |   ⚪️   | GET, POST (valid/invalid), permissions, AJAX handling        |
-|                   | `UserDeleteView` (`views.py`)             |   ⚪️   | GET, POST, permissions, AJAX handling                        |
-|                   | `UserProfileView` (`views.py`)            |   ⚪️   | GET, context                                                 |
-|                   | `PreferencesView` (`views.py`)            |   ⚪️   | GET, context                                                 |
+|                   | `UserCreateView` (`views.py`)             |   🟢   | GET/POST create, AJAX invalid data, permissions |
+|                   | `UserUpdateView` (`views.py`)             |   🟢   | GET/POST update, AJAX invalid data, permissions |
+|                   | `UserDeleteView` (`views.py`)             |   🟢   | GET confirm, POST delete, AJAX success/error |
+|                   | `UserProfileView` (`views.py`)            |   🟢   | Staff-only access, profile auto-create, context |
+|                   | `PreferencesView` (`views.py`)            |   🟢   | Staff-only access, profile auto-create, context |
 |                   | `update_preferences` (`views.py`)         |   🟢   | Valid/invalid preference updates profile|
 |                   | `AdminRequiredMixin` (`views.py`)            |   🟢   | Enforced via user list view tests|
 | **Signals**       | `create_user_profile`, `save_user_profile` (`signals.py`) | 🟢 | Profile auto-created and recreated on save |

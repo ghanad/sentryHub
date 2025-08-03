@@ -131,7 +131,7 @@ class UserDeleteView(AdminRequiredMixin, DeleteView):
             self.object.delete()
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({'status': 'success'})
-            return super().post(request, *args, **kwargs)
+            return redirect(self.success_url)
         except Exception as e:
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
