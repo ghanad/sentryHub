@@ -102,7 +102,7 @@ This document tracks the testing progress for different parts of the SentryHub a
 |                   | `LinkDocumentationToAlertView` (`views.py`)|   🟢   | GET (context), POST (link creation/check existing)         |
 |                   | `UnlinkDocumentationFromAlertView` (`views.py`)| 🟢 | POST (deletion), AJAX response                               |
 | **API Views**     | `DocumentationViewSet` (`api/views.py`)   |   🟢   | CRUD, search, filters, actions (link/unlink)               |
-|                   | `AlertDocumentationLinkViewSet` (`api/views.py`)| 🟢 | List (GET), filters                                          |
+|                   | `AlertDocumentationLinkViewSet` (`api/views.py`)| 🟢 | List (GET), filters, ordering by link time |
 | **API Serializers**| `AlertDocumentationSerializer` (`api/serializers.py`) |   🟢   | Serialization, `created_by_name` variations |
 |                   | `DocumentationAlertGroupSerializer` (`api/serializers.py`) | 🟢 | Serialization, MethodFields                        |
 | **Signals**       | `handle_documentation_save` (`signals.py`)|   🟢   | Automatically links matching alert titles |
