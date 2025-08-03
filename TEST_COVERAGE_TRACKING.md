@@ -35,7 +35,7 @@ This document tracks the testing progress for different parts of the SentryHub a
 |                   | `parse_alertmanager_payload` (`payload_parser.py`) | 🟢 | Parsing different payload versions, date handling, missing fields |
 |                   | `jira_service.py`                         |   🟢   | (Also in integrations) API calls, connection handling         |
 |                   | `jira_matcher.py`                         |   🟢   | (Also in integrations) Rule matching logic                   |
-|                   | `alert_logger.py`                         |   ⚫️   | File writing (might need integration test or mock `open`) |
+|                   | `alert_logger.py`                         |   🟢   | File writing to Logs directory, timestamped JSON output |
 | **Views**         |                                           |        |                                                              |
 |                   | `AlertListView` (`views.py`)              |   🟢   | GET (status, template), filters, context, pagination        |
 |                   | `AlertDetailView` (`views.py`)            |   🟢   | GET (status, template), context, POST (ack, comment), AJAX  |
@@ -79,6 +79,10 @@ This document tracks the testing progress for different parts of the SentryHub a
 | **Template Tags**    |                                      |        |                                             |
 |                      | `core_tags.py`                       |   ⚫️   | All filters (`time_ago`, `status_badge`, `jsonify`, `format_datetime`, `has_group`, `add_class`, `calculate_duration`) are tested. `format_datetime` mocking for `force_jalali` is handled. |
 |                      | `date_format_tags.py`                |   ⚫️   | `to_jalali`, `to_jalali_datetime`, `force_jalali`, `force_gregorian` |
+| **Services**         |                                      |        |                                             |
+|                      | `MetricManager` (`services/metrics.py`) |   🟢   | Counter/gauge tracking, metrics file output |
+| **Tasks**            |                                      |        |                                             |
+|                      | `flush_metrics_to_file` (`tasks.py`) |   🟢   | Writes metrics when enabled, skips otherwise |
 
 ### `docs` App
 
