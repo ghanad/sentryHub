@@ -77,7 +77,7 @@ This document tracks the testing progress for different parts of the SentryHub a
 | **Middleware**       | `AdminAccessMiddleware` (`middleware.py`) |   🟢   | Staff/non-staff access, redirects           |
 | **Context Processors**| `notifications` (`context_processors.py`) |   🟢   | Message extraction into context             |
 | **Template Tags**    |                                      |        |                                             |
-|                      | `core_tags.py`                       |   ⚫️   | All filters (`time_ago`, `status_badge`, `jsonify`, `format_datetime`, `has_group`, `add_class`, `calculate_duration`) are tested. `format_datetime` mocking for `force_jalali` is handled. |
+|                      | `core_tags.py`                       |   🟢   | All filters (`time_ago`, `status_badge`, `jsonify`, `format_datetime`, `has_group`, `add_class`, `calculate_duration`) are tested, including Jalali preference handling and import fallbacks. |
 |                      | `date_format_tags.py`                |   ⚫️   | `to_jalali`, `to_jalali_datetime`, `force_jalali`, `force_gregorian` |
 | **Services**         |                                      |        |                                             |
 |                      | `MetricManager` (`services/metrics.py`) |   🟢   | Counter/gauge tracking, metrics file output |

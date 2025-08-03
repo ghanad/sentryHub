@@ -184,15 +184,20 @@ class CoreTagsFormatDatetimeTests(TestCase):
     @patch('core.templatetags.date_format_tags.force_jalali', new=mock_force_jalali_success_patch)
     @patch('django.utils.timezone.localtime') # Also mock localtime to check it's NOT called
     def test_format_datetime_user_prefers_jalali_force_jalali_succeeds(self, mock_localtime):
-        if not UserProfile: self.skipTest("UserProfile model not available.")
+        if not UserProfile:
+            self.skipTest("UserProfile model not available.")
+        self.user_jalali_ft.profile.date_format_preference = 'jalali'
+        self.user_jalali_ft.profile.save()
         expected_output = f"JALALI_PATCHED:{self.test_datetime_utc.strftime('%Y-%m-%d %H:%M:%S')}"
         self.assertEqual(format_datetime(self.test_datetime_utc, self.user_jalali_ft), expected_output)
-        mock_localtime.assert_not_called() # Should not call localtime if jalali path is taken
+        mock_localtime.assert_not_called()  # Should not call localtime if jalali path is taken
 
     @patch('core.templatetags.date_format_tags.force_jalali', side_effect=ImportError("Simulated import error for force_jalali"))
     @patch('django.utils.timezone.localtime')
     def test_format_datetime_user_prefers_jalali_force_jalali_import_fails(self, mock_localtime, mock_fj_import_error):
         if not UserProfile: self.skipTest("UserProfile model not available.")
+        self.user_jalali_ft.profile.date_format_preference = 'jalali'
+        self.user_jalali_ft.profile.save()
         mock_localtime.return_value.strftime.return_value = "GREGORIAN_FALLBACK_FORMAT"
         with self.assertLogs('core.templatetags.core_tags', level='ERROR') as cm:
             result = format_datetime(self.test_datetime_utc, self.user_jalali_ft)
@@ -213,10 +218,16 @@ class CoreTagsFormatDatetimeTests(TestCase):
     @patch('core.templatetags.date_format_tags.force_jalali', new=mock_force_jalali_success_patch)
     @patch('django.utils.timezone.localtime')
     def test_format_datetime_with_custom_format_string_jalali(self, mock_localtime):
-        if not UserProfile: self.skipTest("UserProfile model not available.")
+        if not UserProfile:
+            self.skipTest("UserProfile model not available.")
+        self.user_jalali_ft.profile.date_format_preference = 'jalali'
+        self.user_jalali_ft.profile.save()
         custom_format = "%d/%m/%Y"
         expected_output = f"JALALI_PATCHED:{self.test_datetime_utc.strftime(custom_format)}"
-        self.assertEqual(format_datetime(self.test_datetime_utc, self.user_jalali_ft, format_string=custom_format), expected_output)
+        self.assertEqual(
+            format_datetime(self.test_datetime_utc, self.user_jalali_ft, format_string=custom_format),
+            expected_output,
+        )
         mock_localtime.assert_not_called()
 
     def test_format_datetime_exception_in_value_strftime(self):
