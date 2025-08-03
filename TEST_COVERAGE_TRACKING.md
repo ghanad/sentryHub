@@ -95,7 +95,7 @@ This document tracks the testing progress for different parts of the SentryHub a
 | **Services**      | `match_documentation_to_alert` (`documentation_matcher.py`) |   🟢   | Matching logic (match/no match), Link creation          |
 |                   | `get_documentation_for_alert` (`documentation_matcher.py`) |   🟢   | Query logic                                                |
 | **Views**         | `DocumentationListView` (`views.py`)      |   🟢   | GET, search, context, pagination                             |
-|                   | `DocumentationDetailView` (`views.py`)    |   🟡   | GET, context (linked alerts) - Failed to assert linked_alerts order after 6 attempts. Needs human review. |
+|                   | `DocumentationDetailView` (`views.py`)    |   🟢   | GET, context (linked alerts ordered by `last_occurrence`) |
 |                   | `DocumentationCreateView` (`views.py`)    |   🟢   | GET (initial), POST (valid/invalid), permissions                       |
 |                   | `DocumentationUpdateView` (`views.py`)    |   🟢   | GET, POST (valid/invalid), permissions                       |
 |                   | `DocumentationDeleteView` (`views.py`)    |   🟢   | GET, POST, permissions                                       |
@@ -103,10 +103,10 @@ This document tracks the testing progress for different parts of the SentryHub a
 |                   | `UnlinkDocumentationFromAlertView` (`views.py`)| 🟢 | POST (deletion), AJAX response                               |
 | **API Views**     | `DocumentationViewSet` (`api/views.py`)   |   🟢   | CRUD, search, filters, actions (link/unlink)               |
 |                   | `AlertDocumentationLinkViewSet` (`api/views.py`)| 🟢 | List (GET), filters                                          |
-| **API Serializers**| `AlertDocumentationSerializer` (`api/serializers.py`) | ⚪️ | Serialization, MethodFields                        |
+| **API Serializers**| `AlertDocumentationSerializer` (`api/serializers.py`) |   🟢   | Serialization, `created_by_name` variations |
 |                   | `DocumentationAlertGroupSerializer` (`api/serializers.py`) | 🟢 | Serialization, MethodFields                        |
-| **Signals**       | `handle_documentation_save` (`signals.py`)|   ⚪️   | Check if `match_documentation_to_alert` is called logic on save |
-| **Handlers**      | `handle_documentation_matching` (`handlers.py`) | ⚪️ | Test receiver logic for `match_documentation_to_alert` call |
+| **Signals**       | `handle_documentation_save` (`signals.py`)|   🟢   | Automatically links matching alert titles |
+| **Handlers**      | `handle_documentation_matching` (`handlers.py`) |   🟢   | Calls matcher on `alert_processed`, warns when missing alert |
 | **Admin**         | `AlertDocumentationAdmin` (`admin.py`)    |   🟢   | `save_model`, Inline checks (if needed)                      |
 |                   | `DocumentationAlertGroupAdmin` (`admin.py`) | 🟢   | Basic registration checks                                    |
 |                   | `DocumentationAlertGroupInline` (`admin.py`) |   🟢   | Basic inline registration checks                     |
