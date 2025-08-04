@@ -1,0 +1,50 @@
+{% extends "dashboard/base.html" %}
+{% load static core_tags %}
+
+{% block title %}Slack Admin - SentryHub{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'dashboard/css/modern_dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'integrations/css/slack-admin.css' %}">
+{% endblock %}
+
+{% block main_content %}
+    <header class="page-header">
+        <h1 class="page-title">Slack Integration Admin</h1>
+    </header>
+
+    {% include 'core/partials/_messages.html' %}
+
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <h5 class="chart-title d-flex align-items-center gap-2">
+                        <i class='bx bxl-slack'></i>
+                        Send Test Message
+                    </h5>
+                </div>
+                <div class="chart-card-body">
+                    <p>Use the form below to send a test message to a Slack channel using the configured proxy endpoint.</p>
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            {{ form.channel.label_tag }}
+                            {{ form.channel }}
+                        </div>
+                        <div class="mb-3">
+                            {{ form.message.label_tag }}
+                            {{ form.message }}
+                        </div>
+                        <button type="submit" class="btn btn-primary d-flex align-items-center gap-1">
+                            <i class='bx bx-paper-plane'></i> Send Message
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+{% endblock %}

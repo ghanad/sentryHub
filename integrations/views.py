@@ -8,9 +8,14 @@ from django.db.models import Q # Import Q for search if needed
 from django.shortcuts import render # Add render
 from django.contrib.auth.decorators import login_required # Add login_required
 from .services.jira_service import JiraService # Import the service
+from .services.slack_service import SlackService
 
-from integrations.models import JiraIntegrationRule
-from integrations.forms import JiraIntegrationRuleForm
+from integrations.models import JiraIntegrationRule, SlackIntegrationRule
+from integrations.forms import (
+    JiraIntegrationRuleForm,
+    SlackIntegrationRuleForm,
+    SlackTestMessageForm,
+)
 # Keep AlertGroup import only if needed for other parts of the view,
 # otherwise it can be removed if solely used for the incorrect delete check.
 from alerts.models import AlertGroup
@@ -111,6 +116,48 @@ class JiraRuleDeleteView(LoginRequiredMixin, DeleteView):
     # No need for get_context_data as the incorrect check is removed.
 
 
+class SlackRuleListView(LoginRequiredMixin, ListView):
+    model = SlackIntegrationRule
+    template_name = 'integrations/slack_rule_list.html'
+    context_object_name = 'slack_rules'
+    paginate_by = 20
+    ordering = ['-priority', 'name']
+
+
+class SlackRuleCreateView(LoginRequiredMixin, CreateView):
+    model = SlackIntegrationRule
+    form_class = SlackIntegrationRuleForm
+    template_name = 'integrations/slack_rule_form.html'
+    success_url = reverse_lazy('integrations:slack-rule-list')
+
+    def form_valid(self, form):
+        messages.success(self.request, "Slack integration rule created successfully.")
+        return super().form_valid(form)
+
+
+class SlackRuleUpdateView(LoginRequiredMixin, UpdateView):
+    model = SlackIntegrationRule
+    form_class = SlackIntegrationRuleForm
+    template_name = 'integrations/slack_rule_form.html'
+    success_url = reverse_lazy('integrations:slack-rule-list')
+
+    def form_valid(self, form):
+        messages.success(self.request, "Slack integration rule updated successfully.")
+        return super().form_valid(form)
+
+
+class SlackRuleDeleteView(LoginRequiredMixin, DeleteView):
+    model = SlackIntegrationRule
+    template_name = 'integrations/slack_rule_confirm_delete.html'
+    success_url = reverse_lazy('integrations:slack-rule-list')
+
+    def delete(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        rule_name = self.object.name
+        messages.success(self.request, f"Slack integration rule '{rule_name}' deleted successfully.")
+        return super().delete(request, *args, **kwargs)
+
+
 @login_required
 def jira_admin_view(request):
     """
@@ -169,6 +216,21 @@ def jira_admin_view(request):
 
     # For GET request or initial page load
     return render(request, 'integrations/jira_admin.html', context)
+
+
+@login_required
+def slack_admin_view(request):
+    """Simple admin view to send test Slack messages."""
+    form = SlackTestMessageForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        channel = form.cleaned_data['channel']
+        message = form.cleaned_data['message']
+        service = SlackService()
+        if service.send_notification(channel, message):
+            messages.success(request, "Slack message sent successfully.")
+        else:
+            messages.error(request, "Failed to send Slack message.")
+    return render(request, 'integrations/slack_admin.html', {'form': form})
 
 import markdown # Import the markdown library
 import re # Import regex module

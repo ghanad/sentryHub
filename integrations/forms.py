@@ -3,7 +3,7 @@ import json
 from django.core.exceptions import ValidationError
 from django.conf import settings
 from django.core.validators import validate_email
-from .models import JiraIntegrationRule
+from .models import JiraIntegrationRule, SlackIntegrationRule
 
 class JiraIntegrationRuleForm(forms.ModelForm):
     """
@@ -90,4 +90,56 @@ class JiraIntegrationRuleForm(forms.ModelForm):
             raise ValidationError('Assignee username must be less than 100 characters')
         return cleaned_data
 
-# Removed duplicated __init__ method
+
+class SlackIntegrationRuleForm(forms.ModelForm):
+    """Form for creating and editing SlackIntegrationRule objects."""
+
+    class Meta:
+        model = SlackIntegrationRule
+        fields = [
+            'name', 'is_active', 'priority',
+            'match_criteria', 'slack_channel', 'message_template',
+        ]
+        widgets = {
+            'match_criteria': forms.Textarea(
+                attrs={
+                    'rows': 5,
+                    'class': 'form-control font-monospace',
+                    'placeholder': 'Enter JSON object, e.g. {"job": "node"}'
+                }
+            ),
+            'message_template': forms.Textarea(
+                attrs={'rows': 3, 'class': 'form-control font-monospace'}
+            ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['priority'].initial = 0
+
+    def clean_match_criteria(self):
+        match_criteria = self.cleaned_data.get('match_criteria', '{}')
+
+        if isinstance(match_criteria, dict):
+            return match_criteria
+
+        try:
+            parsed = json.loads(match_criteria)
+            if not isinstance(parsed, dict):
+                raise ValidationError('Match criteria must be a valid JSON object (dictionary)')
+            return parsed
+        except json.JSONDecodeError:
+            raise ValidationError('Invalid JSON format for match criteria')
+
+
+class SlackTestMessageForm(forms.Form):
+    """Simple form for sending test Slack messages."""
+    channel = forms.CharField(
+        label='Slack Channel',
+        max_length=255,
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+    message = forms.CharField(
+        label='Message',
+        widget=forms.Textarea(attrs={'rows': 3, 'class': 'form-control'})
+    )
