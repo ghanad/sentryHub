@@ -12,9 +12,10 @@ from django.urls import reverse
 from django.core.exceptions import ObjectDoesNotExist
 from django.template import Context, Template, TemplateSyntaxError
 
-from integrations.models import JiraIntegrationRule
+from integrations.models import JiraIntegrationRule, SlackIntegrationRule
 from alerts.models import AlertGroup, AlertInstance # AlertInstance is imported
 from integrations.services.jira_service import JiraService
+from integrations.services.slack_service import SlackService
 
 # jira created time: https://aistudio.google.com/prompts/11xHhaYXIUhCDXxiYOsnUnByzQfZTtZWk
 
@@ -273,3 +274,31 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
         raise e
 
     logger.info(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Finished processing for AlertGroup ID: {alert_group_id}")
+
+
+@shared_task
+def process_slack_for_alert_group(alert_group_id: int, rule_id: int):
+    """Celery task to send Slack notifications for an alert group."""
+    try:
+        alert_group = AlertGroup.objects.get(pk=alert_group_id)
+        rule = SlackIntegrationRule.objects.get(pk=rule_id)
+    except AlertGroup.DoesNotExist:
+        logger.error(f"Slack Task: AlertGroup with ID {alert_group_id} not found. Aborting.")
+        return
+    except SlackIntegrationRule.DoesNotExist:
+        logger.error(f"Slack Task: SlackIntegrationRule with ID {rule_id} not found. Aborting.")
+        return
+
+    latest_instance = alert_group.instances.order_by('-started_at').first()
+    labels = alert_group.labels or {}
+    annotations = latest_instance.annotations if latest_instance else {}
+
+    context = {
+        'alert_group': alert_group,
+        'labels': labels,
+        'annotations': annotations,
+    }
+    message = render_template_safe(rule.message_template, context, '')
+
+    slack_service = SlackService()
+    slack_service.send_notification(rule.slack_channel, message)

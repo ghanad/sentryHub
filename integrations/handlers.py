@@ -6,7 +6,8 @@ from alerts.signals import alert_processed
 # Import AlertGroup if needed for type hinting or direct access, though it comes from kwargs
 from alerts.models import AlertGroup, AlertInstance # AlertInstance را اضافه کنید
 from .services.jira_matcher import JiraRuleMatcherService
-from integrations.tasks import process_jira_for_alert_group
+from .services.slack_matcher import SlackRuleMatcherService
+from integrations.tasks import process_jira_for_alert_group, process_slack_for_alert_group
 
 logger = logging.getLogger(__name__)
 
@@ -60,3 +61,31 @@ def handle_alert_processed(sender, **kwargs):
                  "resolved alert has no existing Jira key" if is_resolved else \
                  f"alert status is '{status}' (and not firing or not resolved with key)"
         logger.info(f"Integrations Handler (FP: {fingerprint_for_log}): Not checking Jira rules because {reason}.")
+
+
+@receiver(alert_processed)
+def handle_alert_processed_slack(sender, **kwargs):
+    """Trigger Slack notifications for firing alerts that are not silenced."""
+    alert_group = kwargs.get('alert_group')
+    status = kwargs.get('status')
+
+    if not alert_group:
+        logger.warning("Integrations Handler: Received alert_processed signal without alert_group. Cannot process for Slack.")
+        return
+
+    if status != 'firing' or alert_group.is_silenced:
+        return
+
+    matcher = SlackRuleMatcherService()
+    rule = matcher.find_matching_rule(alert_group.labels)
+    if rule:
+        try:
+            process_slack_for_alert_group.delay(
+                alert_group_id=alert_group.id,
+                rule_id=rule.id,
+            )
+        except Exception as e:
+            logger.error(
+                f"Integrations Handler: Failed to queue Slack processing task for AlertGroup {alert_group.id}: {e}",
+                exc_info=True,
+            )

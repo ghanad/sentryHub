@@ -75,3 +75,41 @@ class JiraIntegrationRule(models.Model):
     def get_assignee(self):
         """Get the assignee username or None if not set"""
         return self.assignee if self.assignee else None
+
+
+class SlackIntegrationRule(models.Model):
+    """Defines rules for sending Slack notifications for alerts."""
+
+    name = models.CharField(max_length=100, unique=True)
+    is_active = models.BooleanField(default=True, db_index=True)
+    priority = models.IntegerField(
+        default=0, help_text="Higher priority rules are evaluated first."
+    )
+    match_criteria = models.JSONField(
+        default=dict,
+        help_text=
+        'JSON object defining label match criteria. E.g., {"job": "node", "severity": "critical"}'
+    )
+    slack_channel = models.CharField(
+        max_length=100,
+        help_text="Destination Slack channel (e.g., #critical-alerts)"
+    )
+    message_template = models.TextField(
+        blank=True,
+        help_text="Template for Slack message. Uses Django template syntax."
+    )
+
+    class Meta:
+        ordering = ['-priority', 'name']
+        verbose_name = "Slack Integration Rule"
+        verbose_name_plural = "Slack Integration Rules"
+
+    def clean(self):
+        """Validate that match_criteria is a JSON object."""
+        super().clean()
+        if not isinstance(self.match_criteria, dict):
+            raise ValidationError({'match_criteria': 'Must be a valid JSON object (dictionary).'})
+
+    def __str__(self):
+        status = "Active" if self.is_active else "Inactive"
+        return f"{self.name} ({status}, Prio: {self.priority})"

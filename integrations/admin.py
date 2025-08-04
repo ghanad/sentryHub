@@ -1,7 +1,7 @@
 import json
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import JiraIntegrationRule
+from .models import JiraIntegrationRule, SlackIntegrationRule
 
 @admin.register(JiraIntegrationRule)
 class JiraIntegrationRuleAdmin(admin.ModelAdmin):
@@ -45,3 +45,11 @@ class JiraIntegrationRuleAdmin(admin.ModelAdmin):
         except Exception:
             return "Invalid JSON"
     get_match_criteria_preview.short_description = "Match Criteria Preview"
+
+
+@admin.register(SlackIntegrationRule)
+class SlackIntegrationRuleAdmin(admin.ModelAdmin):
+    list_display = ('name', 'is_active', 'priority', 'slack_channel')
+    list_filter = ('is_active', 'slack_channel')
+    search_fields = ('name', 'slack_channel')
+    ordering = ('-priority', 'name')
