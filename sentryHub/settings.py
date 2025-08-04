@@ -286,7 +286,7 @@ RABBITMQ_CONFIG = {
 }
 
 SITE_URL = "https://sentryhub.tsetmc.com"
-SLACK_INTERNAL_ENDPOINT = os.environ.get("SLACK_INTERNAL_ENDPOINT", "")
+SLACK_INTERNAL_ENDPOINT = "URL_HERE"
 JIRA_CONFIG = {
     'server_url': 'https://jira.tsetmc.com',
     'username': 'monitoring',
