@@ -8,9 +8,14 @@ from django.db.models import Q # Import Q for search if needed
 from django.shortcuts import render # Add render
 from django.contrib.auth.decorators import login_required # Add login_required
 from .services.jira_service import JiraService # Import the service
+from .services.slack_service import SlackService
 
 from integrations.models import JiraIntegrationRule, SlackIntegrationRule
-from integrations.forms import JiraIntegrationRuleForm, SlackIntegrationRuleForm
+from integrations.forms import (
+    JiraIntegrationRuleForm,
+    SlackIntegrationRuleForm,
+    SlackTestMessageForm,
+)
 # Keep AlertGroup import only if needed for other parts of the view,
 # otherwise it can be removed if solely used for the incorrect delete check.
 from alerts.models import AlertGroup
@@ -211,6 +216,21 @@ def jira_admin_view(request):
 
     # For GET request or initial page load
     return render(request, 'integrations/jira_admin.html', context)
+
+
+@login_required
+def slack_admin_view(request):
+    """Simple admin view to send test Slack messages."""
+    form = SlackTestMessageForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        channel = form.cleaned_data['channel']
+        message = form.cleaned_data['message']
+        service = SlackService()
+        if service.send_notification(channel, message):
+            messages.success(request, "Slack message sent successfully.")
+        else:
+            messages.error(request, "Failed to send Slack message.")
+    return render(request, 'integrations/slack_admin.html', {'form': form})
 
 import markdown # Import the markdown library
 import re # Import regex module

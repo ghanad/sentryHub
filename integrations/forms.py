@@ -130,3 +130,16 @@ class SlackIntegrationRuleForm(forms.ModelForm):
             return parsed
         except json.JSONDecodeError:
             raise ValidationError('Invalid JSON format for match criteria')
+
+
+class SlackTestMessageForm(forms.Form):
+    """Simple form for sending test Slack messages."""
+    channel = forms.CharField(
+        label='Slack Channel',
+        max_length=255,
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+    message = forms.CharField(
+        label='Message',
+        widget=forms.Textarea(attrs={'rows': 3, 'class': 'form-control'})
+    )
