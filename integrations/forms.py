@@ -143,3 +143,50 @@ class SlackTestMessageForm(forms.Form):
         label='Message',
         widget=forms.Textarea(attrs={'rows': 3, 'class': 'form-control'})
     )
+
+class SlackTemplateTestForm(forms.Form):
+    """
+    Advanced template test form for Slack Admin page.
+    Allows preview and sending of a Django-template-rendered message
+    using a mock alert plus user-provided extra context.
+    """
+    channel = forms.CharField(
+        label='Slack Channel',
+        max_length=255,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '#general'})
+    )
+    message_template = forms.CharField(
+        label='Message Template',
+        widget=forms.Textarea(attrs={
+            'rows': 5,
+            'class': 'form-control font-monospace',
+            'placeholder': 'e.g. Alert {{ alertname }} on {{ labels.instance }}: {{ annotations.summary }}'
+        })
+    )
+    extra_context = forms.CharField(
+        label='Extra Context (JSON)',
+        required=False,
+        help_text='Optional JSON to enrich rendering context. Structure: {"labels": {...}, "annotations": {...}, "vars": {...}}',
+        widget=forms.Textarea(attrs={
+            'rows': 4,
+            'class': 'form-control font-monospace',
+            'placeholder': '{"labels": {"team": "ops"}, "annotations": {"note": "hello"}, "vars": {"ticket_id": "OPS-123"}}'
+        })
+    )
+
+    def clean_extra_context(self):
+        raw = self.cleaned_data.get('extra_context', '').strip()
+        if not raw:
+            return {}
+        try:
+            parsed = json.loads(raw)
+            if not isinstance(parsed, dict):
+                raise ValidationError('Extra context must be a JSON object')
+            # Optional sanity sub-objects
+            for key in ('labels', 'annotations', 'vars'):
+                if key in parsed and not isinstance(parsed[key], dict):
+                    raise ValidationError(f'Extra context "{key}" must be an object if provided')
+            return parsed
+        except json.JSONDecodeError:
+            raise ValidationError('Invalid JSON format for extra context')
+
