@@ -98,6 +98,10 @@ class SlackIntegrationRule(models.Model):
         blank=True,
         help_text="Template for Slack message. Uses Django template syntax."
     )
+    resolved_message_template = models.TextField(
+        blank=True,
+        help_text="Template used when an alert is resolved. Uses Django template syntax."
+    )
 
     class Meta:
         ordering = ['-priority', 'name']

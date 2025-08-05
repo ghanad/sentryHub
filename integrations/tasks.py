@@ -278,7 +278,11 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
 
 @shared_task
 def process_slack_for_alert_group(alert_group_id: int, rule_id: int):
-    """Celery task to send Slack notifications for an alert group."""
+    """Celery task to send Slack notifications for an alert group.
+
+    Uses firing template by default; if the alert_group is resolved and the rule
+    has a resolved_message_template, that template will be used instead.
+    """
     try:
         alert_group = AlertGroup.objects.get(pk=alert_group_id)
         rule = SlackIntegrationRule.objects.get(pk=rule_id)
@@ -292,13 +296,28 @@ def process_slack_for_alert_group(alert_group_id: int, rule_id: int):
     latest_instance = alert_group.instances.order_by('-started_at').first()
     labels = alert_group.labels or {}
     annotations = latest_instance.annotations if latest_instance else {}
+    status = getattr(alert_group, "status", None) or (latest_instance.status if latest_instance and hasattr(latest_instance, "status") else None)
 
     context = {
         'alert_group': alert_group,
         'labels': labels,
         'annotations': annotations,
+        'status': status,
     }
-    message = render_template_safe(rule.message_template, context, '')
+
+    # Choose template based on status
+    template_to_use = None
+    if status == "resolved" and getattr(rule, "resolved_message_template", ""):
+        template_to_use = rule.resolved_message_template
+    else:
+        template_to_use = rule.message_template
+
+    message = render_template_safe(template_to_use or "", context, "")
+
+    # If after rendering we still have empty message (e.g., no template provided), skip
+    if not message:
+        logger.info(f"Slack Task: No message to send for AlertGroup {alert_group_id} (status={status}). Skipping.")
+        return
 
     slack_service = SlackService()
     slack_service.send_notification(rule.slack_channel, message)

@@ -20,6 +20,7 @@ class Migration(migrations.Migration):
                 ('match_criteria', models.JSONField(default=dict, help_text='JSON object defining label match criteria. E.g., {"job": "node", "severity": "critical"}')),
                 ('slack_channel', models.CharField(help_text='Destination Slack channel (e.g., #critical-alerts)', max_length=100)),
                 ('message_template', models.TextField(blank=True, help_text='Template for Slack message. Uses Django template syntax.')),
+                ('resolved_message_template', models.TextField(blank=True, help_text='Template used when an alert is resolved. Uses Django template syntax.')),
             ],
             options={
                 'verbose_name': 'Slack Integration Rule',

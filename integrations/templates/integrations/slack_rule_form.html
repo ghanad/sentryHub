@@ -71,7 +71,7 @@
                     <div class="chart-card-body">
                         <div class="row">
                             {# Slack Channel #}
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-6 mb-4">
                                 <label for="{{ form.slack_channel.id_for_label }}" class="form-label">{{ form.slack_channel.label }}{% if form.slack_channel.field.required %} <span class="text-danger">*</span>{% endif %}</label>
                                 {{ form.slack_channel|add_class:"form-control" }}
                                 {% if form.slack_channel.help_text %}<div class="form-text">{{ form.slack_channel.help_text|safe }}</div>{% endif %}
@@ -79,15 +79,51 @@
                             </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="{{ form.message_template.id_for_label }}" class="form-label">{{ form.message_template.label }}</label>
-                            {{ form.message_template|add_class:"form-control form-control-monospace" }}
-                            {% if form.message_template.help_text %}<div class="form-text">{{ form.message_template.help_text|safe }}</div>{% endif %}
-                            {% for error in form.message_template.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-                            <div class="form-text">
-                                <p class="mb-2">Template for Slack message. Use Django template syntax with double curly braces for variables (e.g., <code>{{ alertname }}</code>, <code>{{ labels.instance }}</code>, <code>{{ annotations.summary }}</code>). Leave blank to use defaults.</p>
-                                <small class="text-muted">Available context: labels, annotations, alertname, status, etc.</small>
+                        {# Place Firing and Resolved templates side by side #}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.message_template.id_for_label }}" class="form-label">
+                                    {{ form.message_template.label|default:"Message Template" }} <span class="badge bg-danger-subtle text-danger">Firing</span>
+                                </label>
+                                {{ form.message_template|add_class:"form-control form-control-monospace" }}
+                                {% if form.message_template.help_text %}<div class="form-text">{{ form.message_template.help_text|safe }}</div>{% endif %}
+                                {% for error in form.message_template.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                                <div class="small text-muted mt-2">
+                                    <strong>Hints:</strong>
+                                    <ul class="mb-2">
+                                        <li>Use emojis: <code>:fire:</code> or Unicode 🔥</li>
+                                        <li>Common vars: <code>{{ '{' }}{{ ' alertname ' }}{{ '}' }}</code>, <code>{{ '{' }}{{ ' labels.instance ' }}{{ '}' }}</code>, <code>{{ '{' }}{{ ' annotations.summary ' }}{{ '}' }}</code></li>
+                                        <li>Link to source: <code>{{ '{' }}{{ ' alert_group.generator_url ' }}{{ '}' }}</code> or <code>{{ '{' }}{{ ' labels.job ' }}{{ '}' }}</code></li>
+                                    </ul>
+                                    <div>Example: <code>:fire: {{ '{' }}{{ ' alertname ' }}{{ '}' }} on {{ '{' }}{{ ' labels.instance ' }}{{ '}' }} ({{ '{' }}{{ ' labels.severity ' }}{{ '}' }})</code></div>
+                                </div>
                             </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.resolved_message_template.id_for_label }}" class="form-label">
+                                    {{ form.resolved_message_template.label|default:"Message Template" }} <span class="badge bg-success-subtle text-success">Resolved</span>
+                                </label>
+                                {{ form.resolved_message_template|add_class:"form-control form-control-monospace" }}
+                                {% if form.resolved_message_template.help_text %}<div class="form-text">{{ form.resolved_message_template.help_text|safe }}</div>{% endif %}
+                                {% for error in form.resolved_message_template.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                                <div class="small text-muted mt-2">
+                                    <strong>Hints:</strong>
+                                    <ul class="mb-2">
+                                        <li>Use emojis: <code>:white_check_mark:</code> or Unicode ✅</li>
+                                        <li>Common vars: <code>{{ '{' }}{{ ' alertname ' }}{{ '}' }}</code>, <code>{{ '{' }}{{ ' labels.instance ' }}{{ '}' }}</code>, <code>{{ '{' }}{{ ' annotations.summary ' }}{{ '}' }}</code></li>
+                                        <li>You can include duration if available in context.</li>
+                                    </ul>
+                                    <div>Example: <code>:white_check_mark: {{ '{' }}{{ ' alertname ' }}{{ '}' }} resolved on {{ '{' }}{{ ' labels.instance ' }}{{ '}' }}</code></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-text">
+                            <p class="mb-2">
+                                Use Django template syntax with double curly braces for variables (e.g., <code>{{ alertname }}</code>, <code>{{ labels.instance }}</code>, <code>{{ annotations.summary }}</code>).
+                                The left field is used when the alert is <strong>firing</strong>, and the right field is used when the alert is <strong>resolved</strong>.
+                            </p>
+                            <small class="text-muted">Available context for both: labels, annotations, alertname, status, etc.</small>
                         </div>
                     </div>
                 </div>

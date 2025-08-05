@@ -98,7 +98,7 @@ class SlackIntegrationRuleForm(forms.ModelForm):
         model = SlackIntegrationRule
         fields = [
             'name', 'is_active', 'priority',
-            'match_criteria', 'slack_channel', 'message_template',
+            'match_criteria', 'slack_channel', 'message_template', 'resolved_message_template',
         ]
         widgets = {
             'match_criteria': forms.Textarea(
@@ -110,6 +110,9 @@ class SlackIntegrationRuleForm(forms.ModelForm):
             ),
             'message_template': forms.Textarea(
                 attrs={'rows': 3, 'class': 'form-control font-monospace'}
+            ),
+            'resolved_message_template': forms.Textarea(
+                attrs={'rows': 3, 'class': 'form-control font-monospace', 'placeholder': ':white_check_mark: {{ alertname }} resolved on {{ labels.instance }}'}
             ),
         }
 

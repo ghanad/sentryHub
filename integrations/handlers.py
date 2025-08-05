@@ -65,7 +65,7 @@ def handle_alert_processed(sender, **kwargs):
 
 @receiver(alert_processed)
 def handle_alert_processed_slack(sender, **kwargs):
-    """Trigger Slack notifications for firing alerts that are not silenced."""
+    """Trigger Slack notifications for firing and resolved alerts (when rule is active) that are not silenced."""
     alert_group = kwargs.get('alert_group')
     status = kwargs.get('status')
 
@@ -73,12 +73,17 @@ def handle_alert_processed_slack(sender, **kwargs):
         logger.warning("Integrations Handler: Received alert_processed signal without alert_group. Cannot process for Slack.")
         return
 
-    if status != 'firing' or alert_group.is_silenced:
+    # Skip silenced alerts entirely
+    if alert_group.is_silenced:
+        return
+
+    # Only act on firing or resolved
+    if status not in ('firing', 'resolved'):
         return
 
     matcher = SlackRuleMatcherService()
     rule = matcher.find_matching_rule(alert_group.labels)
-    if rule:
+    if rule and rule.is_active:
         try:
             process_slack_for_alert_group.delay(
                 alert_group_id=alert_group.id,
