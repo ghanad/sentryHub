@@ -1,0 +1,83 @@
+/* Slack Admin Guide - RTL and Persian typography per .clinerules */
+
+/* Use detect-rtl as per .clinerules/07-persian-fonts.md */
+.slack-admin-guide.detect-rtl {
+  direction: rtl;
+  text-align: right;
+  font-family: 'IRANSansX', 'IRANSans', 'Vazirmatn', 'Vazir', Tahoma, Arial, sans-serif;
+  color: #111827;
+}
+
+.slack-admin-guide {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: .5rem;
+  padding: 1rem 1.25rem;
+  line-height: 1.9;
+}
+
+/* Headings */
+.slack-admin-guide h1,
+.slack-admin-guide h2,
+.slack-admin-guide h3,
+.slack-admin-guide h4,
+.slack-admin-guide h5,
+.slack-admin-guide h6 {
+  font-weight: 700;
+}
+
+/* Lists in RTL */
+.slack-admin-guide ul,
+.slack-admin-guide ol {
+  padding-right: 1.25rem; /* RTL indent */
+  padding-left: 0;
+}
+
+/* Code blocks: keep LTR for readability */
+.slack-admin-guide pre,
+.slack-admin-guide code {
+  direction: ltr;
+  text-align: left;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.slack-admin-guide pre {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  padding: .75rem;
+  border-radius: .5rem;
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+/* Inline code */
+.slack-admin-guide code {
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: .25rem;
+  padding: 0 .25rem;
+}
+
+/* Tables inside markdown */
+.slack-admin-guide table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  direction: rtl;
+}
+
+.slack-admin-guide table th,
+.slack-admin-guide table td {
+  border: 1px solid #e5e7eb;
+  padding: .5rem .75rem;
+}
+
+/* Links */
+.slack-admin-guide a {
+  color: #0d6efd;
+  text-decoration: none;
+}
+
+.slack-admin-guide a:hover {
+  text-decoration: underline;
+}
