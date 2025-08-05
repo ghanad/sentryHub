@@ -1,0 +1,55 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block title %}راهنمای تست Template اسلک - SentryHub{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dashboard/css/modern_dashboard.css' %}">
+<style>
+/* Force RTL and Persian font for guide page to improve readability in Farsi */
+html[lang="fa"] .markdown-body,
+.markdown-body {
+  direction: rtl;
+  text-align: right;
+  font-family: 'IRANSansX', 'IRANSans', 'Vazirmatn', 'Vazir', Tahoma, Arial, sans-serif;
+}
+.markdown-body {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: .5rem;
+  padding: 1rem 1.25rem;
+  line-height: 1.9;
+  color: #111827;
+}
+.markdown-body h1, .markdown-body h2, .markdown-body h3,
+.markdown-body h4, .markdown-body h5, .markdown-body h6 {
+  font-weight: 700;
+}
+.markdown-body pre, .markdown-body code {
+  direction: ltr; /* keep code blocks LTR */
+  text-align: left;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+.markdown-body pre {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  padding: .75rem;
+  border-radius: .5rem;
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+.markdown-body ul, .markdown-body ol {
+  padding-right: 1.25rem; /* RTL list indent */
+}
+</style>
+{% endblock %}
+
+{% block main_content %}
+<header class="page-header">
+  <h1 class="page-title">راهنمای تست Template اسلک</h1>
+</header>
+
+<div class="markdown-body detect-rtl">
+  {{ guide_content_md|safe }}
+</div>
+{% endblock %}

@@ -9,6 +9,8 @@ from django.shortcuts import render # Add render
 from django.contrib.auth.decorators import login_required # Add login_required
 from .services.jira_service import JiraService # Import the service
 from .services.slack_service import SlackService
+import markdown 
+import re 
 
 from integrations.models import JiraIntegrationRule, SlackIntegrationRule
 from integrations.forms import (
@@ -522,13 +524,34 @@ def slack_admin_view(request):
         'form': simple_form,
         'template_form': template_form,
     })
-    return render(request, 'integrations/slack_admin.html', {'form': form})
 
-import markdown # Import the markdown library
-import re # Import regex module
 
-# import markdown # Remove markdown import
-# import re # Remove re import
+@login_required
+def slack_admin_guide_view(request):
+    """
+    View to display Slack Admin Template Testing guide rendered from Markdown to HTML.
+    """
+    content_html = "خطا در بارگذاری راهنما."
+    try:
+        with open('documentations/SLACK_ADMIN_GUIDE.md', 'r', encoding='utf-8') as f:
+            guide_md = f.read()
+        # Convert markdown to HTML (we already import markdown at top of file)
+        content_html = markdown.markdown(
+            guide_md,
+            extensions=["extra", "codehilite", "sane_lists", "toc"]
+        )
+    except FileNotFoundError:
+        logger.error("Slack admin guide file not found.")
+        content_html = "Error loading guide: File not found."
+    except Exception as e:
+        logger.error(f"Error reading Slack admin guide file: {e}")
+        content_html = "Error loading guide."
+
+    context = {'guide_content_md': content_html}
+    return render(request, 'integrations/slack_admin_guide.html', context)
+ 
+
+
 
 @login_required
 def jira_rule_guide_view(request):
