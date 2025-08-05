@@ -1,16 +1,20 @@
 from django.shortcuts import render
 from django.views.generic import TemplateView, ListView
-from django.db.models import Count, Q
+from django.db.models import Count, Q, OuterRef, Subquery
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from datetime import timedelta
 import logging
 import json
-from alerts.models import AlertGroup, AlertComment, AlertAcknowledgementHistory
+import time
+from django.http import StreamingHttpResponse
+from django.db import connection
+from alerts.models import AlertGroup, AlertComment, AlertAcknowledgementHistory, AlertInstance
 from alerts.views import AlertListView
 from alerts.forms import AlertAcknowledgementForm
 from django.contrib.auth.models import User, Group
+from django.template import RequestContext  # Added
 
 logger = logging.getLogger(__name__)
 
@@ -241,3 +245,99 @@ class AdminAcknowledgementsView(LoginRequiredMixin, UserPassesTestMixin, ListVie
         context['alert_filter'] = self.request.GET.get('alert', '')
         
         return context
+
+
+# --- SSE endpoint for Tier1 latest 20 alerts ---
+def _render_alerts_partial(queryset, request):
+    """
+    Render only the tbody rows HTML and provide count.
+    Ensure request-bound context like 'user' is available to the template.
+    """
+    from django.template.loader import render_to_string
+
+    context = {
+        'alerts': queryset,
+        'acknowledge_form': AlertAcknowledgementForm(),
+        'user': request.user,
+        'request': request,
+    }
+    rows_html = render_to_string('dashboard/partials/_tier1_rows.html', context, request=request)
+    return rows_html, queryset.count()
+
+
+def _latest_unacked_qs(limit=20):
+    """
+    Build efficient queryset: only unacknowledged, ordered by latest instance start then pk.
+    """
+    latest_instance_subquery = AlertInstance.objects.filter(
+        alert_group=OuterRef('pk')
+    ).order_by('-started_at').values('started_at')[:1]
+
+    qs = (AlertGroup.objects
+          .filter(acknowledged=False)
+          .annotate(latest_instance_start=Subquery(latest_instance_subquery))
+          .order_by('-latest_instance_start', '-pk')[:limit])
+    return qs
+
+
+def tier1_alerts_sse_stream(request):
+    """
+    Server-Sent Events stream sending:
+      - heartbeat every 10s
+      - on each tick (2s) send latest 20 alerts rendered rows and count
+    Headers: text/event-stream, no-cache, keep-alive
+    """
+
+    # Permission check similar to Tier1AlertListView
+    user = request.user
+    if not (user.is_authenticated and (user.is_staff or user.groups.filter(name='Tier1').exists())):
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden("Forbidden")
+
+    def event_stream():
+        last_signature = ''
+        heartbeat_interval = 10  # seconds
+        tick_interval = 2        # seconds
+        last_heartbeat = time.time()
+
+        while True:
+            try:
+                # Build queryset and render rows
+                qs = _latest_unacked_qs(limit=20)
+                rows_html, total_count = _render_alerts_partial(qs, request)
+
+                # signature to detect change
+                current_ids = list(qs.values_list('fingerprint', flat=True))
+                signature = f"{','.join(current_ids)}|{total_count}"
+
+                # If changed, push update event
+                if signature != last_signature:
+                    payload = json.dumps({
+                        'html': rows_html,
+                        'alert_count': total_count,
+                    })
+                    yield f"event: update\ndata: {payload}\n\n"
+                    last_signature = signature
+
+                # Heartbeat
+                now = time.time()
+                if now - last_heartbeat >= heartbeat_interval:
+                    yield f"event: heartbeat\ndata: ping\n\n"
+                    last_heartbeat = now
+
+                # Sleep between ticks
+                time.sleep(tick_interval)
+
+            except GeneratorExit:
+                logger.info("SSE client disconnected for Tier1 stream")
+                break
+            except Exception as e:
+                logger.exception("Error in SSE stream loop: %s", e)
+                # Send an error event then wait a bit to avoid tight loop
+                yield f"event: error\ndata: server_error\n\n"
+                time.sleep(3)
+
+    response = StreamingHttpResponse(event_stream(), content_type='text/event-stream')
+    response['Cache-Control'] = 'no-cache'
+    response['X-Accel-Buffering'] = 'no'  # for Nginx
+    return response

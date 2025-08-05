@@ -14,7 +14,8 @@
         <h1 class="page-title d-flex align-items-center">
             <i class='bx bx-bell-off me-2'></i>
             Unacknowledged Alerts
-            <span class="badge bg-secondary ms-3" id="refresh-badge">Auto-Refresh: 30s</span>
+            <span class="badge bg-secondary ms-3 d-none" id="refresh-badge">Auto-Refresh: 30s</span>
+            <span class="badge ms-3" id="sse-status-badge" title="Live stream connection status">Connecting…</span>
         </h1>
     </header>
 
@@ -169,8 +170,175 @@
 
 {% block extra_js %}
     <script>
-        // Define API URL that respects FORCE_SCRIPT_NAME
-        window.ALERTS_API_URL = "{% url 'dashboard:tier1_dashboard_new' %}";
+        // SSE stream URL
+        window.TIER1_SSE_URL = "{% url 'dashboard:tier1_sse_stream' %}";
     </script>
-    <script src="{% static 'dashboard/js/unack_alerts.js' %}"></script>
+    <script>
+    (function() {
+        const tbody = document.getElementById('alert-table-body');
+        const countEl = document.getElementById('alert-count-display');
+        const sound = document.getElementById('alert-notification-sound');
+        const statusBadge = document.getElementById('sse-status-badge');
+
+        const Colors = {
+            connected: 'bg-success',
+            reconnecting: 'bg-warning text-dark',
+            disconnected: 'bg-danger'
+        };
+
+        function setStatus(text, cls) {
+            if (!statusBadge) return;
+            statusBadge.className = 'badge ms-3 ' + cls;
+            statusBadge.textContent = text;
+            console.log('[SSE]', text);
+        }
+
+        function reinitDynamicContent() {
+            if (!tbody) return;
+            const tooltipTriggerList = [].slice.call(tbody.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.forEach(el => {
+                const inst = bootstrap.Tooltip.getInstance(el);
+                if (inst) inst.dispose();
+                new bootstrap.Tooltip(el);
+            });
+            // re-bind expand buttons
+            tbody.querySelectorAll('.expand-btn').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const icon = this.querySelector('i');
+                    if (icon) {
+                        icon.classList.toggle('bx-chevron-right');
+                        icon.classList.toggle('bx-chevron-down');
+                    }
+                });
+            });
+            // row click toggler
+            tbody.querySelectorAll('.alert-row').forEach(row => {
+                row.addEventListener('click', function(e) {
+                    if (e.target.tagName === 'A' || e.target.closest('a') || e.target.closest('button')) return;
+                    const expandBtn = this.querySelector('.expand-btn');
+                    if (!expandBtn) return;
+                    e.stopPropagation();
+                    const targetId = expandBtn.getAttribute('data-bs-target');
+                    const targetEl = document.querySelector(targetId);
+                    if (targetEl) {
+                        const collapse = bootstrap.Collapse.getOrCreateInstance(targetEl);
+                        collapse.toggle();
+                        const icon = expandBtn.querySelector('i');
+                        if (icon) {
+                            icon.classList.toggle('bx-chevron-right');
+                            icon.classList.toggle('bx-chevron-down');
+                        }
+                    } else {
+                        expandBtn.click();
+                    }
+                });
+            });
+        }
+
+        function parseFingerprintsFromHTML(html) {
+            const temp = document.createElement('div');
+            temp.innerHTML = `<table><tbody>${html}</tbody></table>`;
+            const set = new Set();
+            temp.querySelectorAll('tr[data-fingerprint]').forEach(tr => set.add(tr.dataset.fingerprint));
+            return set;
+        }
+
+        let currentFingerprints = (function() {
+            const set = new Set();
+            if (tbody) {
+                tbody.querySelectorAll('tr[data-fingerprint]').forEach(tr => set.add(tr.dataset.fingerprint));
+            }
+            return set;
+        })();
+
+        function maybePlayNewAlertSound(newHTML) {
+            const newSet = parseFingerprintsFromHTML(newHTML);
+            let hasNew = false;
+            newSet.forEach(fp => { if (!currentFingerprints.has(fp)) hasNew = true; });
+            currentFingerprints = newSet;
+            if (hasNew && sound) {
+                sound.play().catch(() => {});
+            }
+        }
+
+        // SSE client with backoff 1,2,5,10s and heartbeat 10s watchdog
+        let es = null;
+        let backoffs = [1000, 2000, 5000, 10000];
+        let attempt = 0;
+        let lastHeartbeat = Date.now();
+        let heartbeatWatchdog = null;
+
+        function startWatchdog() {
+            if (heartbeatWatchdog) clearInterval(heartbeatWatchdog);
+            heartbeatWatchdog = setInterval(() => {
+                const delta = Date.now() - lastHeartbeat;
+                if (delta > 20000) { // 2x heartbeat interval => consider dead
+                    setStatus('Disconnected', Colors.disconnected);
+                    if (es) {
+                        try { es.close(); } catch(e) {}
+                    }
+                    scheduleReconnect();
+                }
+            }, 3000);
+        }
+
+        function connect() {
+            if (!window.TIER1_SSE_URL) return;
+            setStatus('Connecting…', Colors.reconnecting);
+            es = new EventSource(window.TIER1_SSE_URL, { withCredentials: true });
+
+            es.addEventListener('open', () => {
+                attempt = 0;
+                lastHeartbeat = Date.now();
+                setStatus('Connected', Colors.connected);
+                startWatchdog();
+            });
+
+            es.addEventListener('heartbeat', () => {
+                lastHeartbeat = Date.now();
+                // Keep silent; badge already shows Connected
+            });
+
+            es.addEventListener('update', (evt) => {
+                try {
+                    const data = JSON.parse(evt.data);
+                    if (tbody && typeof data.html === 'string') {
+                        maybePlayNewAlertSound(data.html);
+                        tbody.innerHTML = data.html;
+                        reinitDynamicContent();
+                    }
+                    if (countEl && typeof data.alert_count === 'number') {
+                        countEl.textContent = `Total: ${data.alert_count}`;
+                    }
+                } catch (e) {
+                    console.error('Failed to parse update payload', e);
+                }
+            });
+
+            es.addEventListener('error', () => {
+                setStatus('Reconnecting…', Colors.reconnecting);
+                if (es) {
+                    try { es.close(); } catch(e) {}
+                }
+                scheduleReconnect();
+            });
+
+            window.addEventListener('beforeunload', () => {
+                if (es) {
+                    try { es.close(); } catch (e) {}
+                }
+            });
+        }
+
+        function scheduleReconnect() {
+            const delay = backoffs[Math.min(attempt, backoffs.length - 1)];
+            attempt += 1;
+            setStatus(`Reconnecting in ${Math.round(delay/1000)}s…`, Colors.reconnecting);
+            setTimeout(connect, delay);
+        }
+
+        connect();
+    })();
+    </script>
 {% endblock %}
