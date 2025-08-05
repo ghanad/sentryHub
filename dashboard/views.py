@@ -325,19 +325,36 @@ def tier1_alerts_sse_stream(request):
                     yield f"event: heartbeat\ndata: ping\n\n"
                     last_heartbeat = now
 
-                # Sleep between ticks
-                time.sleep(tick_interval)
+                # Yield small keep-alives every ~1s up to tick_interval to avoid worker timeouts
+                step = 0.2  # seconds
+                elapsed = 0.0
+                while elapsed < tick_interval:
+                    # lightweight keep-alive comment (ignored by EventSource, helps proxies/workers flush)
+                    yield ": keep-alive\n\n"
+                    time.sleep(step)
+                    elapsed += step
 
-            except GeneratorExit:
-                logger.info("SSE client disconnected for Tier1 stream")
+                # Close stale DB connections in long-lived loop to avoid DB-side timeouts
+                try:
+                    from django.db import connections
+                    connections.close_all()
+                except Exception:
+                    pass
+
+            except (GeneratorExit, SystemExit):
+                logger.info("SSE client disconnected or worker shutting down for Tier1 stream")
                 break
             except Exception as e:
                 logger.exception("Error in SSE stream loop: %s", e)
                 # Send an error event then wait a bit to avoid tight loop
                 yield f"event: error\ndata: server_error\n\n"
-                time.sleep(3)
+                # brief keep-alive cadence while backing off
+                for _ in range(10):
+                    yield ": backoff\n\n"
+                    time.sleep(0.3)
 
     response = StreamingHttpResponse(event_stream(), content_type='text/event-stream')
     response['Cache-Control'] = 'no-cache'
     response['X-Accel-Buffering'] = 'no'  # for Nginx
+    response['Connection'] = 'keep-alive'
     return response
