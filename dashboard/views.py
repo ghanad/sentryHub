@@ -137,8 +137,15 @@ class Tier1AlertListView(UserPassesTestMixin, AlertListView):
         return user.is_staff or user.groups.filter(name='Tier1').exists()
 
     def get_context_data(self, **kwargs):
-        """Remove filter parameters and add acknowledgement form"""
+        """
+        Remove filter parameters and add acknowledgement form.
+        Also override heavy counters to avoid filtering a sliced queryset in parent get_context_data.
+        """
+        # Build a full (unsliced) base queryset for counters ONLY
+        base_qs = super().get_queryset().filter(acknowledged=False)
+
         context = super().get_context_data(**kwargs)
+
         # Remove filter parameters
         filter_keys = ['status', 'severity', 'instance', 'acknowledged', 'silenced_filter', 'search']
         for key in filter_keys:
@@ -147,6 +154,18 @@ class Tier1AlertListView(UserPassesTestMixin, AlertListView):
         context.pop('paginator', None)
         context.pop('page_obj', None)
         context.pop('is_paginated', None)
+
+        # Override heavy counts safely using unsliced queryset
+        try:
+            context['total_firing_count'] = base_qs.filter(current_status='firing').count()
+            context['total_critical_count'] = base_qs.filter(severity='critical').count()
+            context['total_acknowledged_count'] = 0  # always 0 in unacknowledged view by definition
+        except Exception:
+            # Fallbacks if anything goes wrong
+            context['total_firing_count'] = 0
+            context['total_critical_count'] = 0
+            context['total_acknowledged_count'] = 0
+
         # Add the acknowledgement form
         context['acknowledge_form'] = AlertAcknowledgementForm()
         return context
