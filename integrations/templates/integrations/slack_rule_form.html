@@ -140,7 +140,6 @@
                             <div class="small text-muted mt-2">
                                 <p class="mb-1"><strong>New Structure:</strong> Use <code>"labels"</code> for alert labels and <code>"fields"</code> for other alert properties.</p>
                                 <strong>Example:</strong>
-                                <pre class="p-2 bg-light border rounded"><code>{\n  "labels": {\n    "severity": "critical",\n    "env": "production"\n  },\n  "fields": {\n    "source": "prometheus-main",\n    "acknowledged": false,\n    "jira_issue_key__isnull": true\n  }\n}</code></pre>
                                 <p class="mb-0">This rule matches if all label and field conditions are met. Supported field lookups: <code>exact</code> (default), <code>isnull</code> (true/false).</p>
                             </div>
                             {% for error in form.match_criteria.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
