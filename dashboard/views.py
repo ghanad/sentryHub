@@ -105,31 +105,30 @@ class Tier1AlertListView(UserPassesTestMixin, AlertListView):
     """List view of unacknowledged alerts for Tier 1 users"""
     paginate_by = None  # Disable pagination
     template_name = 'dashboard/tier1_unacked.html'
+    context_object_name = 'alerts'
+
+    def get_base_unsliced_queryset(self):
+        """
+        Build the UNSLICED annotated queryset (like parent) for counters and other safe operations.
+        """
+        from django.db.models import OuterRef, Subquery
+        from alerts.models import AlertInstance
+
+        base_queryset = super().get_queryset().filter(acknowledged=False)
+
+        latest_instance_subquery = AlertInstance.objects.filter(
+            alert_group=OuterRef('pk')
+        ).order_by('-started_at').values('started_at')[:1]
+
+        return base_queryset.annotate(latest_instance_start=Subquery(latest_instance_subquery))
 
     def get_queryset(self):
         """
         Return only unacknowledged alerts and limit initial render to last 20,
         ordered by latest_instance_start desc then pk desc, to avoid loading all alerts on first page load.
         """
-        # Rebuild the same annotated queryset as AlertListView but without bringing entire dataset
-        from django.db.models import OuterRef, Subquery
-        from alerts.models import AlertInstance
-
-        # Base queryset from parent (applies filters + annotations)
-        base_queryset = super().get_queryset()
-
-        # Ensure unacknowledged only
-        base_queryset = base_queryset.filter(acknowledged=False)
-
-        # Re-annotate latest_instance_start if not present (safety for direct usage)
-        latest_instance_subquery = AlertInstance.objects.filter(
-            alert_group=OuterRef('pk')
-        ).order_by('-started_at').values('started_at')[:1]
-
-        limited_qs = (base_queryset
-                      .annotate(latest_instance_start=Subquery(latest_instance_subquery))
-                      .order_by('-latest_instance_start', '-pk')[:20])
-        return limited_qs
+        qs = self.get_base_unsliced_queryset()
+        return qs.order_by('-latest_instance_start', '-pk')[:20]
 
     def test_func(self):
         """Only allow Tier1 group members or staff"""
@@ -138,28 +137,20 @@ class Tier1AlertListView(UserPassesTestMixin, AlertListView):
 
     def get_context_data(self, **kwargs):
         """
-        Remove filter parameters and add acknowledgement form.
-        Avoid parent ListView/AlertListView heavy counters that filter a sliced queryset.
+        Build context without invoking parent get_context_data() that computes counters on sliced qs.
         """
-        # Build context without invoking parent get_context_data() that computes counters on sliced qs
         context = {}
         object_list = self.get_queryset()  # already limited to 20
         context['object_list'] = object_list
         context[self.context_object_name] = object_list
-
-        # Remove filter parameters (not present now, kept for parity)
-        filter_keys = ['status', 'severity', 'instance', 'acknowledged', 'silenced_filter', 'search']
-        for key in filter_keys:
-            context.pop(key, None)
 
         # Explicitly set pagination flags
         context['paginator'] = None
         context['page_obj'] = None
         context['is_paginated'] = False
 
-        # Lightweight counters (safe and cheap)
-        # We do NOT reuse parent's counters to avoid re-querying unsafely.
-        base_qs = AlertGroup.objects.filter(acknowledged=False)
+        # Safe counters on UNSLICED queryset
+        base_qs = self.get_base_unsliced_queryset()
         context['total_firing_count'] = base_qs.filter(current_status='firing').count()
         context['total_critical_count'] = base_qs.filter(severity='critical').count()
         context['total_acknowledged_count'] = 0  # by definition for this view
