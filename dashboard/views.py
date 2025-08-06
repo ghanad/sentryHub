@@ -107,9 +107,29 @@ class Tier1AlertListView(UserPassesTestMixin, AlertListView):
     template_name = 'dashboard/tier1_unacked.html'
 
     def get_queryset(self):
-        """Return only unacknowledged alerts"""
+        """
+        Return only unacknowledged alerts and limit initial render to last 20,
+        ordered by latest_instance_start desc then pk desc, to avoid loading all alerts on first page load.
+        """
+        # Rebuild the same annotated queryset as AlertListView but without bringing entire dataset
+        from django.db.models import OuterRef, Subquery
+        from alerts.models import AlertInstance
+
+        # Base queryset from parent (applies filters + annotations)
         base_queryset = super().get_queryset()
-        return base_queryset.filter(acknowledged=False)
+
+        # Ensure unacknowledged only
+        base_queryset = base_queryset.filter(acknowledged=False)
+
+        # Re-annotate latest_instance_start if not present (safety for direct usage)
+        latest_instance_subquery = AlertInstance.objects.filter(
+            alert_group=OuterRef('pk')
+        ).order_by('-started_at').values('started_at')[:1]
+
+        limited_qs = (base_queryset
+                      .annotate(latest_instance_start=Subquery(latest_instance_subquery))
+                      .order_by('-latest_instance_start', '-pk')[:20])
+        return limited_qs
 
     def test_func(self):
         """Only allow Tier1 group members or staff"""
@@ -252,17 +272,21 @@ def _render_alerts_partial(queryset, request):
     """
     Render only the tbody rows HTML and provide count.
     Ensure request-bound context like 'user' is available to the template.
+    Minimize template context to avoid heavy DB work (no prefetch unless needed).
     """
     from django.template.loader import render_to_string
 
+    # Force evaluation in limited form and avoid accidental full prefetching
+    alerts_list = list(queryset)  # already sliced to 20 in callers
+
     context = {
-        'alerts': queryset,
+        'alerts': alerts_list,
         'acknowledge_form': AlertAcknowledgementForm(),
         'user': request.user,
         'request': request,
     }
     rows_html = render_to_string('dashboard/partials/_tier1_rows.html', context, request=request)
-    return rows_html, queryset.count()
+    return rows_html, len(alerts_list)
 
 
 def _latest_unacked_qs(limit=20):
@@ -302,7 +326,7 @@ def tier1_alerts_sse_stream(request):
 
         while True:
             try:
-                # Build queryset and render rows
+                # Build queryset and render rows - fetch only fields needed for signature first
                 qs = _latest_unacked_qs(limit=20)
                 rows_html, total_count = _render_alerts_partial(qs, request)
 
