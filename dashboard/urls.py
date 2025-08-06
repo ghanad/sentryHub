@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import DashboardView, Tier1AlertListView, AdminDashboardView, AdminCommentsView, AdminAcknowledgementsView
+from .views import DashboardView, Tier1AlertListView, AdminDashboardView, AdminCommentsView, AdminAcknowledgementsView, RealtimeDashboardView
 
 app_name = 'dashboard'
 
@@ -10,4 +10,6 @@ urlpatterns = [
     path('admin-summary/', AdminDashboardView.as_view(), name='admin_dashboard_summary'),
     path('admin-comments/', AdminCommentsView.as_view(), name='admin_dashboard_comments'),
     path('admin-acks/', AdminAcknowledgementsView.as_view(), name='admin_dashboard_acks'),
+    # Realtime Dashboard Page
+    path('realtime/', RealtimeDashboardView.as_view(), name='realtime_dashboard'),
 ]

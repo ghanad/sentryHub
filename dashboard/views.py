@@ -15,6 +15,13 @@ from django.contrib.auth.models import User, Group
 logger = logging.getLogger(__name__)
 
 
+class RealtimeDashboardView(LoginRequiredMixin, TemplateView):
+    """
+    Simple view to render the realtime dashboard page.
+    """
+    template_name = 'dashboard/realtime.html'
+
+
 class DashboardView(LoginRequiredMixin, TemplateView):
     template_name = 'dashboard/main_page.html'
 
@@ -126,6 +133,20 @@ class Tier1AlertListView(UserPassesTestMixin, AlertListView):
         # Add the acknowledgement form
         context['acknowledge_form'] = AlertAcknowledgementForm()
         return context
+
+
+class RealtimeDashboardView(LoginRequiredMixin, TemplateView):
+    """
+    Simple view to render the realtime dashboard page.
+    """
+    template_name = 'dashboard/realtime.html'
+
+
+class RealtimeDashboardView(LoginRequiredMixin, TemplateView):
+    """
+    Simple view to render the realtime dashboard page.
+    """
+    template_name = 'dashboard/realtime.html'
 
 
 class AdminDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):

@@ -1,0 +1,65 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+{% block title %}Realtime Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .2rem .6rem;
+    border-radius: 999px;
+    font-size: .85rem;
+    font-weight: 600;
+  }
+  .status-connected { background: #e6ffed; color: #057a55; border: 1px solid #c6f6d5; }
+  .status-reconnecting { background: #fffceb; color: #8a6d3b; border: 1px solid #faebcc; }
+  .status-disconnected { background: #ffecec; color: #b91c1c; border: 1px solid #fecaca; }
+  .table-fixed { table-layout: fixed; }
+  .truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sev-badge { padding: .15rem .45rem; border-radius: .5rem; font-weight: 700; font-size: .8rem;}
+  .sev-critical { background: #fee2e2; color: #991b1b; }
+  .sev-warning { background: #fef3c7; color: #92400e; }
+  .sev-info { background: #dbeafe; color: #1e3a8a; }
+</style>
+{% endblock %}
+
+{% block main_content %}
+<div class="container-fluid py-3">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h4 class="mb-0">Realtime Unacknowledged Alerts</h4>
+    <div id="wsStatus" class="status-pill status-disconnected">
+      <span class="dot">●</span>
+      <span id="wsStatusText">Disconnected</span>
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0 table-fixed" id="realtimeTable">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 160px;">Time</th>
+              <th style="width: 110px;">Severity</th>
+              <th style="width: 160px;">Source</th>
+              <th>Message</th>
+              <th style="width: 140px;">Environment</th>
+              <th style="width: 90px;">Ack</th>
+              <th style="width: 160px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="realtimeRows">
+            <!-- Rows will be prepended here -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'dashboard/js/realtime.js' %}"></script>
+{% endblock %}

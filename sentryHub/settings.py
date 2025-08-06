@@ -33,12 +33,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
+
     # Third-party apps
     'rest_framework',
     'tinymce',
     'django_celery_beat',
-    
+    'channels',  # Realtime via WebSocket
+
     # Project apps
     'core.apps.CoreConfig',
     'alerts',
@@ -60,6 +61,9 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'sentryHub.urls'
+
+# Use channel layers auth stack for channels
+# Note: ASGI_APPLICATION already configured; ensure channels installed in env.
 
 TEMPLATES = [
     {
@@ -83,6 +87,10 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'sentryHub.wsgi.application'
+# ASGI for Channels (websocket support)
+ASGI_APPLICATION = 'sentryHub.asgi.application'
+
+# Optional: channels session settings could be added here if needed
 
 # Database
 DATABASES = {
@@ -258,6 +266,16 @@ CELERY_TASK_ROUTES = {
 }
 # Removed redundant serializer settings
 CELERY_TIMEZONE = TIME_ZONE
+
+# Channels - Redis channel layer (reuse same Redis host, different DB)
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [os.environ.get('CHANNEL_REDIS_URL', 'redis://172.20.82.3:6379/1')],
+        },
+    },
+}
 
 # Celery Beat Schedule for periodic tasks
 from datetime import timedelta
