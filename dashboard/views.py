@@ -139,32 +139,30 @@ class Tier1AlertListView(UserPassesTestMixin, AlertListView):
     def get_context_data(self, **kwargs):
         """
         Remove filter parameters and add acknowledgement form.
-        Also override heavy counters to avoid filtering a sliced queryset in parent get_context_data.
+        Avoid parent ListView/AlertListView heavy counters that filter a sliced queryset.
         """
-        # Build a full (unsliced) base queryset for counters ONLY
-        base_qs = super().get_queryset().filter(acknowledged=False)
+        # Build context without invoking parent get_context_data() that computes counters on sliced qs
+        context = {}
+        object_list = self.get_queryset()  # already limited to 20
+        context['object_list'] = object_list
+        context[self.context_object_name] = object_list
 
-        context = super().get_context_data(**kwargs)
-
-        # Remove filter parameters
+        # Remove filter parameters (not present now, kept for parity)
         filter_keys = ['status', 'severity', 'instance', 'acknowledged', 'silenced_filter', 'search']
         for key in filter_keys:
             context.pop(key, None)
-        # Remove pagination context
-        context.pop('paginator', None)
-        context.pop('page_obj', None)
-        context.pop('is_paginated', None)
 
-        # Override heavy counts safely using unsliced queryset
-        try:
-            context['total_firing_count'] = base_qs.filter(current_status='firing').count()
-            context['total_critical_count'] = base_qs.filter(severity='critical').count()
-            context['total_acknowledged_count'] = 0  # always 0 in unacknowledged view by definition
-        except Exception:
-            # Fallbacks if anything goes wrong
-            context['total_firing_count'] = 0
-            context['total_critical_count'] = 0
-            context['total_acknowledged_count'] = 0
+        # Explicitly set pagination flags
+        context['paginator'] = None
+        context['page_obj'] = None
+        context['is_paginated'] = False
+
+        # Lightweight counters (safe and cheap)
+        # We do NOT reuse parent's counters to avoid re-querying unsafely.
+        base_qs = AlertGroup.objects.filter(acknowledged=False)
+        context['total_firing_count'] = base_qs.filter(current_status='firing').count()
+        context['total_critical_count'] = base_qs.filter(severity='critical').count()
+        context['total_acknowledged_count'] = 0  # by definition for this view
 
         # Add the acknowledgement form
         context['acknowledge_form'] = AlertAcknowledgementForm()
