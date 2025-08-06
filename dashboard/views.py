@@ -137,10 +137,15 @@ class Tier1AlertListView(UserPassesTestMixin, AlertListView):
 
     def get_context_data(self, **kwargs):
         """
-        Build context without invoking parent get_context_data() that computes counters on sliced qs.
+        Build context and AVOID parent AlertListView.get_context_data() (which filters on sliced qs).
+        Use ListView's base implementation to get a clean context, then fill custom keys.
         """
-        context = {}
-        object_list = self.get_queryset()  # already limited to 20
+        # IMPORTANT: call ListView.get_context_data directly to avoid AlertListView override
+        base_listview_get_context = ListView.get_context_data
+        context = base_listview_get_context(self, **kwargs)
+
+        # Replace object list with our limited queryset (20 items)
+        object_list = self.get_queryset()
         context['object_list'] = object_list
         context[self.context_object_name] = object_list
 
