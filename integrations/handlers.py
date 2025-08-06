@@ -82,7 +82,7 @@ def handle_alert_processed_slack(sender, **kwargs):
         return
 
     matcher = SlackRuleMatcherService()
-    rule = matcher.find_matching_rule(alert_group.labels)
+    rule = matcher.find_matching_rule(alert_group)
     if rule and rule.is_active:
         try:
             process_slack_for_alert_group.delay(

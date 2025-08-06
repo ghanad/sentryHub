@@ -107,3 +107,41 @@ http://prometheus.example.local/graph?g0.expr=cpu_usage
 - TemplateSyntaxError: از بلاک‌های {% verbatim %} برای نمایش نمونه کد با {{ }} در خود راهنما استفاده کنید یا سینتکس را بررسی کنید.
 - JSON نامعتبر در Extra Context: ساختار JSON را اعتبارسنجی کنید (آکولاد، کوتیشن‌ها و …).
 - ارسال به اسلک ناموفق: مقدار `SLACK_INTERNAL_ENDPOINT` را در تنظیمات بررسی کنید و لاگ‌ها را ببینید.
+
+## قالب‌های پیام (Message Templates)
+در قوانین اسلک می‌توانید دو نوع قالب پیام تعریف کنید: یکی برای زمانی که هشدار در وضعیت firing قرار دارد و دیگری برای زمانی که resolved می‌شود. این قالب‌ها از زبان قالب جنگو (Django Template Language) پشتیبانی می‌کنند.
+
+- Message Template: برای هشدارهای firing.
+- Resolved Message Template: برای هشدارهای resolved. اگر خالی باشد، برای این وضعیت پیامی ارسال نمی‌شود.
+
+### متغیرهای قابل استفاده در قالب‌ها
+- `{{ alert_group }}`: آبجکت کامل AlertGroup که به تمام فیلدهای آن دسترسی دارید:
+  - `{{ alert_group.name }}`
+  - `{{ alert_group.source }}`
+  - `{{ alert_group.jira_issue_key }}`
+  - `{{ alert_group.acknowledged }}`
+  - `{{ alert_group.total_firing_count }}`
+  - `{{ alert_group.first_occurrence }}` (آبجکت datetime)
+- `{{ labels }}`: دیکشنری کامل labels هشدار.
+  - مثال: `{{ labels.instance }}`, `{{ labels.severity }}`, ...
+- `{{ annotations }}`: دیکشنری کامل annotations از آخرین نمونه هشدار.
+  - مثال: `{{ annotations.summary }}`, `{{ annotations.description }}`, ...
+- `{{ alertname }}`: میانبری برای `labels.alertname`.
+- `{{ status }}`: وضعیت هشدار (`firing` یا `resolved`).
+- `icons`: یک دیکشنری آماده برای استفاده از ایموجی‌های اسلک:
+  - `{{ icons.fire }}` → `:fire:`
+  - `{{ icons.check }}` → `:white_check_mark:`
+  - `{{ icons.warning }}` → `:warning:`
+  - `{{ icons.bell }}` → `:bell:`
+  - ...
+
+### مثال Template
+Generated django
+```
+{% verbatim %}{{ icons.fire }} *{{ alertname }}* on `{{ labels.instance }}`
+> Severity: `{{ labels.severity }}` | Source: `{{ alert_group.source }}`
+> Summary: {{ annotations.summary }}
+{% if alert_group.jira_issue_key %}
+> Jira Ticket: <https://jira.tsetmc.com/browse/{{ alert_group.jira_issue_key }}|{{ alert_group.jira_issue_key }}>
+{% endif %}{% endverbatim %}
+```
