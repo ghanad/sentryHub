@@ -149,12 +149,16 @@ This document tracks the testing progress for different parts of the SentryHub a
 | **Forms**         | `JiraIntegrationRuleForm` (`forms.py`)    |   ⚪️   | Validation, saving, queryset for matchers                  |
 | **Services**      | `JiraService` (`jira_service.py`)         |   ⚪️   | `__init__`, `check_connection`, `create_issue`, `add_comment`, `get_issue_status_category`, `add_watcher` |
 |                   | `JiraRuleMatcherService` (`jira_matcher.py`) | ⚪️ | `find_matching_rule`, `_does_rule_match`, `_does_criteria_match` |
+|                   | `SlackService` (`services/slack_service.py`) |   🟢   | Unit test for `_normalize_channel` in [integrations/tests/test_slack_service.py](integrations/tests/test_slack_service.py) |
+|                   | `SlackRuleMatcherService` (`services/slack_matcher.py`) | 🟡 | Matching tests exist; add `resolve_channel` hierarchy tests next |
 | **Views**         | `JiraRuleListView` (`views.py`)           |   ⚪️   | GET, filters, context, pagination                            |
 |                   | `JiraRuleCreateView` (`views.py`)         |   ⚪️   | GET, POST (valid/invalid), permissions                       |
 |                   | `JiraRuleUpdateView` (`views.py`)         |   ⚪️   | GET, POST (valid/invalid), permissions                       |
 |                   | `JiraRuleDeleteView` (`views.py`)         |   ⚪️   | GET, POST, permissions, check for referenced alerts        |
 |                   | `jira_admin_view` (`views.py`)            |   ⚪️   | Connection testing, test issue creation                      |
 |                   | `jira_rule_guide_view` (`views.py`)       |   ⚪️   | Display markdown guide content                             |
+|                   | `slack_admin_view` (`views.py`)           |   🟢   | Login required, GET 200, and POST send_simple covered by tests |
+|                   | `SlackRuleListView/Create/Update/Delete` (`views.py`) | ⚪️ | CRUD views not yet covered                                  |
 | **Handlers**      | `handle_alert_processed` (`handlers.py`)  |   ⚪️   | Receiver logic, conditions (status, silence), task call     |
 | **Tasks**         | `process_jira_for_alert_group` (`tasks.py`)|   ⚪️   | Task logic, error handling, retry logic, API calls         |
                   | `JiraTaskBase` (`tasks.py`)               |   ⚪️   | Base class for Jira tasks with retry logic                   |
