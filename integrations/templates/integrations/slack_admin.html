@@ -56,7 +56,7 @@
                     </h5>
                 </div>
                 <div class="chart-card-body">
-                    <p>Use Django template syntax like <code>{% verbatim %}{{ alertname }}{% endverbatim %}</code>, <code>{% verbatim %}{{ labels.instance }}{% endverbatim %}</code>, <code>{% verbatim %}{{ annotations.summary }}{% endverbatim %}</code>. You can also add custom keys via Extra Context.</p>
+                    <p>Use Django template syntax like <code>{% verbatim %}{{ alert_group.name }}{% endverbatim %}</code> or <code>{% verbatim %}{{ alert_group.labels.instance }}{% endverbatim %}</code>. You can also add custom keys via Extra Context.</p>
                     <form method="post">
                         {% csrf_token %}
                         <input type="hidden" name="preview_template" value="1">

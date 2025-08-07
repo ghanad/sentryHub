@@ -16,7 +16,7 @@ class JiraIntegrationRule(models.Model):
     # Match criteria defines WHICH alerts trigger this rule
     match_criteria = models.JSONField(
         default=dict,
-        help_text='JSON object defining label match criteria. E.g., {"job": "node", "severity": "critical"}'
+        help_text='JSON object to match AlertGroup attributes. Use "labels__<key>" for label matching and regular field names or lookups (e.g., "source", "jira_issue_key__isnull") for AlertGroup properties.'
     )
     # Action defines WHAT happens in Jira
     jira_project_key = models.CharField(max_length=50, help_text="Target Jira project key (e.g., OPS)")

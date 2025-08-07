@@ -163,17 +163,17 @@ class SlackTemplateTestForm(forms.Form):
         widget=forms.Textarea(attrs={
             'rows': 5,
             'class': 'form-control font-monospace',
-            'placeholder': 'e.g. Alert {{ alertname }} on {{ labels.instance }}: {{ annotations.summary }}'
+            'placeholder': 'e.g. Alert {{ alert_group.name }} on {{ alert_group.labels.instance }}'
         })
     )
     extra_context = forms.CharField(
         label='Extra Context (JSON)',
         required=False,
-        help_text='Optional JSON to enrich rendering context. Structure: {"labels": {...}, "annotations": {...}, "vars": {...}}',
+        help_text='Optional JSON to merge into mock alert_group. Structure: {"labels": {...}, "alert_group": {...}}',
         widget=forms.Textarea(attrs={
             'rows': 4,
             'class': 'form-control font-monospace',
-            'placeholder': '{\"labels\": {\"team\": \"ops\"}, \"annotations\": {\"note\": \"hello\"}, \"vars\": {\"ticket_id\": \"OPS-123\"}}'
+            'placeholder': '{"labels": {"team": "ops"}, "alert_group": {"source": "prometheus"}}'
         })
     )
 
@@ -186,7 +186,7 @@ class SlackTemplateTestForm(forms.Form):
             if not isinstance(parsed, dict):
                 raise ValidationError('Extra context must be a JSON object')
             # Optional sanity sub-objects
-            for key in ('labels', 'annotations', 'vars'):
+            for key in ('labels', 'alert_group'):
                 if key in parsed and not isinstance(parsed[key], dict):
                     raise ValidationError(f'Extra context "{key}" must be an object if provided')
             return parsed

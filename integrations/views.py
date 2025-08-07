@@ -16,7 +16,6 @@ from integrations.models import JiraIntegrationRule, SlackIntegrationRule
 from integrations.forms import (
     JiraIntegrationRuleForm,
     SlackIntegrationRuleForm,
-    SlackTestMessageForm,
 )
 # Keep AlertGroup import only if needed for other parts of the view,
 # otherwise it can be removed if solely used for the incorrect delete check.
@@ -261,124 +260,10 @@ def _build_mock_alert_context():
     return base
  
  
-def _merge_extra_context(base_ctx: dict, extra: dict) -> dict:
-    """
-    Merge user-provided extra context into base_ctx.
-    Supports keys: labels, annotations, vars.
-    - labels/annotations are deep-merged (dict update).
-    - vars is placed as 'vars' in context for direct access in templates.
-    """
-    ctx = {**base_ctx}
-    if not extra:
-        return ctx
- 
-    labels_extra = extra.get("labels") or {}
-    annotations_extra = extra.get("annotations") or {}
-    vars_extra = extra.get("vars") or {}
- 
-    if labels_extra and isinstance(labels_extra, dict):
-        ctx["labels"] = {**ctx.get("labels", {}), **labels_extra}
-        # Common convenience exposures
-        if "alertname" in labels_extra:
-            ctx["alertname"] = labels_extra["alertname"]
-        if "severity" in labels_extra:
-            ctx["severity"] = labels_extra["severity"]
-        if "instance" in labels_extra:
-            ctx["instance"] = labels_extra["instance"]
- 
-    if annotations_extra and isinstance(annotations_extra, dict):
-        ctx["annotations"] = {**ctx.get("annotations", {}), **annotations_extra}
- 
-    if isinstance(vars_extra, dict):
-        ctx["vars"] = vars_extra
- 
-    return ctx
- 
- 
-@login_required
-def slack_admin_view(request):
-    """
-    Admin view to:
-      1) Send a simple test message (legacy form support)
-      2) Preview and Send a Django-templated message with a mock alert + extra_context
-    """
-    from .forms import SlackTestMessageForm, SlackTemplateTestForm  # local import to avoid cycles
- 
-    service = SlackService()
- 
-    # Decide which sub-form was submitted
-    if request.method == 'POST':
-        if 'send_simple' in request.POST:
-            simple_form = SlackTestMessageForm(request.POST)
-            template_form = SlackTemplateTestForm()  # empty for re-render
-            if simple_form.is_valid():
-                channel = simple_form.cleaned_data['channel']
-                message = simple_form.cleaned_data['message']
-                if service.send_notification(channel, message):
-                    messages.success(request, "Slack message sent successfully.")
-                else:
-                    messages.error(request, "Failed to send Slack message.")
-            # Re-render with both forms
-            return render(request, 'integrations/slack_admin.html', {
-                'form': simple_form,
-                'template_form': template_form,
-            })
- 
-        elif 'preview_template' in request.POST or 'send_template' in request.POST:
-            simple_form = SlackTestMessageForm()  # empty for re-render
-            template_form = SlackTemplateTestForm(request.POST)
-            rendered_preview = None
-            if template_form.is_valid():
-                channel = template_form.cleaned_data['channel']
-                template_text = template_form.cleaned_data['message_template']
-                extra = template_form.cleaned_data.get('extra_context') or {}
- 
-                base_ctx = _build_mock_alert_context()
-                final_ctx = _merge_extra_context(base_ctx, extra)
- 
-                # Render via Django template engine
-                from django.template import Template, Context
-                try:
-                    tmpl = Template(template_text)
-                    rendered_preview = tmpl.render(Context(final_ctx))
-                    # Slack accepts unicode emojis and :shortcode:, e.g., {{ icons.fire }}
-                except Exception as exc:
-                    messages.error(request, f"Template rendering failed: {exc}")
-                    rendered_preview = None
- 
-                if rendered_preview and 'send_template' in request.POST:
-                    if service.send_notification(channel, rendered_preview):
-                        messages.success(request, "Rendered template sent to Slack successfully.")
-                    else:
-                        messages.error(request, "Failed to send rendered template to Slack.")
- 
-            return render(request, 'integrations/slack_admin.html', {
-                'form': simple_form,
-                'template_form': template_form,
-                'rendered_preview': rendered_preview,
-            })
- 
-    # GET: initial load
-    simple_form = SlackTestMessageForm()
-    template_form = None
-    try:
-        from .forms import SlackTemplateTestForm as _TF
-        template_form = _TF()
-    except Exception:
-        # If import fails for any reason, keep page working with simple form only
-        template_form = None
- 
-    return render(request, 'integrations/slack_admin.html', {
-        'form': simple_form,
-        'template_form': template_form,
-    })
 
-def _build_mock_alert_context():
-    """
-    Create a mock alert-like context similar to Slack/Jira templates.
-    Core keys: labels, annotations, alertname, status, severity, instance, generator_url.
-    Also includes a 'icons' helper map for convenient emojis in templates.
-    """
+
+def _build_mock_alert_group():
+    """Create a mock AlertGroup for template previews."""
     labels = {
         "job": "node_exporter",
         "instance": "server1:9100",
@@ -386,145 +271,103 @@ def _build_mock_alert_context():
         "alertname": "HighCPUUsage",
         "environment": "prod",
     }
-    annotations = {
-        "summary": "CPU usage is above 90% for the last 5 minutes.",
-        "description": "Node exporter reports sustained high CPU utilization on server1.",
-    }
-    # Common emoji aliases for Slack (works as :emoji_name:)
-    icons = {
-        "fire": ":fire:",
-        "check": ":white_check_mark:",
-        "warning": ":warning:",
-        "bell": ":bell:",
-        "x": ":x:",
-        "info": ":information_source:",
-        "rocket": ":rocket:",
-        "boom": ":boom:",
-    }
-    base = {
-        "labels": labels,
-        "annotations": annotations,
-        "alertname": labels.get("alertname", "UnknownAlert"),
-        "status": "firing",
-        "severity": labels.get("severity", "warning"),
-        "instance": labels.get("instance", ""),
-        "generator_url": "http://prometheus.example.local/graph?g0.expr=cpu_usage",
-        "icons": icons,
-    }
-    return base
+    return AlertGroup(
+        fingerprint="demo-fingerprint",
+        name=labels.get("alertname", "DemoAlert"),
+        labels=labels,
+        severity=labels.get("severity", "warning"),
+        instance=labels.get("instance"),
+        source="prometheus",
+        current_status="firing",
+    )
 
 
-def _merge_extra_context(base_ctx: dict, extra: dict) -> dict:
-    """
-    Merge user-provided extra context into base_ctx.
-    Supports keys: labels, annotations, vars.
-    - labels/annotations are deep-merged (dict update).
-    - vars is placed as 'vars' in context for direct access in templates.
-    """
-    ctx = {**base_ctx}
+def _apply_extra_context(alert_group: AlertGroup, extra: dict) -> AlertGroup:
+    """Merge user-provided values into the mock AlertGroup."""
     if not extra:
-        return ctx
+        return alert_group
 
     labels_extra = extra.get("labels") or {}
-    annotations_extra = extra.get("annotations") or {}
-    vars_extra = extra.get("vars") or {}
-
-    if labels_extra and isinstance(labels_extra, dict):
-        ctx["labels"] = {**ctx.get("labels", {}), **labels_extra}
-        # Common convenience exposures
+    if isinstance(labels_extra, dict):
+        alert_group.labels.update(labels_extra)
         if "alertname" in labels_extra:
-            ctx["alertname"] = labels_extra["alertname"]
-        if "severity" in labels_extra:
-            ctx["severity"] = labels_extra["severity"]
+            alert_group.name = labels_extra["alertname"]
         if "instance" in labels_extra:
-            ctx["instance"] = labels_extra["instance"]
+            alert_group.instance = labels_extra["instance"]
+        if "severity" in labels_extra:
+            alert_group.severity = labels_extra["severity"]
 
-    if annotations_extra and isinstance(annotations_extra, dict):
-        ctx["annotations"] = {**ctx.get("annotations", {}), **annotations_extra}
+    ag_extra = extra.get("alert_group") or {}
+    if isinstance(ag_extra, dict):
+        for key, value in ag_extra.items():
+            setattr(alert_group, key, value)
 
-    if isinstance(vars_extra, dict):
-        ctx["vars"] = vars_extra
-
-    return ctx
+    return alert_group
 
 
 @login_required
 def slack_admin_view(request):
-    """
-    Admin view to:
-      1) Send a simple test message (legacy form support)
-      2) Preview and Send a Django-templated message with a mock alert + extra_context
-    """
+    """Admin page to send test messages and preview Slack templates."""
     from .forms import SlackTestMessageForm, SlackTemplateTestForm  # local import to avoid cycles
-
     service = SlackService()
-
-    # Decide which sub-form was submitted
-    if request.method == 'POST':
-        if 'send_simple' in request.POST:
+    if request.method == "POST":
+        if "send_simple" in request.POST:
             simple_form = SlackTestMessageForm(request.POST)
             template_form = SlackTemplateTestForm()  # empty for re-render
             if simple_form.is_valid():
-                channel = simple_form.cleaned_data['channel']
-                message = simple_form.cleaned_data['message']
+                channel = simple_form.cleaned_data["channel"]
+                message = simple_form.cleaned_data["message"]
                 if service.send_notification(channel, message):
                     messages.success(request, "Slack message sent successfully.")
                 else:
                     messages.error(request, "Failed to send Slack message.")
-            # Re-render with both forms
-            return render(request, 'integrations/slack_admin.html', {
-                'form': simple_form,
-                'template_form': template_form,
-            })
-
-        elif 'preview_template' in request.POST or 'send_template' in request.POST:
-            simple_form = SlackTestMessageForm()  # empty for re-render
+            return render(
+                request,
+                "integrations/slack_admin.html",
+                {"form": simple_form, "template_form": template_form},
+            )
+        elif "preview_template" in request.POST or "send_template" in request.POST:
+            simple_form = SlackTestMessageForm()
             template_form = SlackTemplateTestForm(request.POST)
             rendered_preview = None
             if template_form.is_valid():
-                channel = template_form.cleaned_data['channel']
-                template_text = template_form.cleaned_data['message_template']
-                extra = template_form.cleaned_data.get('extra_context') or {}
-
-                base_ctx = _build_mock_alert_context()
-                final_ctx = _merge_extra_context(base_ctx, extra)
-
-                # Render via Django template engine
+                channel = template_form.cleaned_data["channel"]
+                template_text = template_form.cleaned_data["message_template"]
+                extra = template_form.cleaned_data.get("extra_context") or {}
+                ag = _apply_extra_context(_build_mock_alert_group(), extra)
                 from django.template import Template, Context
                 try:
                     tmpl = Template(template_text)
-                    rendered_preview = tmpl.render(Context(final_ctx))
+                    rendered_preview = tmpl.render(Context({"alert_group": ag}))
                 except Exception as exc:
                     messages.error(request, f"Template rendering failed: {exc}")
                     rendered_preview = None
-
-                if rendered_preview and 'send_template' in request.POST:
+                if rendered_preview and "send_template" in request.POST:
                     if service.send_notification(channel, rendered_preview):
                         messages.success(request, "Rendered template sent to Slack successfully.")
                     else:
                         messages.error(request, "Failed to send rendered template to Slack.")
-
-            return render(request, 'integrations/slack_admin.html', {
-                'form': simple_form,
-                'template_form': template_form,
-                'rendered_preview': rendered_preview,
-            })
-
-    # GET: initial load
+            return render(
+                request,
+                "integrations/slack_admin.html",
+                {
+                    "form": simple_form,
+                    "template_form": template_form,
+                    "rendered_preview": rendered_preview,
+                },
+            )
     simple_form = SlackTestMessageForm()
     template_form = None
     try:
         from .forms import SlackTemplateTestForm as _TF
         template_form = _TF()
     except Exception:
-        # If import fails for any reason, keep page working with simple form only
         template_form = None
-
-    return render(request, 'integrations/slack_admin.html', {
-        'form': simple_form,
-        'template_form': template_form,
-    })
-
+    return render(
+        request,
+        "integrations/slack_admin.html",
+        {"form": simple_form, "template_form": template_form},
+    )
 
 @login_required
 def slack_admin_guide_view(request):
