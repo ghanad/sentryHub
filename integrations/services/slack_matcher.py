@@ -1,6 +1,6 @@
 """Service for matching Slack integration rules."""
 import logging
-from typing import Dict, Optional, List
+from typing import Optional, List
 
 from integrations.models import SlackIntegrationRule
 from alerts.models import AlertGroup
@@ -31,7 +31,7 @@ class SlackRuleMatcherService:
 
         # Sort by specificity (more criteria is better), then priority, then name
         matching_rules.sort(key=lambda r: (
-            -(len(r.match_criteria.get("labels", {})) + len(r.match_criteria.get("fields", {}))),
+            -len(r.match_criteria or {}),
             -r.priority,
             r.name
         ))
@@ -43,7 +43,12 @@ class SlackRuleMatcherService:
     def _does_rule_match(self, rule: SlackIntegrationRule, alert_group: AlertGroup) -> bool:
         """
         Checks if a rule's criteria match the given alert group.
-        Supports both legacy (flat dict) and new (nested "labels"/"fields") formats.
+
+        The match_criteria structure is a flat dictionary where:
+          - Keys starting with ``labels__`` refer to label matches, e.g.,
+            ``{"labels__severity": "critical"}``.
+          - Other keys refer to ``AlertGroup`` attributes and may include Django
+            style lookups (e.g., ``source`` or ``jira_issue_key__isnull``).
         """
         criteria = rule.match_criteria or {}
         fp_for_log = alert_group.fingerprint
@@ -51,61 +56,43 @@ class SlackRuleMatcherService:
         if not isinstance(criteria, dict) or not criteria:
             return False
 
-        # --- Backward Compatibility Logic ---
-        # Check if the structure is the new format or the old flat format
-        if "labels" in criteria or "fields" in criteria:
-            # New format
-            label_criteria = criteria.get("labels", {})
-            field_criteria = criteria.get("fields", {})
-        else:
-            # Old format: treat the whole dict as label criteria
-            label_criteria = criteria
-            field_criteria = {}
-        # -----------------------------------
+        for key, expected_value in criteria.items():
+            if key.startswith("labels__"):
+                label_key = key.split("__", 1)[1]
+                actual_value = alert_group.labels.get(label_key)
+                if str(actual_value) != str(expected_value):
+                    logger.debug(
+                        f"(FP: {fp_for_log}) Rule '{rule.name}': Label mismatch for key '{label_key}'. "
+                        f"Expected: '{expected_value}', Actual: '{actual_value}'. No match."
+                    )
+                    return False
+                continue
 
-        if not label_criteria and not field_criteria:
-            logger.debug(f"(FP: {fp_for_log}) Rule '{rule.name}': Skipping, as it has no valid criteria defined.")
-            return False
-
-        # Check label criteria
-        for k, v in label_criteria.items():
-            if alert_group.labels.get(k) != v:
-                logger.debug(
-                    f"(FP: {fp_for_log}) Rule '{rule.name}': Label mismatch for key '{k}'. "
-                    f"Expected: '{v}', Actual: '{alert_group.labels.get(k)}'. No match."
-                )
-                return False
-
-        # Check field criteria (e.g., source, jira_issue_key)
-        for field_key, expected_value in field_criteria.items():
-            field_name = field_key
-            lookup = 'exact'
-            if '__' in field_key:
-                field_name, lookup = field_key.split('__', 1)
+            field_name, lookup = key, "exact"
+            if "__" in key:
+                field_name, lookup = key.split("__", 1)
 
             if not hasattr(alert_group, field_name):
-                logger.debug(f"(FP: {fp_for_log}) Rule '{rule.name}': Field '{field_name}' does not exist on AlertGroup. No match.")
+                logger.debug(
+                    f"(FP: {fp_for_log}) Rule '{rule.name}': Field '{field_name}' does not exist on AlertGroup. No match."
+                )
                 return False
 
             actual_value = getattr(alert_group, field_name)
 
-            if lookup == 'isnull':
-                is_null = (actual_value is None or actual_value == '')
+            if lookup == "isnull":
+                is_null = actual_value is None or actual_value == ""
                 if is_null != expected_value:
                     logger.debug(
                         f"(FP: {fp_for_log}) Rule '{rule.name}': Field '{field_name}' isnull check failed. "
                         f"Expected isnull={expected_value}, but was not. No match."
                     )
                     return False
-            elif lookup == 'exact':
-                if str(actual_value) != str(expected_value):
-                    logger.debug(
-                        f"(FP: {fp_for_log}) Rule '{rule.name}': Field '{field_name}' mismatch. "
-                        f"Expected: '{expected_value}', Actual: '{actual_value}'. No match."
-                    )
-                    return False
-            else:
-                logger.debug(f"(FP: {fp_for_log}) Rule '{rule.name}': Unsupported field lookup '{lookup}'. No match.")
+            elif str(actual_value) != str(expected_value):
+                logger.debug(
+                    f"(FP: {fp_for_log}) Rule '{rule.name}': Field '{field_name}' mismatch. "
+                    f"Expected: '{expected_value}', Actual: '{actual_value}'. No match."
+                )
                 return False
 
         logger.debug(f"(FP: {fp_for_log}) Rule '{rule.name}': All criteria met. Match successful.")

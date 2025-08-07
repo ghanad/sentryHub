@@ -293,16 +293,10 @@ def process_slack_for_alert_group(alert_group_id: int, rule_id: int):
         logger.error(f"Slack Task: SlackIntegrationRule with ID {rule_id} not found. Aborting.")
         return
 
-    latest_instance = alert_group.instances.order_by('-started_at').first()
-    labels = alert_group.labels or {}
-    annotations = latest_instance.annotations if latest_instance else {}
-    status = getattr(alert_group, "status", None) or (latest_instance.status if latest_instance and hasattr(latest_instance, "status") else None)
+    status = getattr(alert_group, "current_status", None)
 
     context = {
         'alert_group': alert_group,
-        'labels': labels,
-        'annotations': annotations,
-        'status': status,
     }
 
     # Choose template based on status
@@ -316,7 +310,9 @@ def process_slack_for_alert_group(alert_group_id: int, rule_id: int):
 
     # If after rendering we still have empty message (e.g., no template provided), skip
     if not message:
-        logger.info(f"Slack Task: No message to send for AlertGroup {alert_group_id} (status={status}). Skipping.")
+        logger.info(
+            f"Slack Task: No message to send for AlertGroup {alert_group_id} (status={status}). Skipping."
+        )
         return
 
     slack_service = SlackService()
