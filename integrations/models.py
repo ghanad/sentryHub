@@ -92,8 +92,10 @@ class SlackIntegrationRule(models.Model):
     )
     slack_channel = models.CharField(
         max_length=100,
-        help_text="Destination Slack channel (e.g., #critical-alerts)"
+        blank=True,
+        help_text="Destination Slack channel (e.g., #critical-alerts). Leave empty to use labels.channel or default."
     )
+    # Note: When slack_channel is left empty, channel will be resolved via labels.channel or default
     message_template = models.TextField(
         blank=True,
         help_text="Template for Slack message. Uses Django template syntax."

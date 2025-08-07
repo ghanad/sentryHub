@@ -282,6 +282,11 @@ def process_slack_for_alert_group(alert_group_id: int, rule_id: int):
 
     Uses firing template by default; if the alert_group is resolved and the rule
     has a resolved_message_template, that template will be used instead.
+
+    Channel resolution hierarchy:
+      1) Rule-defined channel
+      2) Alert label 'channel' (normalized)
+      3) Default settings.SLACK_DEFAULT_CHANNEL or '#general'
     """
     try:
         alert_group = AlertGroup.objects.get(pk=alert_group_id)
@@ -315,5 +320,13 @@ def process_slack_for_alert_group(alert_group_id: int, rule_id: int):
         )
         return
 
+    # Resolve channel using matcher service (rule > label > default)
+    from integrations.services.slack_matcher import SlackRuleMatcherService
+    matcher = SlackRuleMatcherService()
+    channel, source = matcher.resolve_channel(alert_group, rule)
+    logger.info(
+        f"Slack Task: Using channel {channel!r} resolved from {source} for AlertGroup {alert_group_id}."
+    )
+
     slack_service = SlackService()
-    slack_service.send_notification(rule.slack_channel, message)
+    slack_service.send_notification(channel, message)

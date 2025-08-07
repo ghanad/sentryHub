@@ -1,6 +1,8 @@
-"""Service for matching Slack integration rules."""
+"""Service for matching Slack integration rules and resolving target channel."""
 import logging
-from typing import Optional, List
+from typing import Optional, List, Tuple
+
+from django.conf import settings
 
 from integrations.models import SlackIntegrationRule
 from alerts.models import AlertGroup
@@ -39,6 +41,61 @@ class SlackRuleMatcherService:
         best_match = matching_rules[0]
         logger.info(f"(FP: {fp_for_log}) Selected best match: Rule '{best_match.name}' (ID: {best_match.id}).")
         return best_match
+
+    def resolve_channel(self, alert_group: AlertGroup, rule: Optional[SlackIntegrationRule]) -> Tuple[str, str]:
+        """
+        Resolve the target Slack channel using the hierarchy:
+        1) Rule-defined channel (if rule provided and has slack_channel)
+        2) Alert label 'channel' (normalized) if present and valid
+        3) Default channel from settings or '#general' fallback
+
+        Returns:
+            (channel, source) where source in {'rule', 'label', 'default'}
+        """
+        fp_for_log = alert_group.fingerprint
+
+        # 1) Rule wins
+        if rule and getattr(rule, "slack_channel", None):
+            ch = rule.slack_channel
+            logger.info(f"(FP: {fp_for_log}) Slack channel resolved from rule '{rule.name}': {ch!r}")
+            return ch, "rule"
+
+        # 2) Label-based dynamic channel
+        label_ch = self._extract_channel_from_labels(alert_group)
+        if label_ch:
+            logger.info(f"(FP: {fp_for_log}) Slack channel resolved from alert label: {label_ch!r}")
+            return label_ch, "label"
+
+        # 3) Default
+        default_ch = getattr(settings, "SLACK_DEFAULT_CHANNEL", "#general") or "#general"
+        logger.info(f"(FP: {fp_for_log}) Slack channel resolved to default: {default_ch!r}")
+        return default_ch, "default"
+
+    def _extract_channel_from_labels(self, alert_group: AlertGroup) -> Optional[str]:
+        """
+        Extract and normalize 'channel' from alert labels.
+        - Strips whitespace
+        - Removes leading '@' or '#' if present (SlackService will prefix '#')
+        - Validates non-empty
+        """
+        labels = getattr(alert_group, "labels", {}) or {}
+        raw = labels.get("channel")
+        if raw is None:
+            return None
+
+        ch = str(raw).strip()
+        if not ch:
+            return None
+
+        # remove leading '#' or '@' to keep inputs flexible; SlackService will normalize
+        if ch.startswith("#") or ch.startswith("@"):
+            ch = ch[1:].strip()
+
+        # very lightweight validation: after cleanup must remain non-empty
+        if not ch:
+            return None
+
+        return ch
 
     def _does_rule_match(self, rule: SlackIntegrationRule, alert_group: AlertGroup) -> bool:
         """

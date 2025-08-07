@@ -100,25 +100,39 @@ class SlackIntegrationRuleForm(forms.ModelForm):
             'name', 'is_active', 'priority',
             'match_criteria', 'slack_channel', 'message_template', 'resolved_message_template',
         ]
+        help_texts = {
+            'slack_channel': "Leave empty to route via labels.channel or fallback default channel.",
+            'match_criteria': "Optional. Leave empty to match all alerts (generic rule). Use labels__<key> for label matching.",
+        }
         widgets = {
             'match_criteria': forms.Textarea(
                 attrs={
                     'rows': 5,
                     'class': 'form-control font-monospace',
-                    'placeholder': '{\n  "labels": {"severity": "critical"},\n  "fields": {"acknowledged": false}\n}'
+                    'placeholder': '{\n  "labels__severity": "critical",\n  "source": "prometheus"\n}'
                 }
             ),
             'message_template': forms.Textarea(
                 attrs={'rows': 3, 'class': 'form-control font-monospace'}
             ),
             'resolved_message_template': forms.Textarea(
-                attrs={'rows': 3, 'class': 'form-control font-monospace', 'placeholder': ':white_check_mark: {{ alertname }} resolved on {{ labels.instance }}'}
+                attrs={'rows': 3, 'class': 'form-control font-monospace', 'placeholder': ':white_check_mark: {{ alert_group.labels.alertname }} resolved on {{ alert_group.labels.instance }}'}
             ),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['priority'].initial = 0
+        # Make slack_channel optional at the form level (UI)
+        if 'slack_channel' in self.fields:
+            self.fields['slack_channel'].required = False
+        # Allow creating a generic rule by leaving match_criteria empty
+        if 'match_criteria' in self.fields:
+            self.fields['match_criteria'].required = False
+        # Set priority default
+        if 'priority' in self.fields:
+            self.fields['priority'].initial = 0
+
+# Removed duplicate __init__; initialization handled above
 
     def clean_match_criteria(self):
         match_criteria = self.cleaned_data.get('match_criteria', '{}')
