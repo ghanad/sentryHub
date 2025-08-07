@@ -147,9 +147,9 @@ This document tracks the testing progress for different parts of the SentryHub a
 | :---------------- | :---------------------------------------- | :----: | :----------------------------------------------------------- |
 | **Models**        | `JiraIntegrationRule` (`models.py`)       |   🟢   | Creation, validation, `__str__`, `get_assignee`, ordering                   |
 | **Forms**         | `JiraIntegrationRuleForm` (`forms.py`)    |   🟢   | Initialization, validation (JSON, assignee), saving                  |
-| **Services**      | `JiraService` (`jira_service.py`)         |   ⚪️   | `__init__`, `check_connection`, `create_issue`, `add_comment`, `get_issue_status_category`, `add_watcher` |
-|                   | `JiraRuleMatcherService` (`jira_matcher.py`) | ⚪️ | `find_matching_rule`, `_does_rule_match`, `_does_criteria_match` |
-| **Views**         | `JiraRuleListView` (`views.py`)           |   ⚪️   | GET, filters, context, pagination                            |
+| **Services**      | `JiraService` (`jira_service.py`)         |   🟢   | `__init__`, `check_connection`, `create_issue`, `add_comment`, `get_issue_status_category`, `add_watcher` |
+|                   | `JiraRuleMatcherService` (`jira_matcher.py`) | 🟢 | `find_matching_rule`, `_does_rule_match`, `_does_criteria_match` |
+| **Views**         | `JiraRuleListView` (`views.py`)           |   🟢   | GET, filters, context, pagination                            |
 |                   | `JiraRuleCreateView` (`views.py`)         |   ⚪️   | GET, POST (valid/invalid), permissions                       |
 |                   | `JiraRuleUpdateView` (`views.py`)         |   ⚪️   | GET, POST (valid/invalid), permissions                       |
 |                   | `JiraRuleDeleteView` (`views.py`)         |   ⚪️   | GET, POST, permissions, check for referenced alerts        |
