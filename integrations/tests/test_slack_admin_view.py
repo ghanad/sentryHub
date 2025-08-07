@@ -25,7 +25,7 @@ class SlackAdminViewTests(TestCase):
         self.client.login(username='tester', password='pass')
         response = self.client.post(
             reverse('integrations:slack-admin'),
-            {'channel': 'channel', 'message': 'hello'},
+            {'channel': 'channel', 'message': 'hello', 'send_simple': '1'},
         )
         self.assertEqual(response.status_code, 200)
         mock_service.send_notification.assert_called_once_with('channel', 'hello')

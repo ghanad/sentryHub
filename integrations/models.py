@@ -88,7 +88,7 @@ class SlackIntegrationRule(models.Model):
     match_criteria = models.JSONField(
         default=dict,
         help_text=
-        'JSON object to match alerts. Use "labels" for alert labels and "fields" for alert group properties (e.g., source, acknowledged).'
+        'JSON object to match AlertGroup attributes. Use "labels__<key>" for label matching and regular field names or lookups (e.g., "source", "jira_issue_key__isnull") for AlertGroup properties.'
     )
     slack_channel = models.CharField(
         max_length=100,
