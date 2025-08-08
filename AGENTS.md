@@ -4,6 +4,7 @@ This repository contains a Django project. When modifying any code or documentat
 
 ## Testing
 
+- When modifying or adding code, always write corresponding tests.
 - Run the Django test suite with:
   ```bash
   /Users/ali/codes/sentryHub/venv/bin/python3 manage.py test
