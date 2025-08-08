@@ -1,5 +1,8 @@
-from django.test import SimpleTestCase
-from integrations.services.slack_service import SlackService
+from django.test import SimpleTestCase, override_settings
+from unittest.mock import Mock, patch
+import requests
+
+from integrations.services.slack_service import SlackService, SlackNotificationError
 
 
 class SlackServiceNormalizeChannelTests(SimpleTestCase):
@@ -25,3 +28,45 @@ class SlackServiceNormalizeChannelTests(SimpleTestCase):
         # so we assert that calling it raises IndexError to reflect current behavior.
         with self.assertRaises(IndexError):
             self.service._normalize_channel('   ')
+
+
+class SlackServiceSendNotificationTests(SimpleTestCase):
+    @override_settings(SLACK_INTERNAL_ENDPOINT='http://slack')
+    @patch('integrations.services.slack_service.metrics_manager')
+    def test_send_notification_success(self, metrics_mock):
+        service = SlackService()
+        response_mock = Mock(status_code=200, text='ok')
+        response_mock.raise_for_status = Mock()
+        with patch('integrations.services.slack_service.requests.post', return_value=response_mock) as post_mock:
+            result = service.send_notification('#general', 'hi')
+        self.assertTrue(result)
+        post_mock.assert_called_once()
+        metrics_mock.increment.assert_called()
+
+    @override_settings(SLACK_INTERNAL_ENDPOINT='http://slack')
+    @patch('integrations.services.slack_service.metrics_manager')
+    def test_send_notification_bad_response(self, metrics_mock):
+        service = SlackService()
+        response_mock = Mock(status_code=200, text='error')
+        response_mock.raise_for_status = Mock()
+        with patch('integrations.services.slack_service.requests.post', return_value=response_mock):
+            result = service.send_notification('#general', 'hi')
+        self.assertFalse(result)
+        metrics_mock.increment.assert_called()
+
+    @override_settings(SLACK_INTERNAL_ENDPOINT='http://slack')
+    @patch('integrations.services.slack_service.metrics_manager')
+    def test_send_notification_network_error_raises(self, metrics_mock):
+        service = SlackService()
+        with patch('integrations.services.slack_service.requests.post', side_effect=requests.exceptions.RequestException):
+            with self.assertRaises(SlackNotificationError):
+                service.send_notification('#general', 'hi')
+        metrics_mock.increment.assert_called()
+
+    @override_settings(SLACK_INTERNAL_ENDPOINT='')
+    @patch('integrations.services.slack_service.metrics_manager')
+    def test_send_notification_no_endpoint(self, metrics_mock):
+        service = SlackService()
+        result = service.send_notification('#general', 'hi')
+        self.assertFalse(result)
+        metrics_mock.increment.assert_called()

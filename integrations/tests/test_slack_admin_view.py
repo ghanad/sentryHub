@@ -1,7 +1,9 @@
 from django.test import TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
-from unittest.mock import patch
+from unittest.mock import patch, mock_open
+import markdown
+
 
 class SlackAdminViewTests(TestCase):
     def setUp(self):
@@ -30,3 +32,21 @@ class SlackAdminViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         mock_service.send_notification.assert_called_once_with('channel', 'hello')
 
+
+class SlackAdminGuideViewTests(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.user = User.objects.create_user(username='tester', password='pass')
+
+    def test_requires_login(self):
+        resp = self.client.get(reverse('integrations:slack-admin-guide'))
+        self.assertEqual(resp.status_code, 302)
+
+    @patch('integrations.views.open', new_callable=mock_open, read_data='# Title')
+    @patch('integrations.views.markdown.markdown', side_effect=markdown.markdown)
+    def test_renders_guide_content(self, md_mock, open_mock):
+        self.client.login(username='tester', password='pass')
+        resp = self.client.get(reverse('integrations:slack-admin-guide'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Title')
+        open_mock.assert_called_once()
