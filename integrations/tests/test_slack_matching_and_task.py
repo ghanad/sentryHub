@@ -64,3 +64,27 @@ class SlackTaskTests(TestCase):
         process_slack_for_alert_group(alert_group.id, rule.id)
 
         mock_service.send_notification.assert_called_once_with('#chan', 'foo')
+
+    @patch('integrations.tasks.SlackService')
+    def test_logs_include_fingerprint(self, mock_service_cls):
+        mock_service = mock_service_cls.return_value
+        mock_service.send_notification.return_value = True
+
+        alert_group = AlertGroup.objects.create(
+            fingerprint='fp3',
+            name='AG3',
+            labels={'app': 'bar'},
+            source='prometheus',
+        )
+        rule = SlackIntegrationRule.objects.create(
+            name='rule',
+            slack_channel='#chan',
+            match_criteria={},
+            message_template='{{ alert_group.labels.app }}',
+        )
+
+        with self.assertLogs('integrations.tasks', level='INFO') as cm:
+            process_slack_for_alert_group(alert_group.id, rule.id)
+
+        log_output = ' '.join(cm.output)
+        self.assertIn(f"(FP: {alert_group.fingerprint})", log_output)

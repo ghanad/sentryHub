@@ -294,11 +294,15 @@ def process_slack_for_alert_group(self, alert_group_id: int, rule_id: int):
     try:
         alert_group = AlertGroup.objects.get(pk=alert_group_id)
         rule = SlackIntegrationRule.objects.get(pk=rule_id)
+        fingerprint_for_log = alert_group.fingerprint
+        logger.info(
+            f"Slack Task {self.request.id} (FP: {fingerprint_for_log}): Starting for AlertGroup ID: {alert_group_id}, Rule ID: {rule_id}"
+        )
     except AlertGroup.DoesNotExist:
-        logger.error(f"Slack Task: AlertGroup with ID {alert_group_id} not found. Aborting.")
+        logger.error(f"Slack Task {self.request.id}: AlertGroup with ID {alert_group_id} not found. Aborting.")
         return
     except SlackIntegrationRule.DoesNotExist:
-        logger.error(f"Slack Task: SlackIntegrationRule with ID {rule_id} not found. Aborting.")
+        logger.error(f"Slack Task {self.request.id}: SlackIntegrationRule with ID {rule_id} not found. Aborting.")
         return
 
     status = getattr(alert_group, "current_status", None)
@@ -319,7 +323,7 @@ def process_slack_for_alert_group(self, alert_group_id: int, rule_id: int):
     # If after rendering we still have empty message (e.g., no template provided), skip
     if not message:
         logger.info(
-            f"Slack Task: No message to send for AlertGroup {alert_group_id} (status={status}). Skipping."
+            f"Slack Task {self.request.id} (FP: {fingerprint_for_log}): No message to send for AlertGroup {alert_group_id} (status={status}). Skipping."
         )
         return
 
@@ -328,16 +332,19 @@ def process_slack_for_alert_group(self, alert_group_id: int, rule_id: int):
     matcher = SlackRuleMatcherService()
     channel, source = matcher.resolve_channel(alert_group, rule)
     logger.info(
-        f"Slack Task: Using channel {channel!r} resolved from {source} for AlertGroup {alert_group_id}."
+        f"Slack Task {self.request.id} (FP: {fingerprint_for_log}): Using channel {channel!r} resolved from {source} for AlertGroup {alert_group_id}."
     )
 
     slack_service = SlackService()
     try:
         slack_service.send_notification(channel, message)
+        logger.info(
+            f"Slack Task {self.request.id} (FP: {fingerprint_for_log}): Notification sent to {channel} for AlertGroup {alert_group_id}."
+        )
     except SlackNotificationError as e:
         metrics_manager.increment("sentryhub_slack_notifications_total", {"status": "retry"})
         logger.warning(
-            f"Slack Task: Network error when sending notification for AlertGroup {alert_group_id}. Retrying...",
+            f"Slack Task {self.request.id} (FP: {fingerprint_for_log}): Network error when sending notification for AlertGroup {alert_group_id}. Retrying...",
             exc_info=True
         )
         raise self.retry(exc=e)
