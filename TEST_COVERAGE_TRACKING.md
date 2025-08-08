@@ -146,12 +146,12 @@ This document tracks the testing progress for different parts of the SentryHub a
 | Component         | File / Functionality                      | Status | Notes |
 | :---------------- | :---------------------------------------- | :----: | :---- |
 | **Models**        | `JiraIntegrationRule` (`models.py`)       |   🟢   | Creation, validation, `__str__`, `get_assignee`, ordering |
-|                   | `SlackIntegrationRule` (`models.py`)      |   ⚪️   | Creation, validation, `__str__` |
+|                   | `SlackIntegrationRule` (`models.py`)      |   🟢   | Creation, validation, `__str__`, ordering |
 | **Forms**         | `JiraIntegrationRuleForm` (`forms.py`)    |   🟢   | Initialization, validation (JSON, assignee), saving |
-|                   | `SlackIntegrationRuleForm` (`forms.py`)   |   ⚪️   | Initialization, validation, saving |
+|                   | `SlackIntegrationRuleForm` (`forms.py`)   |   🟢   | JSON parsing, optional fields, defaults |
 | **Services**      | `JiraService` (`jira_service.py`)         |   🟢   | `__init__`, `check_connection`, `create_issue`, `add_comment`, `get_issue_status_category`, `add_watcher` |
 |                   | `JiraRuleMatcherService` (`jira_matcher.py`) | 🟢 | `find_matching_rule`, `_does_rule_match`, `_does_criteria_match` |
-|                   | `SlackService` (`slack_service.py`)       |   ⚪️   | API calls, sending messages |
+|                   | `SlackService` (`slack_service.py`)       |   🟢   | Channel normalization, send success/failure |
 |                   | `SlackRuleMatcherService` (`slack_matcher.py`) | 🟢 | `find_matching_rule`, `resolve_channel` |
 | **Views**         | `JiraRuleListView` (`views.py`)           |   🟢   | GET, filters, context, pagination |
 |                   | `JiraRuleCreateView` (`views.py`)         |   🟢   | GET, POST (valid/invalid), permissions |
@@ -159,20 +159,20 @@ This document tracks the testing progress for different parts of the SentryHub a
 |                   | `JiraRuleDeleteView` (`views.py`)         |   🟢   | GET, POST, permissions, check for referenced alerts |
 |                   | `jira_admin_view` (`views.py`)            |   🟢   | Connection testing, test issue creation |
 |                   | `jira_rule_guide_view` (`views.py`)       |   🟢   | Display markdown guide content |
-|                   | `SlackRuleListView` (`views.py`)          |   ⚪️   | GET, filters, pagination |
-|                   | `SlackRuleCreateView` (`views.py`)        |   ⚪️   | GET, POST (valid/invalid), permissions |
-|                   | `SlackRuleUpdateView` (`views.py`)        |   ⚪️   | GET, POST (valid/invalid), permissions |
-|                   | `SlackRuleDeleteView` (`views.py`)        |   ⚪️   | GET, POST, permissions |
+|                   | `SlackRuleListView` (`views.py`)          |   🟢   | GET list, displays rules |
+|                   | `SlackRuleCreateView` (`views.py`)        |   🟢   | POST create redirects |
+|                   | `SlackRuleUpdateView` (`views.py`)        |   🟢   | POST update redirects |
+|                   | `SlackRuleDeleteView` (`views.py`)        |   🟢   | POST deletion |
 |                   | `slack_admin_view` (`views.py`)           |   🟢   | Send test message, preview template |
-|                   | `slack_admin_guide_view` (`views.py`)     |   ⚪️   | Display markdown guide content |
+|                   | `slack_admin_guide_view` (`views.py`)     |   🟢   | Display markdown guide content |
 | **Handlers**      | `handle_alert_processed` (`handlers.py`)  |   🟢   | Receiver logic, conditions (status, silence), task call |
-|                   | `handle_alert_processed_slack` (`handlers.py`) | ⚪️ | Slack signal handler |
-| **Tasks**         | `process_jira_for_alert_group` (`tasks.py`)|   ⚪️   | Task logic, error handling, retry logic, API calls |
-|                   | `JiraTaskBase` (`tasks.py`)               |   ⚪️   | Base class for Jira tasks with retry logic |
-|                   | `render_template_safe` (`tasks.py`)       |   ⚪️   | Helper function for safe template rendering |
+|                   | `handle_alert_processed_slack` (`handlers.py`) | 🟢 | Slack signal handler |
+| **Tasks**         | `process_jira_for_alert_group` (`tasks.py`)|   🟢   | Handles missing objects, early return |
+|                   | `JiraTaskBase` (`tasks.py`)               |   🟢   | Retry configuration |
+|                   | `render_template_safe` (`tasks.py`)       |   🟢   | Renders template, fallback on errors |
 |                   | `process_slack_for_alert_group` (`tasks.py`)|  🟢 | Slack task logic, channel resolution |
 | **Admin**         | `JiraIntegrationRuleAdmin` (`admin.py`)   |   🟢   | Custom methods (`matcher_count`), fieldsets |
-|                   | `SlackIntegrationRuleAdmin` (`admin.py`)  |   ⚪️   | Basic registration checks |
+|                   | `SlackIntegrationRuleAdmin` (`admin.py`)  |   🟢   | list_display fields |
 
 ---
 
