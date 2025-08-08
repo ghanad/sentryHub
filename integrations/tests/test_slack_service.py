@@ -26,8 +26,8 @@ class SlackServiceNormalizeChannelTests(SimpleTestCase):
         self.assertEqual(self.service._normalize_channel(''), '')
         # Whitespace-only input triggers IndexError in current implementation (ch[0] access),
         # so we assert that calling it raises IndexError to reflect current behavior.
-        with self.assertRaises(IndexError):
-            self.service._normalize_channel('   ')
+        # Whitespace-only input should now return an empty string
+        self.assertEqual(self.service._normalize_channel('   '), '')
 
 
 class SlackServiceSendNotificationTests(SimpleTestCase):
@@ -41,7 +41,7 @@ class SlackServiceSendNotificationTests(SimpleTestCase):
             result = service.send_notification('#general', 'hi')
         self.assertTrue(result)
         post_mock.assert_called_once()
-        metrics_mock.increment.assert_called()
+        metrics_mock.inc_counter.assert_called()
 
     @override_settings(SLACK_INTERNAL_ENDPOINT='http://slack')
     @patch('integrations.services.slack_service.metrics_manager')
@@ -52,7 +52,7 @@ class SlackServiceSendNotificationTests(SimpleTestCase):
         with patch('integrations.services.slack_service.requests.post', return_value=response_mock):
             result = service.send_notification('#general', 'hi')
         self.assertFalse(result)
-        metrics_mock.increment.assert_called()
+        metrics_mock.inc_counter.assert_called()
 
     @override_settings(SLACK_INTERNAL_ENDPOINT='http://slack')
     @patch('integrations.services.slack_service.metrics_manager')
@@ -61,7 +61,7 @@ class SlackServiceSendNotificationTests(SimpleTestCase):
         with patch('integrations.services.slack_service.requests.post', side_effect=requests.exceptions.RequestException):
             with self.assertRaises(SlackNotificationError):
                 service.send_notification('#general', 'hi')
-        metrics_mock.increment.assert_called()
+        metrics_mock.inc_counter.assert_called()
 
     @override_settings(SLACK_INTERNAL_ENDPOINT='')
     @patch('integrations.services.slack_service.metrics_manager')
@@ -69,4 +69,4 @@ class SlackServiceSendNotificationTests(SimpleTestCase):
         service = SlackService()
         result = service.send_notification('#general', 'hi')
         self.assertFalse(result)
-        metrics_mock.increment.assert_called()
+        metrics_mock.inc_counter.assert_called()

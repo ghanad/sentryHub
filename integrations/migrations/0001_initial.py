@@ -17,7 +17,7 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(max_length=100, unique=True)),
                 ('is_active', models.BooleanField(db_index=True, default=True)),
-                ('match_criteria', models.JSONField(default=dict, help_text='JSON object defining label match criteria. E.g., {"job": "node", "severity": "critical"}')),
+                ('match_criteria', models.JSONField(default=dict, help_text='JSON object to match AlertGroup attributes. Use "labels__<key>" for label matching and regular field names or lookups (e.g., "source", "jira_issue_key__isnull") for AlertGroup properties.')),
                 ('jira_project_key', models.CharField(help_text='Target Jira project key (e.g., OPS)', max_length=50)),
                 ('jira_issue_type', models.CharField(help_text='Target Jira issue type (e.g., Bug, Task)', max_length=50)),
                 ('assignee', models.CharField(blank=True, help_text='Jira username to assign the issue to (leave blank for no assignment)', max_length=100)),
