@@ -40,3 +40,12 @@ class HandleAlertProcessedSlackTests(TestCase):
         matcher_mock.return_value.find_matching_rule.return_value = self.rule
         alert_processed.send(sender=None, alert_group=self.alert_group, instance=None, status='pending')
         delay_mock.assert_not_called()
+
+    @patch('integrations.handlers.process_slack_for_alert_group.delay')
+    @patch('integrations.handlers.SlackRuleMatcherService')
+    def test_logs_include_fingerprint(self, matcher_mock, delay_mock):
+        matcher_mock.return_value.find_matching_rule.return_value = self.rule
+        with self.assertLogs('integrations.handlers', level='INFO') as cm:
+            alert_processed.send(sender=None, alert_group=self.alert_group, instance=None, status='firing')
+        log_output = ' '.join(cm.output)
+        self.assertIn(f"(FP: {self.alert_group.fingerprint})", log_output)

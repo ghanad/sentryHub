@@ -70,20 +70,33 @@ def handle_alert_processed_slack(sender, **kwargs):
     status = kwargs.get('status')
 
     if not alert_group:
-        logger.warning("Integrations Handler: Received alert_processed signal without alert_group. Cannot process for Slack.")
+        logger.warning("Integrations Handler (Slack): Received alert_processed signal without alert_group. Cannot process for Slack.")
         return
 
-    # Skip silenced alerts entirely
+    fingerprint_for_log = alert_group.fingerprint
+    logger.info(
+        f"Integrations Handler (Slack) (FP: {fingerprint_for_log}): Received 'alert_processed'. Status: {status}"
+    )
+
     if alert_group.is_silenced:
+        logger.info(
+            f"Integrations Handler (Slack) (FP: {fingerprint_for_log}): Alert is silenced. Skipping Slack processing."
+        )
         return
 
-    # Only act on firing or resolved
     if status not in ('firing', 'resolved'):
+        logger.info(
+            f"Integrations Handler (Slack) (FP: {fingerprint_for_log}): Status '{status}' not applicable for Slack processing. Skipping."
+        )
         return
 
     matcher = SlackRuleMatcherService()
     rule = matcher.find_matching_rule(alert_group)
+
     if rule and rule.is_active:
+        logger.info(
+            f"Integrations Handler (Slack) (FP: {fingerprint_for_log}): Matched Slack rule '{rule.name}'. Queueing task."
+        )
         try:
             process_slack_for_alert_group.delay(
                 alert_group_id=alert_group.id,
@@ -91,6 +104,10 @@ def handle_alert_processed_slack(sender, **kwargs):
             )
         except Exception as e:
             logger.error(
-                f"Integrations Handler: Failed to queue Slack processing task for AlertGroup {alert_group.id}: {e}",
+                f"Integrations Handler (Slack) (FP: {fingerprint_for_log}): Failed to queue Slack processing task for AlertGroup {alert_group.id}: {e}",
                 exc_info=True,
             )
+    else:
+        logger.info(
+            f"Integrations Handler (Slack) (FP: {fingerprint_for_log}): No matching active Slack rule found."
+        )
