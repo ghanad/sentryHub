@@ -15,24 +15,31 @@ def setup_test_environment():
 
     from integrations.models import SlackIntegrationRule
 
-    # Delete any pre-existing rules to ensure a clean slate for the test
+    # Clean slate for the test
     SlackIntegrationRule.objects.all().delete()
 
-    # Create a Slack rule that WILL match our test alert payload
-    print("--- [E2E Test] Creating a matching SlackIntegrationRule...")
+    # --- SCENARIO 1: Rule with a specific channel ---
+    print("--- [E2E Test] Creating a specific SlackIntegrationRule (with channel)...")
     SlackIntegrationRule.objects.create(
-        name="E2E Test Rule for Slack",
+        name="E2E Test Rule for Specific Channel",
         is_active=True,
         priority=100,
-        # This criteria will match the payload sent by this script
-        match_criteria={
-            "labels__service": "e2e-service",
-            "labels__severity": "critical"
-        },
-        slack_channel="#e2e-tests", # Channel sent to mock server
-        message_template="E2E Test Alert: {{ alert_group.labels.alertname }} is firing!"
+        match_criteria={"labels__service": "e2e-specific-service"},
+        slack_channel="#specific-channel",
+        message_template="Specific Rule Alert: {{ alert_group.labels.alertname }}"
     )
-    print("--- [E2E Test] Test rule created successfully.")
+
+    # --- SCENARIO 2: Generic rule that uses the alert's label for channel ---
+    print("--- [E2E Test] Creating a generic SlackIntegrationRule (without channel)...")
+    SlackIntegrationRule.objects.create(
+        name="E2E Test Rule for Label-based Channel",
+        is_active=True,
+        priority=50, # Lower priority than the specific one
+        match_criteria={"labels__severity": "critical"}, # A generic match
+        slack_channel="", # IMPORTANT: This must be empty
+        message_template="Label-based Channel Alert: {{ alert_group.labels.alertname }}"
+    )
+    print("--- [E2E Test] Test rules created successfully.")
 
 def send_alert_to_rabbitmq(alert_payload):
     host = os.getenv("RABBITMQ_HOST", "localhost")
@@ -48,22 +55,25 @@ def send_alert_to_rabbitmq(alert_payload):
     print(f"--- [E2E Test] Sent alert to RabbitMQ: {message_body[:100]}...")
     connection.close()
 
+
 def verify_results():
-    # Django is already set up by setup_test_environment()
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'sentryHub.settings')
+    import django
+    django.setup()
     from alerts.models import AlertGroup
 
     # 1. Verify Database State
     print("--- [E2E Test] Verifying database state...")
-    time.sleep(15) # Wait for all background processes to complete
+    time.sleep(15)
 
     try:
-        alert_group = AlertGroup.objects.get(fingerprint="e2e_fingerprint_for_slack")
-        assert alert_group.name == "E2ESlackTest"
-        print("✅ Database verification successful: AlertGroup created correctly.")
-    except AlertGroup.DoesNotExist:
-        print("❌ Database verification failed: AlertGroup was not created.")
-        sys.exit(1)
-    except AssertionError as e:
+        # Check both alerts were created
+        ag_specific = AlertGroup.objects.get(fingerprint="e2e_fingerprint_specific")
+        ag_label = AlertGroup.objects.get(fingerprint="e2e_fingerprint_label")
+        assert ag_specific.name == "E2ESpecificTest"
+        assert ag_label.name == "E2ELabelTest"
+        print("✅ Database verification successful: Both AlertGroups created.")
+    except (AlertGroup.DoesNotExist, AssertionError) as e:
         print(f"❌ Database verification failed: {e}")
         sys.exit(1)
 
@@ -74,19 +84,24 @@ def verify_results():
         response.raise_for_status()
         received_data = response.json()
         
-        # Check Slack
-        assert len(received_data["slack"]) > 0, "No message was sent to Slack."
-        slack_message_payload = received_data["slack"][0]
-        
-        # Verify channel and message content
-        assert slack_message_payload['channel'] == "#e2e-tests", f"Message sent to wrong channel: {slack_message_payload['channel']}"
-        expected_text = "E2E Test Alert: E2ESlackTest is firing!"
-        assert slack_message_payload['text'] == expected_text, f"Slack message content is incorrect: '{slack_message_payload['text']}'"
-        print("✅ Slack verification successful: Message with correct content received by mock server.")
+        slack_messages = received_data.get("slack", [])
+        assert len(slack_messages) == 2, f"Expected 2 Slack messages, but received {len(slack_messages)}."
+        print("✅ Slack verification: Received 2 messages as expected.")
 
-    except (requests.RequestException, AssertionError, KeyError) as e:
+        # Find the message for the specific rule
+        specific_msg = next((m for m in slack_messages if m['channel'] == '#specific-channel'), None)
+        assert specific_msg is not None, "Message for the specific rule was not received."
+        assert specific_msg['text'] == "Specific Rule Alert: E2ESpecificTest", f"Specific rule message content is incorrect: {specific_msg['text']}"
+        print("✅ Slack verification: Message for specific rule is correct.")
+
+        # Find the message for the label-based rule
+        label_msg = next((m for m in slack_messages if m['channel'] == '#dynamic-alerts-from-label'), None)
+        assert label_msg is not None, "Message for the label-based rule was not received."
+        assert label_msg['text'] == "Label-based Channel Alert: E2ELabelTest", f"Label-based rule message content is incorrect: {label_msg['text']}"
+        print("✅ Slack verification: Message for label-based rule is correct.")
+
+    except (requests.RequestException, AssertionError, KeyError, StopIteration) as e:
         print(f"❌ External integration verification failed: {e}")
-        # Print the received data for debugging
         if 'received_data' in locals():
             print("--- Mock Server Data ---")
             print(json.dumps(received_data, indent=2))
@@ -94,31 +109,38 @@ def verify_results():
         sys.exit(1)
 
 if __name__ == '__main__':
-    # Step 1: Prepare the test environment and database records
     setup_test_environment()
 
-    # Step 2: Define the payload that will be sent
-    test_payload = {
-        "alerts": [
-            {
-                "status": "firing",
-                "labels": { 
-                    "alertname": "E2ESlackTest", 
-                    "severity": "critical", 
-                    "service": "e2e-service"
-                },
-                "annotations": { "summary": "This is a full E2E test." },
-                "startsAt": "2024-01-01T00:00:00Z",
-                "endsAt": "0001-01-01T00:00:00Z",
-                "fingerprint": "e2e_fingerprint_for_slack"
-            }
-        ]
+    # Payload 1: Should match the specific rule
+    payload_specific = {
+        "alerts": [{
+            "status": "firing",
+            "labels": { "alertname": "E2ESpecificTest", "severity": "warning", "service": "e2e-specific-service" },
+            "annotations": { "summary": "Test for specific channel rule." },
+            "startsAt": "2024-01-01T00:00:00Z", "endsAt": "0001-01-01T00:00:00Z",
+            "fingerprint": "e2e_fingerprint_specific"
+        }]
+    }
+
+    # Payload 2: Should match the generic rule and use the 'channel' label
+    payload_label_based = {
+        "alerts": [{
+            "status": "firing",
+            "labels": { 
+                "alertname": "E2ELabelTest", 
+                "severity": "critical", 
+                "service": "other-service",
+                "channel": "dynamic-alerts-from-label" # The dynamic channel name
+            },
+            "annotations": { "summary": "Test for label-based channel." },
+            "startsAt": "2024-01-01T01:00:00Z", "endsAt": "0001-01-01T00:00:00Z",
+            "fingerprint": "e2e_fingerprint_label"
+        }]
     }
     
-    # Step 3: Trigger the event
-    send_alert_to_rabbitmq(test_payload)
+    send_alert_to_rabbitmq(payload_specific)
+    send_alert_to_rabbitmq(payload_label_based)
     
-    # Step 4: Verify the outcomes
     verify_results()
     
     print("\n🎉 E2E Test Passed Successfully! 🎉")
