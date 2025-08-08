@@ -11,14 +11,11 @@ logger = logging.getLogger(__name__)
 class SlackService:
     """
     Service for sending plain-text messages to Slack via an internal proxy endpoint.
-    Automatically normalizes channel names to start with '#' unless they appear to be a Slack channel/DM/group ID.
-    Logs detailed info on both success and failures.
+    ... (docstring) ...
     """
 
     def __init__(self):
         self.endpoint = getattr(settings, "SLACK_INTERNAL_ENDPOINT", "")
-        # You can now safely remove the debug log line
-        # logger.warning(f"SlackService initialized with endpoint: '{self.endpoint}'")
 
     def send_notification(self, channel: str, message: str) -> bool:
         """
@@ -27,7 +24,7 @@ class SlackService:
         """
         if not self.endpoint:
             logger.error("SlackService: SLACK_INTERNAL_ENDPOINT is not configured.")
-            metrics_manager.inc_counter("sentryhub_component_initialization_errors_total", {"component": "slack"}) # FIXED
+            metrics_manager.inc_counter("sentryhub_component_initialization_errors_total", labels={"component": "slack"})
             return False
 
         channel_fixed = self._normalize_channel(channel)
@@ -49,7 +46,7 @@ class SlackService:
                     error_msg,
                     exc_info=True,
                 )
-                metrics_manager.inc_counter("sentryhub_slack_notifications_total", {"status": "failure", "reason": "bad_response"}) # FIXED
+                metrics_manager.inc_counter("sentryhub_slack_notifications_total", labels={"status": "failure", "reason": "bad_response"})
                 return False
 
             logger.info(
@@ -57,8 +54,16 @@ class SlackService:
                 channel_fixed,
                 message[:200] + ("…" if len(message) > 200 else ""),
             )
-            metrics_manager.inc_counter("sentryhub_slack_notifications_total", {"status": "success"}) # FIXED
-            metrics_manager.set_gauge("sentryhub_component_last_successful_api_call_timestamp", time.time(), {"component": "slack"})
+            metrics_manager.inc_counter("sentryhub_slack_notifications_total", labels={"status": "success"})
+            
+            # --- MODIFIED/FIXED LINE HERE ---
+            metrics_manager.set_gauge(
+                "sentryhub_component_last_successful_api_call_timestamp", 
+                value=time.time(), 
+                labels={"component": "slack"}
+            )
+            # --- END OF MODIFIED LINE ---
+
             return True
 
         except requests.exceptions.RequestException as exc:
@@ -68,7 +73,7 @@ class SlackService:
                 exc,
                 exc_info=True,
             )
-            metrics_manager.inc_counter("sentryhub_slack_notifications_total", {"status": "failure", "reason": "network_error"}) # FIXED
+            metrics_manager.inc_counter("sentryhub_slack_notifications_total", labels={"status": "failure", "reason": "network_error"})
             raise SlackNotificationError("Network error during Slack notification") from exc
         except Exception as exc:
             logger.error(
@@ -77,7 +82,7 @@ class SlackService:
                 exc,
                 exc_info=True,
             )
-            metrics_manager.inc_counter("sentryhub_slack_notifications_total", {"status": "failure", "reason": "unexpected"}) # FIXED
+            metrics_manager.inc_counter("sentryhub_slack_notifications_total", labels={"status": "failure", "reason": "unexpected"})
             return False
 
     def _normalize_channel(self, channel: str) -> str:
