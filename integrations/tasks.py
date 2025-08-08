@@ -8,7 +8,7 @@ from typing import Optional, Dict, Any
 from celery import shared_task, Task
 from django.conf import settings
 
-from core.services import metrics_manager
+from core.services.metrics import metrics_manager
 from integrations.exceptions import SlackNotificationError
 from django.utils import timezone
 from django.urls import reverse

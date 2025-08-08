@@ -3,7 +3,7 @@ from django.conf import settings
 import requests
 import time
 
-from core.services import metrics_manager
+from core.services.metrics import metrics_manager
 from integrations.exceptions import SlackNotificationError
 
 logger = logging.getLogger(__name__)
