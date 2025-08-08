@@ -286,7 +286,11 @@ RABBITMQ_CONFIG = {
 }
 
 SITE_URL = "https://sentryhub.tsetmc.com"
-SLACK_INTERNAL_ENDPOINT = "SLACK_URL"
+SLACK_INTERNAL_ENDPOINT = os.environ.get('SLACK_INTERNAL_ENDPOINT', "")
+
+# Default Slack channel used when no rule channel is set and no 'channel' label is provided
+SLACK_DEFAULT_CHANNEL = "#general"
+
 JIRA_CONFIG = {
     'server_url': 'https://jira.tsetmc.com',
     'username': 'monitoring',
