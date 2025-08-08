@@ -90,6 +90,9 @@ class SlackService:
             return channel
 
         ch = channel.strip()
+        if not ch:  # Handle empty string after stripping
+            return ""
+
         if ch.startswith("#") or ch[0] in {"C", "G", "U", "D"}:
             return ch
         return f"#{ch}"
