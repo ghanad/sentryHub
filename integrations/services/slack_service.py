@@ -1,6 +1,10 @@
 import logging
 from django.conf import settings
 import requests
+import time
+
+from core.services import metrics_manager
+from integrations.exceptions import SlackNotificationError
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +30,7 @@ class SlackService:
         """
         if not self.endpoint:
             logger.error("SlackService: SLACK_INTERNAL_ENDPOINT is not configured.")
+            metrics_manager.increment("sentryhub_component_initialization_errors_total", {"component": "slack"})
             return False
 
         channel_fixed = self._normalize_channel(channel)
@@ -47,6 +52,7 @@ class SlackService:
                     error_msg,
                     exc_info=True,
                 )
+                metrics_manager.increment("sentryhub_slack_notifications_total", {"status": "failure", "reason": "bad_response"})
                 return False
 
             # Success: log informational message
@@ -55,6 +61,8 @@ class SlackService:
                 channel_fixed,
                 message[:200] + ("…" if len(message) > 200 else ""),  # Truncate long messages
             )
+            metrics_manager.increment("sentryhub_slack_notifications_total", {"status": "success"})
+            metrics_manager.set_gauge("sentryhub_component_last_successful_api_call_timestamp", time.time(), {"component": "slack"})
             return True
 
         except requests.exceptions.RequestException as exc:
@@ -64,7 +72,8 @@ class SlackService:
                 exc,
                 exc_info=True,
             )
-            return False
+            metrics_manager.increment("sentryhub_slack_notifications_total", {"status": "failure", "reason": "network_error"})
+            raise SlackNotificationError("Network error during Slack notification") from exc
         except Exception as exc:
             logger.error(
                 "SlackService: unexpected error when sending to Slack (channel=%r): %s",
@@ -72,6 +81,7 @@ class SlackService:
                 exc,
                 exc_info=True,
             )
+            metrics_manager.increment("sentryhub_slack_notifications_total", {"status": "failure", "reason": "unexpected"})
             return False
 
     def _normalize_channel(self, channel: str) -> str:

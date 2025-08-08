@@ -7,6 +7,9 @@ import pytz
 from typing import Optional, Dict, Any
 from celery import shared_task, Task
 from django.conf import settings
+
+from core.services import metrics_manager
+from integrations.exceptions import SlackNotificationError
 from django.utils import timezone
 from django.urls import reverse
 from django.core.exceptions import ObjectDoesNotExist
@@ -276,8 +279,8 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
     logger.info(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Finished processing for AlertGroup ID: {alert_group_id}")
 
 
-@shared_task
-def process_slack_for_alert_group(alert_group_id: int, rule_id: int):
+@shared_task(bind=True, autoretry_for=(SlackNotificationError,), retry_kwargs={'max_retries': 12}, countdown=300, retry_backoff=True, retry_backoff_max=3600)
+def process_slack_for_alert_group(self, alert_group_id: int, rule_id: int):
     """Celery task to send Slack notifications for an alert group.
 
     Uses firing template by default; if the alert_group is resolved and the rule
@@ -329,4 +332,12 @@ def process_slack_for_alert_group(alert_group_id: int, rule_id: int):
     )
 
     slack_service = SlackService()
-    slack_service.send_notification(channel, message)
+    try:
+        slack_service.send_notification(channel, message)
+    except SlackNotificationError as e:
+        metrics_manager.increment("sentryhub_slack_notifications_total", {"status": "retry"})
+        logger.warning(
+            f"Slack Task: Network error when sending notification for AlertGroup {alert_group_id}. Retrying...",
+            exc_info=True
+        )
+        raise self.retry(exc=e)
