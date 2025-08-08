@@ -17,6 +17,7 @@ class SlackService:
 
     def __init__(self):
         self.endpoint = getattr(settings, "SLACK_INTERNAL_ENDPOINT", "")
+        logger.warning(f"SlackService initialized with endpoint: '{self.endpoint}'")
 
     def send_notification(self, channel: str, message: str) -> bool:
         """
