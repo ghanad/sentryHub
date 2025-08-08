@@ -2,7 +2,7 @@ name: End-to-End Tests
 
 on:
   push:
-    branches: [ "main", "develop" ]
+    branches: [ "e2e_workflow"]
 
 jobs:
   e2e-test:
