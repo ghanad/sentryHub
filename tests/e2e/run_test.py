@@ -72,7 +72,7 @@ if __name__ == '__main__':
                 "labels": { "alertname": "E2ESlackTest", "severity": "critical", "service": "e2e-service" },
                 "annotations": { "summary": "This is a full E2E test." },
                 "startsAt": "2024-01-01T00:00:00Z",
-                "endsAt": "0000-00-00T00:00:00Z",
+                "endsAt": "0001-01-01T00:00:00Z",
                 "fingerprint": "e2e_fingerprint_for_slack"
             }
         ]
