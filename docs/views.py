@@ -129,9 +129,9 @@ class DocumentationDeleteView(LoginRequiredMixin, DeleteView):
     template_name = 'docs/documentation_confirm_delete.html'
     success_url = reverse_lazy('docs:documentation-list')
     
-    def delete(self, request, *args, **kwargs):
-        messages.success(request, 'Documentation deleted successfully.')
-        return super().delete(request, *args, **kwargs)
+    def form_valid(self, form):
+        messages.success(self.request, 'Documentation deleted successfully.')
+        return super().form_valid(form)
 
 
 class LinkDocumentationToAlertView(LoginRequiredMixin, UpdateView):
