@@ -17,21 +17,17 @@ class SlackService:
 
     def __init__(self):
         self.endpoint = getattr(settings, "SLACK_INTERNAL_ENDPOINT", "")
-        logger.warning(f"SlackService initialized with endpoint: '{self.endpoint}'")
+        # You can now safely remove the debug log line
+        # logger.warning(f"SlackService initialized with endpoint: '{self.endpoint}'")
 
     def send_notification(self, channel: str, message: str) -> bool:
         """
         Send text to a Slack channel via POST.
-        Args:
-          channel: slack channel name (e.g., 'general' or '#general') or channel ID ('C012ABC', 'G123XYZ', etc.).
-          message: plain text to send.
-
-        Returns:
-          True if the message was posted successfully ("200 OK" + body “ok”). False otherwise.
+        ... (docstring) ...
         """
         if not self.endpoint:
             logger.error("SlackService: SLACK_INTERNAL_ENDPOINT is not configured.")
-            metrics_manager.increment("sentryhub_component_initialization_errors_total", {"component": "slack"})
+            metrics_manager.inc_counter("sentryhub_component_initialization_errors_total", {"component": "slack"}) # FIXED
             return False
 
         channel_fixed = self._normalize_channel(channel)
@@ -53,16 +49,15 @@ class SlackService:
                     error_msg,
                     exc_info=True,
                 )
-                metrics_manager.increment("sentryhub_slack_notifications_total", {"status": "failure", "reason": "bad_response"})
+                metrics_manager.inc_counter("sentryhub_slack_notifications_total", {"status": "failure", "reason": "bad_response"}) # FIXED
                 return False
 
-            # Success: log informational message
             logger.info(
                 "Message posted to Slack channel %r: %r",
                 channel_fixed,
-                message[:200] + ("…" if len(message) > 200 else ""),  # Truncate long messages
+                message[:200] + ("…" if len(message) > 200 else ""),
             )
-            metrics_manager.increment("sentryhub_slack_notifications_total", {"status": "success"})
+            metrics_manager.inc_counter("sentryhub_slack_notifications_total", {"status": "success"}) # FIXED
             metrics_manager.set_gauge("sentryhub_component_last_successful_api_call_timestamp", time.time(), {"component": "slack"})
             return True
 
@@ -73,7 +68,7 @@ class SlackService:
                 exc,
                 exc_info=True,
             )
-            metrics_manager.increment("sentryhub_slack_notifications_total", {"status": "failure", "reason": "network_error"})
+            metrics_manager.inc_counter("sentryhub_slack_notifications_total", {"status": "failure", "reason": "network_error"}) # FIXED
             raise SlackNotificationError("Network error during Slack notification") from exc
         except Exception as exc:
             logger.error(
@@ -82,15 +77,10 @@ class SlackService:
                 exc,
                 exc_info=True,
             )
-            metrics_manager.increment("sentryhub_slack_notifications_total", {"status": "failure", "reason": "unexpected"})
+            metrics_manager.inc_counter("sentryhub_slack_notifications_total", {"status": "failure", "reason": "unexpected"}) # FIXED
             return False
 
     def _normalize_channel(self, channel: str) -> str:
-        """
-        If the channel doesn't start with '#', and doesn't appear
-        to be a Slack channel/group/DM/user ID, prefix it with '#'.
-        Accepted ID prefixes: 'C', 'G', 'U', 'D'.
-        """
         if not channel:
             return channel
 
