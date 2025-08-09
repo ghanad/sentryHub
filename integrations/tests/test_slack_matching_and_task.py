@@ -2,6 +2,7 @@ from django.test import TestCase
 from unittest.mock import patch
 
 from alerts.models import AlertGroup
+from django.utils import timezone
 from integrations.models import SlackIntegrationRule
 from integrations.services.slack_matcher import SlackRuleMatcherService
 from integrations.tasks import process_slack_for_alert_group
@@ -88,3 +89,32 @@ class SlackTaskTests(TestCase):
 
         log_output = ' '.join(cm.output)
         self.assertIn(f"(FP: {alert_group.fingerprint})", log_output)
+
+    @patch('integrations.tasks.SlackService')
+    def test_process_slack_for_alert_group_uses_annotations(self, mock_service_cls):
+        mock_service = mock_service_cls.return_value
+        mock_service.send_notification.return_value = True
+
+        alert_group = AlertGroup.objects.create(
+            fingerprint='fp4',
+            name='AG4',
+            labels={'app': 'baz'},
+            source='prometheus',
+        )
+        # create AlertInstance with annotations
+        alert_group.instances.create(
+            status='firing',
+            started_at=timezone.now(),
+            annotations={'summary': 'Summary text', 'description': 'More details'},
+        )
+
+        rule = SlackIntegrationRule.objects.create(
+            name='rule',
+            slack_channel='#chan',
+            match_criteria={},
+            message_template='{{ summary }} -- {{ description }}',
+        )
+
+        process_slack_for_alert_group(alert_group.id, rule.id)
+
+        mock_service.send_notification.assert_called_once_with('#chan', 'Summary text -- More details')

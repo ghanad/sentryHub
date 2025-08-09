@@ -55,29 +55,23 @@
 توجه: سیستم اسلک اکنون کاملاً بر اساس AlertGroup کار می‌کند. AlertInstance در منطق Slack استفاده نمی‌شود و بهتر است به آن در قالب‌ها/قوانین اشاره‌ای نشود.
 
 ## نحوه‌ی نوشتن Template
-> **⚠️ مهم:** سیستم جدید فقط و فقط با `AlertGroup` کار می‌کند. هیچ دسترسی مستقیم به `alertname` یا متغیرهای سطح بالا وجود ندارد. تمام داده‌ها باید از طریق شیء `alert_group` دسترسی پیدا کنند.
+> **⚠️ مهم:** منطق اصلی بر اساس `AlertGroup` است، اما برای دسترسی به جزئیات آخرین رخداد، متغیرهای کمکی نیز فراهم شده است.
 
-در قالب‌ها تنها یک متغیر اصلی در دسترس است:
+در قالب‌ها متغیرهای اصلی زیر در دسترس هستند:
 
-- `{{ alert_group }}`: شیء کامل AlertGroup که به تمام فیلدهای آن دسترسی دارید:
+- `{{ alert_group }}`: شیء کامل AlertGroup.
   - `{{ alert_group.name }}`
   - `{{ alert_group.labels.instance }}`
-  - `{{ alert_group.labels.alertname }}`  ← برای دسترسی به نام هشدار از labels
-  - `{{ alert_group.labels.channel }}`  ← اگر قصد دارید کانال مقصد را هم داخل پیام نشان دهید
   - `{{ alert_group.current_status }}`
-  - `{{ alert_group.source }}`
-  - `{{ alert_group.severity }}`
-  - `{{ alert_group.jira_issue_key }}` و سایر فیلدها
+  - و سایر فیلدها...
+- `{{ latest_instance }}`: شیء جدیدترین `AlertInstance` مرتبط با گروه (ممکن است `None` باشد).
+  - `{{ latest_instance.started_at }}`
+  - `{{ latest_instance.annotations }}`
+- `{{ annotations }}`: دیکشنری `annotations` از جدیدترین رخداد (یک میانبر برای `latest_instance.annotations`).
+- `{{ summary }}`: یک میانبر برای `annotations.summary` (اگر وجود نداشته باشد، از `alert_group.name` استفاده می‌کند).
+- `{{ description }}`: یک میانبر برای `annotations.description`.
 
 برای درج ایموجی می‌توانید مستقیماً از یونیکد (مثل 🔥) یا شورت‌کدهای اسلک (`:fire:`) استفاده کنید.
-
-نمونه ساده:
-```
-{{ alert_group.labels.alertname }} روی {{ alert_group.labels.instance }}
-وضعیت: {{ alert_group.current_status }}
-شدت: {{ alert_group.severity }}
-کانال: {{ alert_group.labels.channel }}
-```
 
 ## Extra Context (افزودن داده‌های سفارشی)
 می‌توانید JSON سفارشی وارد کنید تا مقادیر داخل نمونه‌ی `alert_group` را تغییر دهید.
@@ -108,13 +102,15 @@
 5. اگر نتیجه مطلوب بود، «Send Rendered» را بزنید تا پیام به کانال ارسال شود.
 
 ## مثال آماده
-Template:
+**Template:**
+```django
+🔥 {{ summary }} 🔥
+
+*Severity:* `{{ alert_group.severity }}`
+*Instance:* `{{ alert_group.labels.instance }}`
+*Description:* {{ description }}
 ```
-{{ alert_group.labels.alertname }} | {{ alert_group.labels.instance }}
-وضعیت: {{ alert_group.current_status }} | شدت: {{ alert_group.severity }}
-منبع: {{ alert_group.source }} | کانال: {{ alert_group.labels.channel|default:"#general" }}
-```
-Extra Context:
+Extra Context (for testing):
 ```json
 {
   "labels": { "service": "payments", "channel": "backend-alerts" },
@@ -123,9 +119,11 @@ Extra Context:
 ```
 Rendered (نمونه):
 ```
-HighCPUUsage | server1:9100
-وضعیت: firing | شدت: critical
-منبع: prometheus | کانال: backend-alerts
+🔥 CPU usage is above 90% for the last 5 minutes. 🔥
+
+*Severity:* `critical`
+*Instance:* `server1:9100`
+*Description:* Node exporter reports sustained high CPU utilization on server1.
 ```
 
 ## منطق Match و انتخاب کانال Slack (Group-centric)
@@ -134,7 +132,7 @@ HighCPUUsage | server1:9100
   - کلیدهایی با پیشوند `labels__` برای مقایسه با `alert_group.labels` (مثلاً `labels__team`, `labels__severity`).
   - سایر کلیدها، فیلدهای مستقیم `AlertGroup` هستند و می‌توانند Lookup هم داشته باشند (مثل `source`, `jira_issue_key__isnull`).
 - اولویت‌بندی انتخاب Rule: بیشترین تعداد معیار تطبیق، سپس `priority` و سپس نام قانون؛ پیاده‌سازی در [integrations/services/slack_matcher.py](integrations/services/slack_matcher.py:11).
-- انتخاب کانال (Channel Resolution) در زمان ارسال انجام می‌شود: [python.process_slack_for_alert_group()](integrations/tasks.py:279) با استفاده از [python.SlackRuleMatcherService.resolve_channel()](integrations/services/slack_matcher.py:45)
+- انتخاب کانال (Channel Resolution) در زمان ارسال انجام می‌شود: [python.process_slack_for_alert_group()](integrations/tasks.py:283) با استفاده از [python.SlackRuleMatcherService.resolve_channel()](integrations/services/slack_matcher.py:45)
   - اول Rule.slack_channel
   - بعد labels.channel
   - در نهایت تنظیمات `SLACK_DEFAULT_CHANNEL` (پیش‌فرض: #general، قابل تغییر در [python.settings](sentryHub/settings.py:288))
