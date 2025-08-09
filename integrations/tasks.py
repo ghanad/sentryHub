@@ -402,7 +402,7 @@ def process_slack_for_alert_group(self, alert_group_id: int, rule_id: int):
             f"Slack Task {self.request.id} (FP: {fingerprint_for_log}): Notification sent to {channel} for AlertGroup {alert_group_id}."
         )
     except SlackNotificationError as e:
-        metrics_manager.increment("sentryhub_slack_notifications_total", {"status": "retry"})
+        metrics_manager.inc_counter("sentryhub_slack_notifications_total", {"status": "retry"})
         logger.warning(
             f"Slack Task {self.request.id} (FP: {fingerprint_for_log}): Network error when sending notification for AlertGroup {alert_group_id}. Retrying...",
             exc_info=True
