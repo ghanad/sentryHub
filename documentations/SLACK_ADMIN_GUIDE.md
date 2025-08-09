@@ -52,15 +52,17 @@
 - `silenced_until` (datetime|null)
 - `jira_issue_key` (string|null)
 
-توجه: AlertInstance در منطق Slack استفاده نمی‌شود و بهتر است به آن در قالب‌ها/قوانین اشاره‌ای نشود.
+توجه: سیستم اسلک اکنون کاملاً بر اساس AlertGroup کار می‌کند. AlertInstance در منطق Slack استفاده نمی‌شود و بهتر است به آن در قالب‌ها/قوانین اشاره‌ای نشود.
 
 ## نحوه‌ی نوشتن Template
+> **⚠️ مهم:** سیستم جدید فقط و فقط با `AlertGroup` کار می‌کند. هیچ دسترسی مستقیم به `alertname` یا متغیرهای سطح بالا وجود ندارد. تمام داده‌ها باید از طریق شیء `alert_group` دسترسی پیدا کنند.
+
 در قالب‌ها تنها یک متغیر اصلی در دسترس است:
 
 - `{{ alert_group }}`: شیء کامل AlertGroup که به تمام فیلدهای آن دسترسی دارید:
   - `{{ alert_group.name }}`
   - `{{ alert_group.labels.instance }}`
-  - `{{ alert_group.labels.alertname }}`
+  - `{{ alert_group.labels.alertname }}`  ← برای دسترسی به نام هشدار از labels
   - `{{ alert_group.labels.channel }}`  ← اگر قصد دارید کانال مقصد را هم داخل پیام نشان دهید
   - `{{ alert_group.current_status }}`
   - `{{ alert_group.source }}`

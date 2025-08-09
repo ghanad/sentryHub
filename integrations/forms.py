@@ -113,10 +113,10 @@ class SlackIntegrationRuleForm(forms.ModelForm):
                 }
             ),
             'message_template': forms.Textarea(
-                attrs={'rows': 3, 'class': 'form-control font-monospace'}
+                attrs={'rows': 3, 'class': 'form-control font-monospace', 'placeholder': ':fire: {{ alert_group.labels.alertname }}'}
             ),
             'resolved_message_template': forms.Textarea(
-                attrs={'rows': 3, 'class': 'form-control font-monospace', 'placeholder': ':white_check_mark: {{ alert_group.labels.alertname }} resolved on {{ alert_group.labels.instance }}'}
+                attrs={'rows': 3, 'class': 'form-control font-monospace', 'placeholder': ':white_check_mark: {{ alert_group.labels.alertname }}'}
             ),
         }
 
