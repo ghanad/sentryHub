@@ -1,3 +1,5 @@
+# integrations/services/slack_service.py
+
 import logging
 from django.conf import settings
 import requests
@@ -35,6 +37,8 @@ class SlackService:
         payload = {"channel": channel_fixed, "text": message}
 
         max_retries = 3
+        timeout_exceptions = (requests.exceptions.ReadTimeout, requests.exceptions.ConnectTimeout)
+
         for attempt in range(1, max_retries + 1):
             try:
                 resp = requests.post(self.endpoint, json=payload, timeout=10)
@@ -66,24 +70,42 @@ class SlackService:
                 metrics_manager.inc_counter(
                     "sentryhub_slack_notifications_total", labels={"status": "success"}
                 )
-
-                # --- MODIFIED/FIXED LINE HERE ---
                 metrics_manager.set_gauge(
                     "sentryhub_component_last_successful_api_call_timestamp",
                     value=time.time(),
                     labels={"component": "slack"},
                 )
-                # --- END OF MODIFIED LINE ---
-
                 return True
 
-            except requests.exceptions.RequestException as exc:
+            except timeout_exceptions as exc:
+                retry_delay = 2 ** (attempt - 1)
                 logger.warning(
-                    "SlackService: HTTP request attempt %d/%d failed (channel=%r): %s",
+                    "SlackService: Timeout on attempt %d/%d for channel %r. Retrying in %ds... Error: %s",
+                    attempt,
+                    max_retries,
+                    channel_fixed,
+                    retry_delay,
+                    exc,
+                )
+                if attempt == max_retries:
+                    metrics_manager.inc_counter(
+                        "sentryhub_slack_notifications_total",
+                        labels={"status": "failure", "reason": "network_error"},
+                    )
+                    raise SlackNotificationError(
+                        "Network error during Slack notification after multiple retries"
+                    ) from exc
+                time.sleep(retry_delay)
+
+            except requests.exceptions.RequestException as exc:
+                retry_delay = 2 ** (attempt - 1)
+                logger.warning(
+                    "SlackService: HTTP request attempt %d/%d failed (channel=%r): %s. Retrying in %ds...",
                     attempt,
                     max_retries,
                     channel_fixed,
                     exc,
+                    retry_delay,
                     exc_info=True,
                 )
                 if attempt == max_retries:
@@ -94,7 +116,8 @@ class SlackService:
                     raise SlackNotificationError(
                         "Network error during Slack notification"
                     ) from exc
-                time.sleep(2 ** (attempt - 1))
+                time.sleep(retry_delay)
+
             except Exception as exc:
                 logger.error(
                     "SlackService: unexpected error when sending to Slack (channel=%r): %s",
@@ -113,7 +136,7 @@ class SlackService:
             return channel
 
         ch = channel.strip()
-        if not ch:  # Handle empty string after stripping
+        if not ch:
             return ""
 
         if ch.startswith("#") or ch[0] in {"C", "G", "U", "D"}:
