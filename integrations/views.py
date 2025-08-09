@@ -232,6 +232,7 @@ def _build_mock_alert_context():
     labels = {
         "job": "node_exporter",
         "instance": "server1:9100",
+        "name": "server1",
         "severity": "critical",
         "alertname": "HighCPUUsage",
         "environment": "prod",
@@ -263,14 +264,13 @@ def _build_mock_alert_context():
     }
     return base
  
- 
-
 
 def _build_mock_alert_group():
     """Create a mock AlertGroup for template previews."""
     labels = {
         "job": "node_exporter",
         "instance": "server1:9100",
+        "name": "server1",
         "severity": "critical",
         "alertname": "HighCPUUsage",
         "environment": "prod",
@@ -285,8 +285,16 @@ def _build_mock_alert_group():
         labels=labels,
         severity=labels.get("severity", "warning"),
         instance=labels.get("instance"),
-        source="prometheus",
+        source="internet",
         current_status="firing",
+        total_firing_count=2,
+        acknowledged=False,
+        acknowledged_by=None,
+        acknowledgement_time=None,
+        is_silenced=False,
+        jira_issue_key="SNT-2020",
+        last_occurrence=timezone.now(),
+        first_occurrence=timezone.now(),
     )
 
     class _MockInstance:
