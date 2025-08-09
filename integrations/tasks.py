@@ -305,11 +305,25 @@ def process_slack_for_alert_group(self, alert_group_id: int, rule_id: int):
         logger.error(f"Slack Task {self.request.id}: SlackIntegrationRule with ID {rule_id} not found. Aborting.")
         return
 
+    # --- START: Added Logic ---
+    # Fetch the latest instance to get access to its annotations
+    latest_instance = alert_group.instances.order_by('-started_at').first()
+    annotations = latest_instance.annotations if latest_instance else {}
+    summary = annotations.get('summary', alert_group.name)
+    description = annotations.get('description', 'No description provided.')
+    # --- END: Added Logic ---
+
     status = getattr(alert_group, "current_status", None)
 
+    # --- MODIFIED: Updated Context ---
     context = {
         'alert_group': alert_group,
+        'latest_instance': latest_instance,
+        'annotations': annotations,
+        'summary': summary,
+        'description': description,
     }
+    # --- END: Updated Context ---
 
     # Choose template based on status
     template_to_use = None

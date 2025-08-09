@@ -26,7 +26,7 @@ def setup_test_environment():
         priority=100,
         match_criteria={"labels__service": "e2e-specific-service"},
         slack_channel="#specific-channel",
-        message_template="Specific Rule Alert: {{ alert_group.labels.alertname }}"
+        message_template="Specific Rule Alert | Summary: {{ summary }} | Desc: {{ description }}"
     )
 
     # --- SCENARIO 2: Generic rule that uses the alert's label for channel ---
@@ -37,7 +37,7 @@ def setup_test_environment():
         priority=50, # Lower priority than the specific one
         match_criteria={"labels__severity": "critical"}, # A generic match
         slack_channel="", # IMPORTANT: This must be empty
-        message_template="Label-based Channel Alert: {{ alert_group.labels.alertname }}"
+        message_template="Label-based Channel Alert | Summary: {{ summary }} | Desc: {{ description }}"
     )
     print("--- [E2E Test] Test rules created successfully.")
 
@@ -54,7 +54,6 @@ def send_alert_to_rabbitmq(alert_payload):
     channel.basic_publish(exchange='', routing_key=queue_name, body=message_body)
     print(f"--- [E2E Test] Sent alert to RabbitMQ: {message_body[:100]}...")
     connection.close()
-
 
 def verify_results():
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'sentryHub.settings')
@@ -88,16 +87,18 @@ def verify_results():
         assert len(slack_messages) == 2, f"Expected 2 Slack messages, but received {len(slack_messages)}."
         print("✅ Slack verification: Received 2 messages as expected.")
 
-        # Find the message for the specific rule
+        # Find the message for the specific rule and check its content
         specific_msg = next((m for m in slack_messages if m['channel'] == '#specific-channel'), None)
         assert specific_msg is not None, "Message for the specific rule was not received."
-        assert specific_msg['text'] == "Specific Rule Alert: E2ESpecificTest", f"Specific rule message content is incorrect: {specific_msg['text']}"
+        expected_specific_text = "Specific Rule Alert | Summary: Test for specific channel rule. | Desc: This is the description for the SPECIFIC rule."
+        assert specific_msg['text'] == expected_specific_text, f"Specific rule message content is incorrect. Got: '{specific_msg['text']}'"
         print("✅ Slack verification: Message for specific rule is correct.")
 
-        # Find the message for the label-based rule
+        # Find the message for the label-based rule and check its content
         label_msg = next((m for m in slack_messages if m['channel'] == '#dynamic-alerts-from-label'), None)
         assert label_msg is not None, "Message for the label-based rule was not received."
-        assert label_msg['text'] == "Label-based Channel Alert: E2ELabelTest", f"Label-based rule message content is incorrect: {label_msg['text']}"
+        expected_label_text = "Label-based Channel Alert | Summary: Test for label-based channel. | Desc: This is the description for the LABEL-BASED rule."
+        assert label_msg['text'] == expected_label_text, f"Label-based rule message content is incorrect. Got: '{label_msg['text']}'"
         print("✅ Slack verification: Message for label-based rule is correct.")
 
     except (requests.RequestException, AssertionError, KeyError, StopIteration) as e:
@@ -116,7 +117,10 @@ if __name__ == '__main__':
         "alerts": [{
             "status": "firing",
             "labels": { "alertname": "E2ESpecificTest", "severity": "warning", "service": "e2e-specific-service" },
-            "annotations": { "summary": "Test for specific channel rule." },
+            "annotations": { 
+                "summary": "Test for specific channel rule.",
+                "description": "This is the description for the SPECIFIC rule." 
+            },
             "startsAt": "2024-01-01T00:00:00Z", "endsAt": "0001-01-01T00:00:00Z",
             "fingerprint": "e2e_fingerprint_specific"
         }]
@@ -132,7 +136,10 @@ if __name__ == '__main__':
                 "service": "other-service",
                 "channel": "dynamic-alerts-from-label" # The dynamic channel name
             },
-            "annotations": { "summary": "Test for label-based channel." },
+            "annotations": { 
+                "summary": "Test for label-based channel.",
+                "description": "This is the description for the LABEL-BASED rule."
+            },
             "startsAt": "2024-01-01T01:00:00Z", "endsAt": "0001-01-01T00:00:00Z",
             "fingerprint": "e2e_fingerprint_label"
         }]
