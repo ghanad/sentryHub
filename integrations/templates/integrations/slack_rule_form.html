@@ -88,6 +88,12 @@
                                 {{ form.message_template|add_class:"form-control form-control-monospace" }}
                                 {% if form.message_template.help_text %}<div class="form-text">{{ form.message_template.help_text|safe }}</div>{% endif %}
                                 {% for error in form.message_template.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <button type="button" class="btn btn-sm btn-outline-info" id="check-firing-template-btn">
+                                        <i class='bx bx-check-shield'></i> Check Template
+                                    </button>
+                                    <div id="firing-template-result" class="small"></div>
+                                </div>
                                 <div class="small text-muted mt-2">
                                     <strong>Hints:</strong>
                                     <ul class="mb-2">
@@ -106,6 +112,12 @@
                                 {{ form.resolved_message_template|add_class:"form-control form-control-monospace" }}
                                 {% if form.resolved_message_template.help_text %}<div class="form-text">{{ form.resolved_message_template.help_text|safe }}</div>{% endif %}
                                 {% for error in form.resolved_message_template.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <button type="button" class="btn btn-sm btn-outline-info" id="check-resolved-template-btn">
+                                        <i class='bx bx-check-shield'></i> Check Template
+                                    </button>
+                                    <div id="resolved-template-result" class="small"></div>
+                                </div>
                                 <div class="small text-muted mt-2">
                                     <strong>Hints:</strong>
                                     <ul class="mb-2">
@@ -163,4 +175,65 @@
 
 {% block extra_js %}
 {{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    const checkUrl = "{% url 'integrations:slack-rule-check-template' %}";
+
+    function setupTemplateChecker(buttonId, textareaId, resultId) {
+        const checkButton = document.getElementById(buttonId);
+        const templateTextarea = document.getElementById(textareaId);
+        const resultDiv = document.getElementById(resultId);
+
+        if (!checkButton || !templateTextarea || !resultDiv) {
+            console.warn(`Could not find all elements for template checker: ${buttonId}, ${textareaId}, ${resultId}`);
+            return;
+        }
+
+        checkButton.addEventListener('click', function() {
+            const templateString = templateTextarea.value;
+            resultDiv.innerHTML = `<span class="spinner-border spinner-border-sm text-muted" role="status"></span> Checking...`;
+            resultDiv.className = 'small text-muted';
+
+            fetch(checkUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({ 'template_string': templateString })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    resultDiv.innerHTML = `<i class='bx bx-check-circle text-success'></i> Valid! Preview: <pre class="d-inline bg-light p-1 rounded" style="font-size: 0.8em;">${data.rendered}</pre>`;
+                    resultDiv.className = 'small text-success';
+                } else {
+                    resultDiv.innerHTML = `<i class='bx bx-x-circle text-danger'></i> Error: ${data.error}`;
+                    resultDiv.className = 'small text-danger';
+                }
+            })
+            .catch(error => {
+                console.error('Template check failed:', error);
+                resultDiv.innerHTML = `<i class='bx bx-error-alt text-danger'></i> Request failed. See console for details.`;
+                resultDiv.className = 'small text-danger';
+            });
+        });
+    }
+
+    // Setup for the 'firing' template
+    setupTemplateChecker(
+        'check-firing-template-btn',
+        '{{ form.message_template.id_for_label }}',
+        'firing-template-result'
+    );
+
+    // Setup for the 'resolved' template
+    setupTemplateChecker(
+        'check-resolved-template-btn',
+        '{{ form.resolved_message_template.id_for_label }}',
+        'resolved-template-result'
+    );
+});
+</script>
 {% endblock %}

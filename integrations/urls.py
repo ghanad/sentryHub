@@ -8,10 +8,11 @@ from .views import (
     SlackRuleCreateView,
     SlackRuleUpdateView,
     SlackRuleDeleteView,
-    jira_admin_view,  # Add import for the new view
-    jira_rule_guide_view,  # Import the new guide view
+    jira_admin_view,
+    jira_rule_guide_view,
     slack_admin_view,
     slack_admin_guide_view,
+    check_slack_template,
 )
 
 app_name = 'integrations'
@@ -27,6 +28,7 @@ urlpatterns = [
     path('slack-rules/<int:pk>/delete/', SlackRuleDeleteView.as_view(), name='slack-rule-delete'),
     path('jira/admin/', jira_admin_view, name='jira-admin'), # Add URL for the admin view
     path('slack/admin/', slack_admin_view, name='slack-admin'),
-    path('jira-rules/guide/', jira_rule_guide_view, name='jira-rule-guide'), # Add URL for the guide page
+    path('jira-rules/guide/', jira_rule_guide_view, name='jira-rule-guide'),
     path('slack/admin/guide/', slack_admin_guide_view, name='slack-admin-guide'),
+    path('slack-rules/check-template/', check_slack_template, name='slack-rule-check-template'),
 ]

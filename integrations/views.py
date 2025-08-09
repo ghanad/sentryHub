@@ -3,14 +3,18 @@ from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from django.contrib import messages
-from django.shortcuts import redirect, get_object_or_404 # Added get_object_or_404
-from django.db.models import Q # Import Q for search if needed
-from django.shortcuts import render # Add render
-from django.contrib.auth.decorators import login_required # Add login_required
-from .services.jira_service import JiraService # Import the service
+from django.shortcuts import redirect, get_object_or_404  # Added get_object_or_404
+from django.db.models import Q  # Import Q for search if needed
+from django.shortcuts import render  # Add render
+from django.contrib.auth.decorators import login_required  # Add login_required
+from django.views.decorators.http import require_POST
+from django.http import JsonResponse
+from django.utils import timezone
+from .services.jira_service import JiraService  # Import the service
 from .services.slack_service import SlackService
-import markdown 
-import re 
+import markdown
+import re
+import json
 
 from integrations.models import JiraIntegrationRule, SlackIntegrationRule
 from integrations.forms import (
@@ -271,7 +275,11 @@ def _build_mock_alert_group():
         "alertname": "HighCPUUsage",
         "environment": "prod",
     }
-    return AlertGroup(
+    annotations = {
+        "summary": "CPU usage is above 90% for the last 5 minutes.",
+        "description": "Node exporter reports sustained high CPU utilization on server1.",
+    }
+    ag = AlertGroup(
         fingerprint="demo-fingerprint",
         name=labels.get("alertname", "DemoAlert"),
         labels=labels,
@@ -280,6 +288,25 @@ def _build_mock_alert_group():
         source="prometheus",
         current_status="firing",
     )
+
+    class _MockInstance:
+        def __init__(self, annotations):
+            self.annotations = annotations
+            self.started_at = timezone.now()
+
+    class _MockInstanceManager:
+        def __init__(self, instance):
+            self._instance = instance
+
+        def order_by(self, *args, **kwargs):
+            return self
+
+        def first(self):
+            return self._instance
+
+    mock_instance = _MockInstance(annotations)
+    ag.__dict__["instances"] = _MockInstanceManager(mock_instance)
+    return ag
 
 
 def _apply_extra_context(alert_group: AlertGroup, extra: dict) -> AlertGroup:
@@ -418,3 +445,56 @@ def jira_rule_guide_view(request):
         'guide_content_md': guide_content_md # Pass raw markdown content to the template
     }
     return render(request, 'integrations/jira_rule_guide.html', context)
+
+
+# --- START: New View for Template Checking ---
+@login_required
+@require_POST
+def check_slack_template(request):
+    """
+    An API endpoint to safely render and validate a Slack message template.
+    Expects a JSON body with a 'template_string' key.
+    """
+    try:
+        data = json.loads(request.body)
+        template_string = data.get('template_string')
+
+        if template_string is None:
+            return JsonResponse({'status': 'error', 'error': 'Missing template_string.'}, status=400)
+
+        # Build a mock alert group object for context, similar to the admin page
+        mock_alert_group = _build_mock_alert_group()
+
+        # --- Create a special context for rendering ---
+        try:
+            latest_instance = mock_alert_group.instances.order_by('-started_at').first()
+        except Exception:
+            latest_instance = None
+        annotations = latest_instance.annotations if latest_instance else {}
+        summary = annotations.get('summary', mock_alert_group.name)
+        description = annotations.get('description', 'No description provided.')
+
+        context = {
+            'alert_group': mock_alert_group,
+            'latest_instance': latest_instance,
+            'annotations': annotations,
+            'summary': summary,
+            'description': description,
+        }
+
+        # Attempt to render the template
+        try:
+            from django.template import Template, Context, TemplateSyntaxError  # Local import
+            template = Template(template_string)
+            rendered_text = template.render(Context(context))
+            return JsonResponse({'status': 'success', 'rendered': rendered_text.strip()})
+        except TemplateSyntaxError as e:
+            return JsonResponse({'status': 'error', 'error': f'Template Syntax Error: {e}'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'error': f'An unexpected error occurred: {e}'})
+
+    except json.JSONDecodeError:
+        return JsonResponse({'status': 'error', 'error': 'Invalid JSON body.'}, status=400)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'error': f'Server error: {e}'}, status=500)
+# --- END: New View ---
