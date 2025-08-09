@@ -87,19 +87,19 @@ def verify_results():
         assert len(slack_messages) == 2, f"Expected 2 Slack messages, but received {len(slack_messages)}."
         print("✅ Slack verification: Received 2 messages as expected.")
 
-        # Find the message for the specific rule and check its content
+        # --- MODIFIED: Find the message for the specific rule and check its SANITIZED content ---
         specific_msg = next((m for m in slack_messages if m['channel'] == '#specific-channel'), None)
         assert specific_msg is not None, "Message for the specific rule was not received."
-        expected_specific_text = "Specific Rule Alert | Summary: Test for specific channel rule. | Desc: This is the description for the SPECIFIC rule."
+        expected_specific_text = "Specific Rule Alert | Summary: Test for specific channel rule on IP. | Desc: This is the description for the SPECIFIC rule."
         assert specific_msg['text'] == expected_specific_text, f"Specific rule message content is incorrect. Got: '{specific_msg['text']}'"
-        print("✅ Slack verification: Message for specific rule is correct.")
+        print("✅ Slack verification: Message for specific rule is correct (IP sanitized).")
 
-        # Find the message for the label-based rule and check its content
+        # --- MODIFIED: Find the message for the label-based rule and check its SANITIZED content ---
         label_msg = next((m for m in slack_messages if m['channel'] == '#dynamic-alerts-from-label'), None)
         assert label_msg is not None, "Message for the label-based rule was not received."
-        expected_label_text = "Label-based Channel Alert | Summary: Test for label-based channel. | Desc: This is the description for the LABEL-BASED rule."
+        expected_label_text = "Label-based Channel Alert | Summary: Test for label-based channel. | Desc: This is the description for the LABEL-BASED rule on instance IP."
         assert label_msg['text'] == expected_label_text, f"Label-based rule message content is incorrect. Got: '{label_msg['text']}'"
-        print("✅ Slack verification: Message for label-based rule is correct.")
+        print("✅ Slack verification: Message for label-based rule is correct (IP with port sanitized).")
 
     except (requests.RequestException, AssertionError, KeyError, StopIteration) as e:
         print(f"❌ External integration verification failed: {e}")
@@ -112,13 +112,14 @@ def verify_results():
 if __name__ == '__main__':
     setup_test_environment()
 
+    # --- MODIFIED: Added IP addresses to annotations ---
     # Payload 1: Should match the specific rule
     payload_specific = {
         "alerts": [{
             "status": "firing",
             "labels": { "alertname": "E2ESpecificTest", "severity": "warning", "service": "e2e-specific-service" },
             "annotations": { 
-                "summary": "Test for specific channel rule.",
+                "summary": "Test for specific channel rule on 172.16.0.10.",
                 "description": "This is the description for the SPECIFIC rule." 
             },
             "startsAt": "2024-01-01T00:00:00Z", "endsAt": "0001-01-01T00:00:00Z",
@@ -134,11 +135,11 @@ if __name__ == '__main__':
                 "alertname": "E2ELabelTest", 
                 "severity": "critical", 
                 "service": "other-service",
-                "channel": "dynamic-alerts-from-label" # The dynamic channel name
+                "channel": "dynamic-alerts-from-label"
             },
             "annotations": { 
                 "summary": "Test for label-based channel.",
-                "description": "This is the description for the LABEL-BASED rule."
+                "description": "This is the description for the LABEL-BASED rule on instance 192.168.1.1:8080."
             },
             "startsAt": "2024-01-01T01:00:00Z", "endsAt": "0001-01-01T00:00:00Z",
             "fingerprint": "e2e_fingerprint_label"

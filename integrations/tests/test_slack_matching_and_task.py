@@ -5,7 +5,7 @@ from alerts.models import AlertGroup
 from django.utils import timezone
 from integrations.models import SlackIntegrationRule
 from integrations.services.slack_matcher import SlackRuleMatcherService
-from integrations.tasks import process_slack_for_alert_group
+from integrations.tasks import process_slack_for_alert_group, sanitize_ip_addresses
 
 
 class SlackMatcherTests(TestCase):
@@ -118,3 +118,57 @@ class SlackTaskTests(TestCase):
         process_slack_for_alert_group(alert_group.id, rule.id)
 
         mock_service.send_notification.assert_called_once_with('#chan', 'Summary text -- More details')
+
+    @patch('integrations.tasks.SlackService')
+    def test_process_slack_for_alert_group_sanitizes_ipv4_with_port(self, mock_service_cls):
+        mock_service = mock_service_cls.return_value
+        mock_service.send_notification.return_value = True
+
+        alert_group = AlertGroup.objects.create(
+            fingerprint='fp5',
+            name='AG5',
+            labels={'app': 'app'},
+            source='prometheus',
+        )
+        rule = SlackIntegrationRule.objects.create(
+            name='rule',
+            slack_channel='#chan',
+            match_criteria={},
+            message_template='Alert on 192.168.1.10:9100 is firing.',
+        )
+
+        process_slack_for_alert_group(alert_group.id, rule.id)
+
+        mock_service.send_notification.assert_called_once_with('#chan', 'Alert on IP is firing.')
+
+    @patch('integrations.tasks.SlackService')
+    def test_process_slack_for_alert_group_sanitizes_ipv6(self, mock_service_cls):
+        mock_service = mock_service_cls.return_value
+        mock_service.send_notification.return_value = True
+
+        alert_group = AlertGroup.objects.create(
+            fingerprint='fp6',
+            name='AG6',
+            labels={'app': 'app'},
+            source='prometheus',
+        )
+        rule = SlackIntegrationRule.objects.create(
+            name='rule',
+            slack_channel='#chan',
+            match_criteria={},
+            message_template='Service is down at fe80::1ff:fe23:4567:890a.',
+        )
+
+        process_slack_for_alert_group(alert_group.id, rule.id)
+
+        mock_service.send_notification.assert_called_once_with('#chan', 'Service is down at IP.')
+
+
+class SanitizeIpAddressesTests(TestCase):
+    def test_sanitizes_ipv4_and_port(self):
+        text = 'Alert on 192.168.1.10:9100 is firing.'
+        self.assertEqual(sanitize_ip_addresses(text), 'Alert on IP is firing.')
+
+    def test_sanitizes_ipv6(self):
+        text = 'Service down at fe80::1ff:fe23:4567:890a.'
+        self.assertEqual(sanitize_ip_addresses(text), 'Service down at IP.')

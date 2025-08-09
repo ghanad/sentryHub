@@ -3,6 +3,7 @@
 import logging
 import json
 import re
+import ipaddress
 import pytz
 from typing import Optional, Dict, Any
 from celery import shared_task, Task
@@ -51,6 +52,47 @@ def render_template_safe(template_string: str, context_dict: Dict[str, Any], def
     except Exception as e:
         logger.error(f"Unexpected error during template rendering: {e}. Using default value.", exc_info=True)
         return default_value
+
+
+def sanitize_ip_addresses(message: str) -> str:
+    """Replace IPv4/IPv6 addresses and optional ports in the message with 'IP'."""
+    if not message:
+        return message
+
+    pattern = re.compile(
+        r"\b(?:\d{1,3}(?:\.\d{1,3}){3}|\[?[A-Fa-f0-9:]+\]?)(?::\d{1,5})?\b"
+    )
+
+    def _replace(match: re.Match) -> str:
+        candidate = match.group(0)
+        ip_part = candidate
+
+        if candidate.startswith("[") and "]" in candidate:
+            end = candidate.index("]")
+            ip_part = candidate[1:end]
+            port_part = candidate[end + 1 :]
+            if port_part.startswith(":") and port_part[1:].isdigit():
+                ip_part = candidate[1:end]
+        elif "." in candidate:
+            if ":" in candidate:
+                ip_part = candidate.split(":", 1)[0]
+        else:
+            if candidate.count(":") > 1:
+                last_colon = candidate.rfind(":")
+                port_candidate = candidate[last_colon + 1 :]
+                if port_candidate.isdigit():
+                    ip_part = candidate[:last_colon]
+
+        try:
+            ipaddress.ip_address(ip_part)
+            return "IP"
+        except ValueError:
+            return candidate
+
+    sanitized, count = pattern.subn(_replace, message)
+    if count:
+        logger.debug(f"sanitize_ip_addresses: replaced {count} IP address(es).")
+    return sanitized
 
 @shared_task(bind=True, base=JiraTaskBase)
 def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_status: str, triggering_instance_id: Optional[int] = None):
@@ -333,6 +375,10 @@ def process_slack_for_alert_group(self, alert_group_id: int, rule_id: int):
         template_to_use = rule.message_template
 
     message = render_template_safe(template_to_use or "", context, "")
+    message = sanitize_ip_addresses(message)
+    logger.debug(
+        f"Slack Task {self.request.id} (FP: {fingerprint_for_log}): Sanitized message: {message}"
+    )
 
     # If after rendering we still have empty message (e.g., no template provided), skip
     if not message:
