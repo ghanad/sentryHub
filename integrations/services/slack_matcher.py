@@ -1,3 +1,5 @@
+# integrations/services/slack_matcher.py
+
 """Service for matching Slack integration rules and resolving target channel."""
 import logging
 from typing import Optional, List, Tuple
@@ -110,8 +112,15 @@ class SlackRuleMatcherService:
         criteria = rule.match_criteria or {}
         fp_for_log = alert_group.fingerprint
 
-        if not isinstance(criteria, dict) or not criteria:
+        # --- START: MODIFIED LOGIC ---
+        # Ensure it's a dictionary first.
+        if not isinstance(criteria, dict):
+            logger.warning(f"(FP: {fp_for_log}) Rule '{rule.name}': match_criteria is not a valid dictionary. Skipping.")
             return False
+        # An empty criteria dict should be a "match all" rule.
+        if not criteria:
+            return True   # This is the fix: empty dict means match.
+        # --- END: MODIFIED LOGIC ---
 
         for key, expected_value in criteria.items():
             if key.startswith("labels__"):
