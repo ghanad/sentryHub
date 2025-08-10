@@ -24,8 +24,6 @@ class SlackServiceNormalizeChannelTests(SimpleTestCase):
         self.assertEqual(self.service._normalize_channel("@alerts"), "#@alerts")
         # Falsy input returns as-is (empty string)
         self.assertEqual(self.service._normalize_channel(""), "")
-        # Whitespace-only input triggers IndexError in current implementation (ch[0] access),
-        # so we assert that calling it raises IndexError to reflect current behavior.
         # Whitespace-only input should now return an empty string
         self.assertEqual(self.service._normalize_channel("   "), "")
 
@@ -45,6 +43,7 @@ class SlackServiceSendNotificationTests(SimpleTestCase):
         self.assertTrue(result)
         post_mock.assert_called_once()
         metrics_mock.inc_counter.assert_called()
+        metrics_mock.set_gauge.assert_called()
 
     @override_settings(SLACK_INTERNAL_ENDPOINT="http://slack")
     @patch("integrations.services.slack_service.metrics_manager")
