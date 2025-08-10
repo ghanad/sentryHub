@@ -66,7 +66,9 @@ class SlackTaskTests(TestCase):
 
         process_slack_for_alert_group(alert_group.id, rule.id)
 
-        mock_service.send_notification.assert_called_once_with('#chan', 'foo')
+        mock_service.send_notification.assert_called_once_with(
+            '#chan', 'foo', fingerprint='fp2'
+        )
 
     @patch('integrations.tasks.SlackService')
     def test_logs_include_fingerprint(self, mock_service_cls):
@@ -119,7 +121,9 @@ class SlackTaskTests(TestCase):
 
         process_slack_for_alert_group(alert_group.id, rule.id)
 
-        mock_service.send_notification.assert_called_once_with('#chan', 'Summary text -- More details')
+        mock_service.send_notification.assert_called_once_with(
+            '#chan', 'Summary text -- More details', fingerprint='fp4'
+        )
 
     @patch('integrations.tasks.SlackService')
     def test_process_slack_for_alert_group_sanitizes_ipv4_with_port(self, mock_service_cls):
@@ -141,7 +145,9 @@ class SlackTaskTests(TestCase):
 
         process_slack_for_alert_group(alert_group.id, rule.id)
 
-        mock_service.send_notification.assert_called_once_with('#chan', 'Alert on IP is firing.')
+        mock_service.send_notification.assert_called_once_with(
+            '#chan', 'Alert on IP is firing.', fingerprint='fp5'
+        )
 
     @patch('integrations.tasks.SlackService')
     def test_process_slack_for_alert_group_sanitizes_ipv6(self, mock_service_cls):
@@ -163,7 +169,9 @@ class SlackTaskTests(TestCase):
 
         process_slack_for_alert_group(alert_group.id, rule.id)
 
-        mock_service.send_notification.assert_called_once_with('#chan', 'Service is down at IP.')
+        mock_service.send_notification.assert_called_once_with(
+            '#chan', 'Service is down at IP.', fingerprint='fp6'
+        )
 
     @patch('integrations.tasks.SlackService')
     def test_process_slack_for_alert_group_uses_resolved_template(self, mock_service_cls):
@@ -189,7 +197,9 @@ class SlackTaskTests(TestCase):
 
         process_slack_for_alert_group(alert_group.id, rule.id)
 
-        mock_service.send_notification.assert_called_once_with('#chan', 'resolved AG8')
+        mock_service.send_notification.assert_called_once_with(
+            '#chan', 'resolved AG8', fingerprint='fp8'
+        )
 
     @patch('integrations.tasks.metrics_manager')
     @patch('integrations.tasks.SlackService')
