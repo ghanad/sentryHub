@@ -7,6 +7,7 @@ import ipaddress
 import pytz
 from typing import Optional, Dict, Any
 from celery import shared_task, Task
+from celery.exceptions import Retry # <--- این ایمپورت را اضافه کنید
 from django.conf import settings
 
 from core.services.metrics import metrics_manager
@@ -17,16 +18,12 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.template import Context, Template, TemplateSyntaxError
 
 from integrations.models import JiraIntegrationRule, SlackIntegrationRule
-from alerts.models import AlertGroup, AlertInstance # AlertInstance is imported
+from alerts.models import AlertGroup, AlertInstance
 from integrations.services.jira_service import JiraService
 from integrations.services.slack_service import SlackService
 
-# jira created time: https://aistudio.google.com/prompts/11xHhaYXIUhCDXxiYOsnUnByzQfZTtZWk
-
-
 logger = logging.getLogger(__name__)
 
-# Base task with retry logic (unchanged)
 class JiraTaskBase(Task):
     autoretry_for = (Exception,)
     retry_kwargs = {'max_retries': 3, 'countdown': 15}
@@ -321,17 +318,12 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
     logger.info(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Finished processing for AlertGroup ID: {alert_group_id}")
 
 
-@shared_task(bind=True, autoretry_for=(SlackNotificationError,), retry_kwargs={'max_retries': 12}, countdown=300, retry_backoff=True, retry_backoff_max=3600)
+
+@shared_task(bind=True, retry_kwargs={'max_retries': 12}, countdown=300, retry_backoff=True, retry_backoff_max=3600)
 def process_slack_for_alert_group(self, alert_group_id: int, rule_id: int):
-    """Celery task to send Slack notifications for an alert group.
-
-    Uses firing template by default; if the alert_group is resolved and the rule
-    has a resolved_message_template, that template will be used instead.
-
-    Channel resolution hierarchy:
-      1) Rule-defined channel
-      2) Alert label 'channel' (normalized)
-      3) Default settings.SLACK_DEFAULT_CHANNEL or '#general'
+    """
+    Celery task to send Slack notifications for an alert group.
+    Handles network errors gracefully and retries without logging full tracebacks.
     """
     try:
         alert_group = AlertGroup.objects.get(pk=alert_group_id)
@@ -347,17 +339,13 @@ def process_slack_for_alert_group(self, alert_group_id: int, rule_id: int):
         logger.error(f"Slack Task {self.request.id}: SlackIntegrationRule with ID {rule_id} not found. Aborting.")
         return
 
-    # --- START: Added Logic ---
-    # Fetch the latest instance to get access to its annotations
     latest_instance = alert_group.instances.order_by('-started_at').first()
     annotations = latest_instance.annotations if latest_instance else {}
     summary = annotations.get('summary', alert_group.name)
     description = annotations.get('description', 'No description provided.')
-    # --- END: Added Logic ---
 
     status = getattr(alert_group, "current_status", None)
 
-    # --- MODIFIED: Updated Context ---
     context = {
         'alert_group': alert_group,
         'latest_instance': latest_instance,
@@ -365,9 +353,7 @@ def process_slack_for_alert_group(self, alert_group_id: int, rule_id: int):
         'summary': summary,
         'description': description,
     }
-    # --- END: Updated Context ---
 
-    # Choose template based on status
     template_to_use = None
     if status == "resolved" and getattr(rule, "resolved_message_template", ""):
         template_to_use = rule.resolved_message_template
@@ -380,14 +366,12 @@ def process_slack_for_alert_group(self, alert_group_id: int, rule_id: int):
         f"Slack Task {self.request.id} (FP: {fingerprint_for_log}): Sanitized message: {message}"
     )
 
-    # If after rendering we still have empty message (e.g., no template provided), skip
     if not message:
         logger.info(
             f"Slack Task {self.request.id} (FP: {fingerprint_for_log}): No message to send for AlertGroup {alert_group_id} (status={status}). Skipping."
         )
         return
 
-    # Resolve channel using matcher service (rule > label > default)
     from integrations.services.slack_matcher import SlackRuleMatcherService
     matcher = SlackRuleMatcherService()
     channel, source = matcher.resolve_channel(alert_group, rule)
@@ -397,14 +381,13 @@ def process_slack_for_alert_group(self, alert_group_id: int, rule_id: int):
 
     slack_service = SlackService()
     try:
-        slack_service.send_notification(channel, message)
+        slack_service.send_notification(channel, message, fingerprint=fingerprint_for_log)
         logger.info(
             f"Slack Task {self.request.id} (FP: {fingerprint_for_log}): Notification sent to {channel} for AlertGroup {alert_group_id}."
         )
     except SlackNotificationError as e:
         metrics_manager.inc_counter("sentryhub_slack_notifications_total", {"status": "retry"})
         logger.warning(
-            f"Slack Task {self.request.id} (FP: {fingerprint_for_log}): Network error when sending notification for AlertGroup {alert_group_id}. Retrying...",
-            exc_info=True
+            f"Slack Task {self.request.id} (FP: {fingerprint_for_log}): Network error sending notification for AlertGroup {alert_group_id}. Celery will retry. Error: {e}"
         )
         raise self.retry(exc=e)

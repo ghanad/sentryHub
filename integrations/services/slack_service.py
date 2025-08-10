@@ -14,19 +14,29 @@ logger = logging.getLogger(__name__)
 class SlackService:
     """
     Service for sending plain-text messages to Slack via an internal proxy endpoint.
-    ... (docstring) ...
+    Includes retry logic for network errors and adds contextual fingerprint to logs.
     """
 
     def __init__(self):
         self.endpoint = getattr(settings, "SLACK_INTERNAL_ENDPOINT", "")
 
-    def send_notification(self, channel: str, message: str) -> bool:
+    def send_notification(self, channel: str, message: str, fingerprint: str = "N/A") -> bool:
         """
-        Send text to a Slack channel via POST.
-        ... (docstring) ...
+        Send text to a Slack channel via POST. Retries on transient network errors.
+
+        Args:
+            channel (str): The target Slack channel (e.g., '#alerts', 'C12345').
+            message (str): The plain text message to send.
+            fingerprint (str, optional): The alert fingerprint for logging context. Defaults to "N/A".
+
+        Returns:
+            bool: True on success, False on failure.
+
+        Raises:
+            SlackNotificationError: If the notification fails after all retry attempts due to network issues.
         """
         if not self.endpoint:
-            logger.error("SlackService: SLACK_INTERNAL_ENDPOINT is not configured.")
+            logger.error(f"SlackService (FP: {fingerprint}): SLACK_INTERNAL_ENDPOINT is not configured.")
             metrics_manager.inc_counter(
                 "sentryhub_component_initialization_errors_total",
                 labels={"component": "slack"},
@@ -51,10 +61,7 @@ class SlackService:
                         f"(status={resp.status_code}, body={resp.text!r})"
                     )
                     logger.error(
-                        "SlackService: send failed (channel=%r): %s",
-                        channel_fixed,
-                        error_msg,
-                        exc_info=True,
+                        f"SlackService (FP: {fingerprint}): send failed (channel={channel_fixed!r}): {error_msg}"
                     )
                     metrics_manager.inc_counter(
                         "sentryhub_slack_notifications_total",
@@ -80,12 +87,7 @@ class SlackService:
             except timeout_exceptions as exc:
                 retry_delay = 2 ** (attempt - 1)
                 logger.warning(
-                    "SlackService: Timeout on attempt %d/%d for channel %r. Retrying in %ds... Error: %s",
-                    attempt,
-                    max_retries,
-                    channel_fixed,
-                    retry_delay,
-                    exc,
+                    f"SlackService (FP: {fingerprint}): Timeout on attempt {attempt}/{max_retries} for channel {channel_fixed!r}. Retrying in {retry_delay}s... Error: {exc}"
                 )
                 if attempt == max_retries:
                     metrics_manager.inc_counter(
@@ -100,13 +102,7 @@ class SlackService:
             except requests.exceptions.RequestException as exc:
                 retry_delay = 2 ** (attempt - 1)
                 logger.warning(
-                    "SlackService: HTTP request attempt %d/%d failed (channel=%r): %s. Retrying in %ds...",
-                    attempt,
-                    max_retries,
-                    channel_fixed,
-                    exc,
-                    retry_delay,
-                    exc_info=True,
+                    f"SlackService (FP: {fingerprint}): HTTP request attempt {attempt}/{max_retries} failed (channel={channel_fixed!r}): {exc}. Retrying in {retry_delay}s..."
                 )
                 if attempt == max_retries:
                     metrics_manager.inc_counter(
@@ -120,9 +116,7 @@ class SlackService:
 
             except Exception as exc:
                 logger.error(
-                    "SlackService: unexpected error when sending to Slack (channel=%r): %s",
-                    channel_fixed,
-                    exc,
+                    f"SlackService (FP: {fingerprint}): unexpected error when sending to Slack (channel={channel_fixed!r}): {exc}",
                     exc_info=True,
                 )
                 metrics_manager.inc_counter(
@@ -130,6 +124,7 @@ class SlackService:
                     labels={"status": "failure", "reason": "unexpected"},
                 )
                 return False
+        return False # Should not be reached, but as a fallback
 
     def _normalize_channel(self, channel: str) -> str:
         if not channel:
