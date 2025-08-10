@@ -21,9 +21,6 @@ from alerts.models import AlertGroup, AlertInstance # AlertInstance is imported
 from integrations.services.jira_service import JiraService
 from integrations.services.slack_service import SlackService
 
-# jira created time: https://aistudio.google.com/prompts/11xHhaYXIUhCDXxiYOsnUnByzQfZTtZWk
-
-
 logger = logging.getLogger(__name__)
 
 # Base task with retry logic (unchanged)
@@ -321,7 +318,7 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
     logger.info(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Finished processing for AlertGroup ID: {alert_group_id}")
 
 
-@shared_task(bind=True, autoretry_for=(SlackNotificationError,), retry_kwargs={'max_retries': 12}, countdown=300, retry_backoff=True, retry_backoff_max=3600)
+@shared_task(bind=True, retry_kwargs={'max_retries': 12}, countdown=300, retry_backoff=True, retry_backoff_max=3600)
 def process_slack_for_alert_group(self, alert_group_id: int, rule_id: int):
     """Celery task to send Slack notifications for an alert group.
 

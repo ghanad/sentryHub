@@ -54,7 +54,7 @@ class SlackService:
                         "SlackService: send failed (channel=%r): %s",
                         channel_fixed,
                         error_msg,
-                        exc_info=True,
+                        # exc_info=True,
                     )
                     metrics_manager.inc_counter(
                         "sentryhub_slack_notifications_total",
@@ -106,7 +106,7 @@ class SlackService:
                     channel_fixed,
                     exc,
                     retry_delay,
-                    exc_info=True,
+                    # exc_info=True,
                 )
                 if attempt == max_retries:
                     metrics_manager.inc_counter(
@@ -123,7 +123,7 @@ class SlackService:
                     "SlackService: unexpected error when sending to Slack (channel=%r): %s",
                     channel_fixed,
                     exc,
-                    exc_info=True,
+                    # exc_info=True,
                 )
                 metrics_manager.inc_counter(
                     "sentryhub_slack_notifications_total",
