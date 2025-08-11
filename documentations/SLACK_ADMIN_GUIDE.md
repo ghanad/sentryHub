@@ -52,7 +52,7 @@
 - `silenced_until` (datetime|null)
 - `jira_issue_key` (string|null)
 
-توجه: سیستم اسلک اکنون کاملاً بر اساس AlertGroup کار می‌کند. AlertInstance در منطق Slack استفاده نمی‌شود و بهتر است به آن در قالب‌ها/قوانین اشاره‌ای نشود.
+توجه: منطق کلی همچنان حول <code>AlertGroup</code> است، اما جزئیات آخرین <code>AlertInstance</code> نیز برای استفاده در قالب‌ها در دسترس قرار گرفته است.
 
 ## نحوه‌ی نوشتن Template
 > **⚠️ مهم:** منطق اصلی بر اساس `AlertGroup` است، اما برای دسترسی به جزئیات آخرین رخداد، متغیرهای کمکی نیز فراهم شده است.
@@ -108,6 +108,8 @@
 
 *Severity:* `{{ alert_group.severity }}`
 *Instance:* `{{ alert_group.labels.instance }}`
+*Started:* `{{ latest_instance.started_at|format_datetime:user }}`
+{% if alert_group.current_status == 'resolved' and latest_instance.ended_at %}*Ended:* `{{ latest_instance.ended_at|format_datetime:user }}`{% endif %}
 *Description:* {{ description }}
 ```
 Extra Context (for testing):
@@ -123,6 +125,7 @@ Rendered (نمونه):
 
 *Severity:* `critical`
 *Instance:* `server1:9100`
+*Started:* `2024-05-01 10:00`
 *Description:* Node exporter reports sustained high CPU utilization on server1.
 ```
 
