@@ -12,6 +12,8 @@ from django.http import JsonResponse
 from django.utils import timezone
 from .services.jira_service import JiraService  # Import the service
 from .services.slack_service import SlackService
+from .services.sms_service import SmsService
+from .exceptions import SmsNotificationError
 import markdown
 import re
 import json
@@ -22,6 +24,7 @@ from integrations.forms import (
     SlackIntegrationRuleForm,
     SmsIntegrationRuleForm,
     PhoneBookForm,
+    SmsTestForm,
 )
 # Keep AlertGroup import only if needed for other parts of the view,
 # otherwise it can be removed if solely used for the incorrect delete check.
@@ -477,8 +480,38 @@ def slack_admin_guide_view(request):
 
     context = {'guide_content_md': content_html}
     return render(request, 'integrations/slack_admin_guide.html', context)
- 
+@login_required
+def sms_admin_view(request):
+    """Admin page for checking SMS balance and sending test messages."""
+    service = SmsService()
+    balance = None
+    balance_error = None
+    try:
+        balance = service.get_balance()
+    except Exception as exc:
+        balance_error = str(exc)
 
+    if request.method == "POST":
+        form = SmsTestForm(request.POST)
+        if form.is_valid():
+            recipient = form.cleaned_data["recipient"]
+            message = form.cleaned_data["message"]
+            try:
+                if service.send_sms(recipient.phone_number, message):
+                    messages.success(request, "Test SMS sent successfully.")
+                else:
+                    messages.error(request, "Failed to send SMS.")
+            except SmsNotificationError:
+                messages.error(request, "Network error sending SMS.")
+            return redirect("integrations:sms-admin")
+    else:
+        form = SmsTestForm()
+
+    return render(
+        request,
+        "integrations/sms_admin.html",
+        {"form": form, "balance": balance, "balance_error": balance_error},
+    )
 
 
 @login_required

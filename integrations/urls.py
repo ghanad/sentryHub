@@ -21,6 +21,7 @@ from .views import (
     slack_admin_view,
     slack_admin_guide_view,
     check_slack_template,
+    sms_admin_view,
 )
 
 app_name = 'integrations'
@@ -44,6 +45,7 @@ urlpatterns = [
     path('sms-rules/<int:pk>/delete/', SmsRuleDeleteView.as_view(), name='sms-rule-delete'),
     path('jira/admin/', jira_admin_view, name='jira-admin'), # Add URL for the admin view
     path('slack/admin/', slack_admin_view, name='slack-admin'),
+    path('sms/admin/', sms_admin_view, name='sms-admin'),
     path('jira-rules/guide/', jira_rule_guide_view, name='jira-rule-guide'),
     path('slack/admin/guide/', slack_admin_guide_view, name='slack-admin-guide'),
     path('slack-rules/check-template/', check_slack_template, name='slack-rule-check-template'),

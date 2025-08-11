@@ -1,0 +1,70 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block title %}SMS Admin - SentryHub{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'dashboard/css/modern_dashboard.css' %}">
+{% endblock %}
+
+{% block main_content %}
+<header class="page-header">
+    <h1 class="page-title">SMS Integration Admin</h1>
+</header>
+
+{% include 'core/partials/_messages.html' %}
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <h5 class="chart-title d-flex align-items-center gap-2">
+                    <i class='bx bx-wallet'></i>
+                    Balance
+                </h5>
+            </div>
+            <div class="chart-card-body">
+                {% if balance is not None %}
+                    <p>Current balance: {{ balance }}</p>
+                {% elif balance_error %}
+                    <div class="alert alert-warning">{{ balance_error }}</div>
+                {% else %}
+                    <p>Balance unavailable.</p>
+                {% endif %}
+                <a href="{% url 'integrations:sms-admin' %}" class="btn btn-secondary mt-2 d-flex align-items-center gap-1">
+                    <i class='bx bx-refresh'></i> Refresh
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <h5 class="chart-title d-flex align-items-center gap-2">
+                    <i class='bx bx-test-tube'></i>
+                    Send Test SMS
+                </h5>
+            </div>
+            <div class="chart-card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        {{ form.recipient.label_tag }}
+                        {{ form.recipient }}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.message.label_tag }}
+                        {{ form.message }}
+                    </div>
+                    <button type="submit" class="btn btn-primary d-flex align-items-center gap-1">
+                        <i class='bx bx-paper-plane'></i> Send SMS
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}{% endblock %}

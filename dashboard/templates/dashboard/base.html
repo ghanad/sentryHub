@@ -62,6 +62,7 @@
             {% url 'integrations:slack-rule-list' as slack_url %}
             {% url 'integrations:sms-rule-list' as sms_url %}
             {% url 'integrations:phonebook-list' as phonebook_url %}
+            {% url 'integrations:sms-admin' as sms_admin_url %}
             {% url 'docs:documentation-list' as docs_url %}
             {% url 'docs:macro-list' as macros_url %}
 
@@ -160,12 +161,18 @@
                              <span class="nav-text">Jira Admin</span>
                          </a>
                      </li>
-                     <li class="nav-item">
-                         <a href="{% url 'integrations:slack-admin' %}" class="nav-link {% if request.resolver_match.namespace == 'integrations' and request.resolver_match.url_name == 'slack-admin' %}active{% endif %}">
-                             <i class='bx bx-radio-circle nav-icon-sub'></i>
-                             <span class="nav-text">Slack Admin</span>
-                         </a>
-                     </li>
+                    <li class="nav-item">
+                        <a href="{% url 'integrations:slack-admin' %}" class="nav-link {% if request.resolver_match.namespace == 'integrations' and request.resolver_match.url_name == 'slack-admin' %}active{% endif %}">
+                            <i class='bx bx-radio-circle nav-icon-sub'></i>
+                            <span class="nav-text">Slack Admin</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ sms_admin_url }}" class="nav-link {% if request.resolver_match.namespace == 'integrations' and request.resolver_match.url_name == 'sms-admin' %}active{% endif %}">
+                            <i class='bx bx-radio-circle nav-icon-sub'></i>
+                            <span class="nav-text">SMS Admin</span>
+                        </a>
+                    </li>
                     <li class="nav-item">
                         <a href="{{ phonebook_url }}" class="nav-link {% if request.resolver_match.namespace == 'integrations' and request.resolver_match.url_name == 'phonebook-list' %}active{% endif %}">
                             <i class='bx bx-radio-circle nav-icon-sub'></i>

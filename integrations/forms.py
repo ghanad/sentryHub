@@ -252,3 +252,15 @@ class SmsIntegrationRuleForm(forms.ModelForm):
             return parsed
         except json.JSONDecodeError:
             raise ValidationError('Invalid JSON format for match criteria')
+
+
+class SmsTestForm(forms.Form):
+    recipient = forms.ModelChoiceField(
+        queryset=PhoneBook.objects.all(),
+        label="Recipient",
+        widget=forms.Select(attrs={"class": "form-control"}),
+    )
+    message = forms.CharField(
+        label="Message",
+        widget=forms.Textarea(attrs={"rows": 3, "class": "form-control"}),
+    )
