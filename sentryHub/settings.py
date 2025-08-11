@@ -306,9 +306,14 @@ SMS_PROVIDER_BALANCE_URL = os.environ.get(
     "SMS_PROVIDER_BALANCE_URL",
     "https://sms.magfa.com/api/http/sms/v2/balance",
 )
+SMS_PROVIDER_SEND_URL = os.environ.get(
+    "SMS_PROVIDER_SEND_URL",
+    "https://sms.magfa.com/api/http/sms/v2/send",
+)
 SMS_PROVIDER_USERNAME = os.environ.get("SMS_PROVIDER_USERNAME", "")
 SMS_PROVIDER_PASSWORD = os.environ.get("SMS_PROVIDER_PASSWORD", "")
 SMS_PROVIDER_DOMAIN = os.environ.get("SMS_PROVIDER_DOMAIN", "")
+SMS_PROVIDER_SENDER = os.environ.get("SMS_PROVIDER_SENDER", "")
 
 
 JIRA_CONFIG = {

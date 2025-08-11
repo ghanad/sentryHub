@@ -444,8 +444,8 @@ def process_sms_for_alert_group(self, alert_group_id: int, rule_id: int):
         return
 
     sms_service = SmsService()
-    for number in recipients:
-        sms_service.send_sms(number, message)
-        logger.info(
-            f"SMS Task {self.request.id} (FP: {fingerprint_for_log}): Notification sent to {number} for AlertGroup {alert_group_id}."
-        )
+    sms_service.send_bulk(recipients, message, fingerprint=fingerprint_for_log)
+    logger.info(
+        f"SMS Task {self.request.id} (FP: {fingerprint_for_log}): "
+        f"Notification sent to {recipients} for AlertGroup {alert_group_id}."
+    )

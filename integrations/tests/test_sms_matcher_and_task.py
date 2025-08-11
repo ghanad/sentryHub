@@ -39,17 +39,17 @@ class SmsTaskTests(TestCase):
     @patch('integrations.tasks.SmsService')
     def test_process_sms_for_alert_group(self, service_cls):
         mock_service = service_cls.return_value
-        mock_service.send_sms.return_value = True
+        mock_service.send_bulk.return_value = True
         PhoneBook.objects.create(name='alice', phone_number='1')
         alert_group = AlertGroup.objects.create(fingerprint='fp2', name='AG2', labels={}, source='prometheus')
         rule = SmsIntegrationRule.objects.create(name='r', match_criteria={}, recipients='alice', firing_template='msg')
         process_sms_for_alert_group(alert_group.id, rule.id)
-        mock_service.send_sms.assert_called_once_with('1', 'msg')
+        mock_service.send_bulk.assert_called_once_with(['1'], 'msg', fingerprint='fp2')
 
     @patch('integrations.tasks.SmsService')
     @patch('integrations.tasks.process_sms_for_alert_group.retry', side_effect=Retry('boom'))
     def test_task_retries_on_error(self, retry_mock, service_cls):
-        service_cls.return_value.send_sms.side_effect = SmsNotificationError('net')
+        service_cls.return_value.send_bulk.side_effect = SmsNotificationError('net')
         PhoneBook.objects.create(name='alice', phone_number='1')
         alert_group = AlertGroup.objects.create(fingerprint='fp3', name='AG3', labels={}, source='prometheus')
         rule = SmsIntegrationRule.objects.create(name='r', match_criteria={}, recipients='alice', firing_template='msg')
