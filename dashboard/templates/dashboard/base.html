@@ -124,12 +124,6 @@
                 </a>
             </li>
             <li class="nav-item">
-                 <a href="{{ phonebook_url }}" class="nav-link {% if request.resolver_match.namespace == 'integrations' and request.resolver_match.url_name == 'phonebook-list' %}active{% endif %}">
-                    <i data-lucide="book-open" class="nav-icon"></i>
-                    <span class="nav-text">Phone Book</span>
-                </a>
-            </li>
-            <li class="nav-item">
                  <a href="{{ docs_url }}" class="nav-link {% if request.resolver_match.namespace == 'docs' and request.resolver_match.url_name == 'documentation-list' %}active{% endif %}">
                     <i data-lucide="book-open-text" class="nav-icon"></i>
                     <span class="nav-text">Documentation</span>
@@ -138,15 +132,15 @@
              {% if user.is_authenticated and user.is_staff %}
              <!-- Admin Dropdown -->
              <li class="nav-item">
-                 <a class="nav-link collapsed {% if request.resolver_match.url_name in 'admin_dashboard_summary,user_list,jira-admin,macro-list' %}active{% endif %}"
+                 <a class="nav-link collapsed {% if request.resolver_match.url_name in 'admin_dashboard_summary,user_list,jira-admin,slack-admin,macro-list,phonebook-list' %}active{% endif %}"
                     href="#adminSubmenu" data-bs-toggle="collapse" role="button"
-                    aria-expanded="{% if request.resolver_match.url_name in 'admin_dashboard_summary,user_list,jira-admin,macro-list' %}true{% else %}false{% endif %}"
+                    aria-expanded="{% if request.resolver_match.url_name in 'admin_dashboard_summary,user_list,jira-admin,slack-admin,macro-list,phonebook-list' %}true{% else %}false{% endif %}"
                     aria-controls="adminSubmenu">
                      <i data-lucide="settings" class="nav-icon"></i>
                      <span class="nav-text">Admin</span>
                      <i class='bx bx-chevron-down ms-auto sidebar-arrow'></i>
                  </a>
-                 <ul class="nav-submenu collapse {% if request.resolver_match.url_name in 'admin_dashboard_summary,user_list,jira-admin' %}show{% endif %}"
+                 <ul class="nav-submenu collapse {% if request.resolver_match.url_name in 'admin_dashboard_summary,user_list,jira-admin,slack-admin,phonebook-list' %}show{% endif %}"
                      id="adminSubmenu" data-bs-parent=".sidebar-nav">
                      <li class="nav-item">
                          <a href="{% url 'dashboard:admin_dashboard_summary' %}" class="nav-link {% if request.resolver_match.url_name == 'admin_dashboard_summary' %}active{% endif %}">
@@ -172,6 +166,12 @@
                              <span class="nav-text">Slack Admin</span>
                          </a>
                      </li>
+                    <li class="nav-item">
+                        <a href="{{ phonebook_url }}" class="nav-link {% if request.resolver_match.namespace == 'integrations' and request.resolver_match.url_name == 'phonebook-list' %}active{% endif %}">
+                            <i class='bx bx-radio-circle nav-icon-sub'></i>
+                            <span class="nav-text">Phone Book</span>
+                        </a>
+                    </li>
                      <li class="nav-item">
                          <a href="{{ macros_url }}" class="nav-link {% if request.resolver_match.namespace == 'docs' and request.resolver_match.url_name == 'macro-list' %}active{% endif %}">
                              <i class='bx bx-radio-circle nav-icon-sub'></i>

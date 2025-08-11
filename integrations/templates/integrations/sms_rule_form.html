@@ -1,4 +1,116 @@
 {% extends "dashboard/base.html" %}
+{% load static core_tags %}
+
+{% block title %}{% if form.instance.pk %}Edit SMS Rule{% else %}Create SMS Rule{% endif %} - SentryHub{% endblock %}
+
+{% block extra_css %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'dashboard/css/modern_dashboard.css' %}">
+{% endblock %}
+
 {% block main_content %}
-<form method="post">{% csrf_token %}{{ form.as_p }}<button type="submit">Save</button></form>
+    <header class="page-header mb-4">
+        <h1 class="page-title">{% if form.instance.pk %}Edit SMS Rule: {{ form.instance.name }}{% else %}Create New SMS Rule{% endif %}</h1>
+    </header>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-10 col-xl-9">
+            <form method="post">
+                {% csrf_token %}
+                {% if form.non_field_errors %}
+                    {% for error in form.non_field_errors %}
+                        <div class="alert alert-danger" role="alert">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+
+                <div class="chart-card mb-4">
+                    <div class="chart-card-header">
+                        <h5 class="chart-title">General Settings</h5>
+                    </div>
+                    <div class="chart-card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.name.id_for_label }}" class="form-label">{{ form.name.label }}{% if form.name.field.required %} <span class="text-danger">*</span>{% endif %}</label>
+                                {{ form.name|add_class:"form-control" }}
+                                {% for error in form.name.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                            </div>
+                            <div class="col-md-3 mb-3 align-self-center">
+                                <label for="{{ form.is_active.id_for_label }}" class="form-label">{{ form.is_active.label }}</label>
+                                <div class="form-check form-switch">
+                                    {{ form.is_active|add_class:"form-check-input" }}
+                                </div>
+                                {% for error in form.is_active.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="{{ form.priority.id_for_label }}" class="form-label">{{ form.priority.label }}</label>
+                                {{ form.priority|add_class:"form-control" }}
+                                {% for error in form.priority.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-card mb-4">
+                    <div class="chart-card-header">
+                        <h5 class="chart-title">Recipient Settings</h5>
+                    </div>
+                    <div class="chart-card-body">
+                        <div class="form-check form-switch mb-3">
+                            {{ form.use_sms_annotation|add_class:"form-check-input" }}
+                            <label for="{{ form.use_sms_annotation.id_for_label }}" class="form-check-label">Use recipients from alert annotations</label>
+                        </div>
+                        <div class="mb-3">
+                            <label for="{{ form.recipients.id_for_label }}" class="form-label">{{ form.recipients.label }}</label>
+                            {{ form.recipients|add_class:"form-control" }}
+                            {% if form.recipients.help_text %}<div class="form-text">{{ form.recipients.help_text|safe }}</div>{% endif %}
+                            {% for error in form.recipients.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-card mb-4">
+                    <div class="chart-card-header">
+                        <h5 class="chart-title">Templates</h5>
+                    </div>
+                    <div class="chart-card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.firing_template.id_for_label }}" class="form-label">{{ form.firing_template.label }} <span class="badge bg-danger-subtle text-danger">Firing</span></label>
+                                {{ form.firing_template|add_class:"form-control form-control-monospace" }}
+                                {% for error in form.firing_template.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.resolved_template.id_for_label }}" class="form-label">{{ form.resolved_template.label }} <span class="badge bg-success-subtle text-success">Resolved</span></label>
+                                {{ form.resolved_template|add_class:"form-control form-control-monospace" }}
+                                {% for error in form.resolved_template.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-card mb-4">
+                    <div class="chart-card-header">
+                        <h5 class="chart-title">Match Criteria</h5>
+                    </div>
+                    <div class="chart-card-body">
+                        <div class="mb-3">
+                            <label for="{{ form.match_criteria.id_for_label }}" class="form-label">{{ form.match_criteria.label }}</label>
+                            {{ form.match_criteria|add_class:"form-control form-control-monospace" }}
+                            {% if form.match_criteria.help_text %}<div class="form-text">{{ form.match_criteria.help_text|safe }}</div>{% endif %}
+                            {% for error in form.match_criteria.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end pt-3 border-top">
+                    <a href="{% url 'integrations:sms-rule-list' %}" class="btn btn-secondary me-2">
+                        <i class="bx bx-x me-1"></i> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bx bx-check me-1"></i> {% if form.instance.pk %}Update{% else %}Create{% endif %} Rule
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 {% endblock %}
