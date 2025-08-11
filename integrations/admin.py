@@ -1,7 +1,7 @@
 import json
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import JiraIntegrationRule, SlackIntegrationRule
+from .models import JiraIntegrationRule, SlackIntegrationRule, PhoneBook, SmsIntegrationRule
 
 @admin.register(JiraIntegrationRule)
 class JiraIntegrationRuleAdmin(admin.ModelAdmin):
@@ -52,4 +52,18 @@ class SlackIntegrationRuleAdmin(admin.ModelAdmin):
     list_display = ('name', 'is_active', 'priority', 'slack_channel')
     list_filter = ('is_active', 'slack_channel')
     search_fields = ('name', 'slack_channel')
+    ordering = ('-priority', 'name')
+
+
+@admin.register(PhoneBook)
+class PhoneBookAdmin(admin.ModelAdmin):
+    list_display = ('name', 'phone_number')
+    search_fields = ('name',)
+
+
+@admin.register(SmsIntegrationRule)
+class SmsIntegrationRuleAdmin(admin.ModelAdmin):
+    list_display = ('name', 'is_active', 'priority', 'use_sms_annotation')
+    list_filter = ('is_active', 'use_sms_annotation')
+    search_fields = ('name',)
     ordering = ('-priority', 'name')

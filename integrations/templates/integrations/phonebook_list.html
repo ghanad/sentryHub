@@ -1,0 +1,10 @@
+{% extends "dashboard/base.html" %}
+{% block main_content %}
+<ul>
+{% for entry in entries %}
+<li>{{ entry.name }}</li>
+{% empty %}
+<li>No entries.</li>
+{% endfor %}
+</ul>
+{% endblock %}

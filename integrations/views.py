@@ -16,10 +16,12 @@ import markdown
 import re
 import json
 
-from integrations.models import JiraIntegrationRule, SlackIntegrationRule
+from integrations.models import JiraIntegrationRule, SlackIntegrationRule, SmsIntegrationRule, PhoneBook
 from integrations.forms import (
     JiraIntegrationRuleForm,
     SlackIntegrationRuleForm,
+    SmsIntegrationRuleForm,
+    PhoneBookForm,
 )
 # Keep AlertGroup import only if needed for other parts of the view,
 # otherwise it can be removed if solely used for the incorrect delete check.
@@ -162,6 +164,54 @@ class SlackRuleDeleteView(LoginRequiredMixin, DeleteView):
         messages.success(self.request, f"Slack integration rule '{rule_name}' deleted successfully.")
         return super().delete(request, *args, **kwargs)
 
+
+
+class PhoneBookListView(LoginRequiredMixin, ListView):
+    model = PhoneBook
+    template_name = 'integrations/phonebook_list.html'
+    context_object_name = 'entries'
+    paginate_by = 20
+
+class PhoneBookCreateView(LoginRequiredMixin, CreateView):
+    model = PhoneBook
+    form_class = PhoneBookForm
+    template_name = 'integrations/phonebook_form.html'
+    success_url = reverse_lazy('integrations:phonebook-list')
+
+class PhoneBookUpdateView(LoginRequiredMixin, UpdateView):
+    model = PhoneBook
+    form_class = PhoneBookForm
+    template_name = 'integrations/phonebook_form.html'
+    success_url = reverse_lazy('integrations:phonebook-list')
+
+class PhoneBookDeleteView(LoginRequiredMixin, DeleteView):
+    model = PhoneBook
+    template_name = 'integrations/phonebook_confirm_delete.html'
+    success_url = reverse_lazy('integrations:phonebook-list')
+
+class SmsRuleListView(LoginRequiredMixin, ListView):
+    model = SmsIntegrationRule
+    template_name = 'integrations/sms_rule_list.html'
+    context_object_name = 'sms_rules'
+    paginate_by = 20
+    ordering = ['-priority', 'name']
+
+class SmsRuleCreateView(LoginRequiredMixin, CreateView):
+    model = SmsIntegrationRule
+    form_class = SmsIntegrationRuleForm
+    template_name = 'integrations/sms_rule_form.html'
+    success_url = reverse_lazy('integrations:sms-rule-list')
+
+class SmsRuleUpdateView(LoginRequiredMixin, UpdateView):
+    model = SmsIntegrationRule
+    form_class = SmsIntegrationRuleForm
+    template_name = 'integrations/sms_rule_form.html'
+    success_url = reverse_lazy('integrations:sms-rule-list')
+
+class SmsRuleDeleteView(LoginRequiredMixin, DeleteView):
+    model = SmsIntegrationRule
+    template_name = 'integrations/sms_rule_confirm_delete.html'
+    success_url = reverse_lazy('integrations:sms-rule-list')
 
 @login_required
 def jira_admin_view(request):

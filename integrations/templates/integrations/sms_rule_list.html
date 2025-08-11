@@ -1,0 +1,10 @@
+{% extends "dashboard/base.html" %}
+{% block main_content %}
+<ul>
+{% for rule in sms_rules %}
+<li>{{ rule.name }}</li>
+{% empty %}
+<li>No rules.</li>
+{% endfor %}
+</ul>
+{% endblock %}

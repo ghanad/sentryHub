@@ -7,7 +7,8 @@ from alerts.signals import alert_processed
 from alerts.models import AlertGroup, AlertInstance # AlertInstance را اضافه کنید
 from .services.jira_matcher import JiraRuleMatcherService
 from .services.slack_matcher import SlackRuleMatcherService
-from integrations.tasks import process_jira_for_alert_group, process_slack_for_alert_group
+from .services.sms_matcher import SmsRuleMatcherService
+from integrations.tasks import process_jira_for_alert_group, process_slack_for_alert_group, process_sms_for_alert_group
 
 logger = logging.getLogger(__name__)
 
@@ -110,4 +111,41 @@ def handle_alert_processed_slack(sender, **kwargs):
     else:
         logger.info(
             f"Integrations Handler (Slack) (FP: {fingerprint_for_log}): No matching active Slack rule found."
+        )
+
+@receiver(alert_processed)
+def handle_alert_processed_sms(sender, **kwargs):
+    """Trigger SMS notifications based on matching rules."""
+    alert_group = kwargs.get('alert_group')
+    status = kwargs.get('status')
+    if not alert_group:
+        logger.warning("Integrations Handler (SMS): Received alert_processed without alert_group.")
+        return
+    fingerprint_for_log = alert_group.fingerprint
+    if alert_group.is_silenced:
+        logger.info(
+            f"Integrations Handler (SMS) (FP: {fingerprint_for_log}): Alert is silenced. Skipping SMS processing."
+        )
+        return
+    if status not in ('firing', 'resolved'):
+        logger.info(
+            f"Integrations Handler (SMS) (FP: {fingerprint_for_log}): Status '{status}' not applicable. Skipping."
+        )
+        return
+    matcher = SmsRuleMatcherService()
+    rule = matcher.find_matching_rule(alert_group)
+    if rule and rule.is_active:
+        logger.info(
+            f"Integrations Handler (SMS) (FP: {fingerprint_for_log}): Matched SMS rule '{rule.name}'. Queueing task."
+        )
+        try:
+            process_sms_for_alert_group.delay(alert_group_id=alert_group.id, rule_id=rule.id)
+        except Exception as e:
+            logger.error(
+                f"Integrations Handler (SMS) (FP: {fingerprint_for_log}): Failed to queue SMS task for AlertGroup {alert_group.id}: {e}",
+                exc_info=True,
+            )
+    else:
+        logger.info(
+            f"Integrations Handler (SMS) (FP: {fingerprint_for_log}): No matching active SMS rule found."
         )
