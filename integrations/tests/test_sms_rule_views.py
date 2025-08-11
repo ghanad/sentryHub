@@ -19,6 +19,7 @@ class SmsRuleViewsTests(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, 'r1')
         self.assertContains(resp, 'r2')
+        self.assertContains(resp, reverse('integrations:sms-rule-create'))
 
     def test_create_view(self):
         resp = self.client.post(

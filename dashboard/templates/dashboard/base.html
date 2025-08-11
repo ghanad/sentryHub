@@ -60,6 +60,8 @@
             {% url 'alerts:silence-rule-list' as silences_url %}
             {% url 'integrations:jira-rule-list' as jira_url %}
             {% url 'integrations:slack-rule-list' as slack_url %}
+            {% url 'integrations:sms-rule-list' as sms_url %}
+            {% url 'integrations:phonebook-list' as phonebook_url %}
             {% url 'docs:documentation-list' as docs_url %}
             {% url 'docs:macro-list' as macros_url %}
 
@@ -113,6 +115,18 @@
                  <a href="{{ slack_url }}" class="nav-link {% if request.resolver_match.namespace == 'integrations' and request.resolver_match.url_name == 'slack-rule-list' %}active{% endif %}">
                     <i data-lucide="slack" class="nav-icon"></i>
                     <span class="nav-text">Slack Rules</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                 <a href="{{ sms_url }}" class="nav-link {% if request.resolver_match.namespace == 'integrations' and request.resolver_match.url_name == 'sms-rule-list' %}active{% endif %}">
+                    <i data-lucide="phone" class="nav-icon"></i>
+                    <span class="nav-text">SMS Rules</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                 <a href="{{ phonebook_url }}" class="nav-link {% if request.resolver_match.namespace == 'integrations' and request.resolver_match.url_name == 'phonebook-list' %}active{% endif %}">
+                    <i data-lucide="book-open" class="nav-icon"></i>
+                    <span class="nav-text">Phone Book</span>
                 </a>
             </li>
             <li class="nav-item">
