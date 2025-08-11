@@ -1,5 +1,6 @@
 from django.test import TestCase
 from unittest.mock import patch
+import datetime
 
 from alerts.models import AlertGroup
 from django.utils import timezone
@@ -123,6 +124,41 @@ class SlackTaskTests(TestCase):
 
         mock_service.send_notification.assert_called_once_with(
             '#chan', 'Summary text -- More details', fingerprint='fp4'
+        )
+
+    @patch('integrations.tasks.SlackService')
+    def test_process_slack_for_alert_group_exposes_instance_times(self, mock_service_cls):
+        mock_service = mock_service_cls.return_value
+        mock_service.send_notification.return_value = True
+
+        alert_group = AlertGroup.objects.create(
+            fingerprint='fp9',
+            name='AG9',
+            labels={'app': 'app'},
+            source='prometheus',
+        )
+        started = timezone.now()
+        ended = started + datetime.timedelta(minutes=5)
+        alert_group.instances.create(
+            status='firing',
+            started_at=started,
+            ended_at=ended,
+            annotations={},
+        )
+        rule = SlackIntegrationRule.objects.create(
+            name='rule',
+            slack_channel='#chan',
+            match_criteria={},
+            message_template='{{ latest_instance.started_at|date:"Y-m-d H:i" }} -- {{ latest_instance.ended_at|date:"Y-m-d H:i" }}',
+        )
+
+        process_slack_for_alert_group(alert_group.id, rule.id)
+
+        local_started = timezone.localtime(started)
+        local_ended = timezone.localtime(ended)
+        expected = f"{local_started.strftime('%Y-%m-%d %H:%M')} -- {local_ended.strftime('%Y-%m-%d %H:%M')}"
+        mock_service.send_notification.assert_called_once_with(
+            '#chan', expected, fingerprint='fp9'
         )
 
     @patch('integrations.tasks.SlackService')

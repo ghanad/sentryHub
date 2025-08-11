@@ -98,10 +98,10 @@
                                     <strong>Hints:</strong>
                                     <ul class="mb-2">
                                         <li>Use emojis: <code>:fire:</code> or Unicode 🔥</li>
-                                        <li>Common vars: <code>{{ '{' }}{{ ' alert_group.labels.alertname ' }}{{ '}' }}</code>, <code>{{ '{' }}{{ ' alert_group.labels.instance ' }}{{ '}' }}</code>, <code>{{ '{' }}{{ ' alert_group.labels.summary ' }}{{ '}' }}</code></li>
-                                        <li>Link to source: <code>{{ '{' }}{{ ' alert_group.source ' }}{{ '}' }}</code> or <code>{{ '{' }}{{ ' alert_group.labels.job ' }}{{ '}' }}</code></li>
+                                        <li>Common vars: <code>{{ '{' }}{{ ' summary ' }}{{ '}' }}</code>, <code>{{ '{' }}{{ ' alert_group.labels.instance ' }}{{ '}' }}</code>, <code>{{ '{' }}{{ ' latest_instance.started_at|format_datetime:user ' }}{{ '}' }}</code></li>
+                                        <li>Link to source: <code>{{ '{' }}{{ ' alert_group.source ' }}{{ '}' }}</code> یا <code>{{ '{' }}{{ ' alert_group.labels.job ' }}{{ '}' }}</code></li>
                                     </ul>
-                                    <div>Example: <code>:fire: {{ '{' }}{{ ' alert_group.labels.alertname ' }}{{ '}' }} on {{ '{' }}{{ ' alert_group.labels.instance ' }}{{ '}' }} ({{ '{' }}{{ ' alert_group.severity ' }}{{ '}' }})</code></div>
+                                    <div>Example: <code>:fire: {{ '{' }}{{ ' summary ' }}{{ '}' }} — started at {{ '{' }}{{ ' latest_instance.started_at|format_datetime:user ' }}{{ '}' }}</code></div>
                                 </div>
                             </div>
 
@@ -122,20 +122,20 @@
                                     <strong>Hints:</strong>
                                     <ul class="mb-2">
                                         <li>Use emojis: <code>:white_check_mark:</code> or Unicode ✅</li>
-                                        <li>Common vars: <code>{{ '{' }}{{ ' alert_group.labels.alertname ' }}{{ '}' }}</code>, <code>{{ '{' }}{{ ' alert_group.labels.instance ' }}{{ '}' }}</code>, <code>{{ '{' }}{{ ' alert_group.labels.summary ' }}{{ '}' }}</code></li>
+                                        <li>Common vars: <code>{{ '{' }}{{ ' summary ' }}{{ '}' }}</code>, <code>{{ '{' }}{{ ' alert_group.labels.instance ' }}{{ '}' }}</code>, <code>{{ '{' }}{{ ' latest_instance.ended_at|format_datetime:user ' }}{{ '}' }}</code></li>
                                         <li>You can include duration if available in context.</li>
                                     </ul>
-                                    <div>Example: <code>:white_check_mark: {{ '{' }}{{ ' alert_group.labels.alertname ' }}{{ '}' }} resolved on {{ '{' }}{{ ' alert_group.labels.instance ' }}{{ '}' }}</code></div>
+                                    <div>Example: <code>:white_check_mark: {{ '{' }}{{ ' summary ' }}{{ '}' }} — ended at {{ '{' }}{{ ' latest_instance.ended_at|format_datetime:user ' }}{{ '}' }}</code></div>
                                 </div>
                             </div>
                         </div>
 
                         <div class="form-text">
                             <p class="mb-2">
-                                Use Django template syntax with double curly braces for variables (e.g., <code>{{ '{' }}{{ ' alert_group.labels.alertname ' }}{{ '}' }}</code>, <code>{{ '{' }}{{ ' alert_group.labels.instance ' }}{{ '}' }}</code>, <code>{{ '{' }}{{ ' alert_group.labels.summary ' }}{{ '}' }}</code>).
+                                Use Django template syntax with double curly braces for variables (e.g., <code>{{ '{' }}{{ ' summary ' }}{{ '}' }}</code>, <code>{{ '{' }}{{ ' alert_group.labels.instance ' }}{{ '}' }}</code>, <code>{{ '{' }}{{ ' latest_instance.started_at|format_datetime:user ' }}{{ '}' }}</code>).
                                 The left field is used when the alert is <strong>firing</strong>, and the right field is used when the alert is <strong>resolved</strong>.
                             </p>
-                            <small class="text-muted">Available context: The full <code>alert_group</code> object, including its <code>labels</code> and other fields.</small>
+                            <small class="text-muted">Available context: The full <code>alert_group</code> object plus <code>latest_instance</code>, <code>annotations</code>, <code>summary</code>, and <code>description</code>.</small>
                         </div>
                     </div>
                 </div>

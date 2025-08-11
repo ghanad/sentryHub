@@ -113,10 +113,18 @@ class SlackIntegrationRuleForm(forms.ModelForm):
                 }
             ),
             'message_template': forms.Textarea(
-                attrs={'rows': 3, 'class': 'form-control font-monospace', 'placeholder': ':fire: {{ alert_group.labels.alertname }}'}
+                attrs={
+                    'rows': 3,
+                    'class': 'form-control font-monospace',
+                    'placeholder': ':fire: [{{ alert_group.severity }}] {{ summary }}\nStarted: {{ latest_instance.started_at|format_datetime:user }}'
+                }
             ),
             'resolved_message_template': forms.Textarea(
-                attrs={'rows': 3, 'class': 'form-control font-monospace', 'placeholder': ':white_check_mark: {{ alert_group.labels.alertname }}'}
+                attrs={
+                    'rows': 3,
+                    'class': 'form-control font-monospace',
+                    'placeholder': ':white_check_mark: [{{ alert_group.severity }}] {{ summary }}\nStarted: {{ latest_instance.started_at|format_datetime:user }}\nEnded: {{ latest_instance.ended_at|format_datetime:user }}'
+                }
             ),
         }
 
@@ -177,7 +185,7 @@ class SlackTemplateTestForm(forms.Form):
         widget=forms.Textarea(attrs={
             'rows': 5,
             'class': 'form-control font-monospace',
-            'placeholder': 'e.g. Alert {{ alert_group.name }} on {{ alert_group.labels.instance }}'
+            'placeholder': 'e.g. {{ summary }} started at {{ latest_instance.started_at|format_datetime:user }}'
         })
     )
     extra_context = forms.CharField(
