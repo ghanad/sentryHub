@@ -422,8 +422,15 @@ def process_sms_for_alert_group(self, alert_group_id: int, rule_id: int):
     }
 
     template = None
-    if status == 'resolved' and rule.resolved_template:
-        template = rule.resolved_template
+    from integrations.services.sms_matcher import SmsRuleMatcherService
+    matcher = SmsRuleMatcherService()
+    recipients, should_send_resolve = matcher.resolve_recipients(alert_group, rule)
+
+    if status == 'resolved':
+        if rule.resolved_template and should_send_resolve:
+            template = rule.resolved_template
+        else:
+            template = None
     else:
         template = rule.firing_template
 
@@ -434,9 +441,6 @@ def process_sms_for_alert_group(self, alert_group_id: int, rule_id: int):
         )
         return
 
-    from integrations.services.sms_matcher import SmsRuleMatcherService
-    matcher = SmsRuleMatcherService()
-    recipients = matcher.resolve_recipients(alert_group, rule)
     if not recipients:
         logger.info(
             f"SMS Task {self.request.id} (FP: {fingerprint_for_log}): No recipients resolved for AlertGroup {alert_group_id}. Skipping."
