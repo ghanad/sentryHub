@@ -35,6 +35,15 @@ class SmsMatcherTests(TestCase):
         self.assertEqual(nums, ['1'])
 
 
+    def test_case_insensitive_recipient_matching(self):
+        PhoneBook.objects.create(name='Ali', phone_number='3')
+        self.alert_group.instances.create(status='firing', started_at=timezone.now(), annotations={'sms': 'ali'})
+        rule = SmsIntegrationRule.objects.create(name='r_case_insensitive', match_criteria={}, use_sms_annotation=True, firing_template='hi')
+        matcher = SmsRuleMatcherService()
+        nums = matcher.resolve_recipients(self.alert_group, rule)
+        self.assertEqual(set(nums), {'3'})
+
+
 class SmsTaskTests(TestCase):
     @patch('integrations.tasks.SmsService')
     def test_process_sms_for_alert_group(self, service_cls):
