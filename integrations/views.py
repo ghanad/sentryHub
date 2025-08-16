@@ -12,14 +12,19 @@ from django.http import JsonResponse
 from django.utils import timezone
 from .services.jira_service import JiraService  # Import the service
 from .services.slack_service import SlackService
+from .services.sms_service import SmsService
+from .exceptions import SmsNotificationError
 import markdown
 import re
 import json
 
-from integrations.models import JiraIntegrationRule, SlackIntegrationRule
+from integrations.models import JiraIntegrationRule, SlackIntegrationRule, SmsIntegrationRule, PhoneBook
 from integrations.forms import (
     JiraIntegrationRuleForm,
     SlackIntegrationRuleForm,
+    SmsIntegrationRuleForm,
+    PhoneBookForm,
+    SmsTestForm,
 )
 # Keep AlertGroup import only if needed for other parts of the view,
 # otherwise it can be removed if solely used for the incorrect delete check.
@@ -162,6 +167,54 @@ class SlackRuleDeleteView(LoginRequiredMixin, DeleteView):
         messages.success(self.request, f"Slack integration rule '{rule_name}' deleted successfully.")
         return super().delete(request, *args, **kwargs)
 
+
+
+class PhoneBookListView(LoginRequiredMixin, ListView):
+    model = PhoneBook
+    template_name = 'integrations/phonebook_list.html'
+    context_object_name = 'entries'
+    paginate_by = 20
+
+class PhoneBookCreateView(LoginRequiredMixin, CreateView):
+    model = PhoneBook
+    form_class = PhoneBookForm
+    template_name = 'integrations/phonebook_form.html'
+    success_url = reverse_lazy('integrations:phonebook-list')
+
+class PhoneBookUpdateView(LoginRequiredMixin, UpdateView):
+    model = PhoneBook
+    form_class = PhoneBookForm
+    template_name = 'integrations/phonebook_form.html'
+    success_url = reverse_lazy('integrations:phonebook-list')
+
+class PhoneBookDeleteView(LoginRequiredMixin, DeleteView):
+    model = PhoneBook
+    template_name = 'integrations/phonebook_confirm_delete.html'
+    success_url = reverse_lazy('integrations:phonebook-list')
+
+class SmsRuleListView(LoginRequiredMixin, ListView):
+    model = SmsIntegrationRule
+    template_name = 'integrations/sms_rule_list.html'
+    context_object_name = 'sms_rules'
+    paginate_by = 20
+    ordering = ['-priority', 'name']
+
+class SmsRuleCreateView(LoginRequiredMixin, CreateView):
+    model = SmsIntegrationRule
+    form_class = SmsIntegrationRuleForm
+    template_name = 'integrations/sms_rule_form.html'
+    success_url = reverse_lazy('integrations:sms-rule-list')
+
+class SmsRuleUpdateView(LoginRequiredMixin, UpdateView):
+    model = SmsIntegrationRule
+    form_class = SmsIntegrationRuleForm
+    template_name = 'integrations/sms_rule_form.html'
+    success_url = reverse_lazy('integrations:sms-rule-list')
+
+class SmsRuleDeleteView(LoginRequiredMixin, DeleteView):
+    model = SmsIntegrationRule
+    template_name = 'integrations/sms_rule_confirm_delete.html'
+    success_url = reverse_lazy('integrations:sms-rule-list')
 
 @login_required
 def jira_admin_view(request):
@@ -427,8 +480,48 @@ def slack_admin_guide_view(request):
 
     context = {'guide_content_md': content_html}
     return render(request, 'integrations/slack_admin_guide.html', context)
- 
+@login_required
+def sms_admin_view(request):
+    """Admin page for checking SMS balance and sending test messages."""
+    service = SmsService()
+    balance = None
+    balance_error = None
+    try:
+        balance = service.get_balance()
+    except Exception as exc:
+        balance_error = str(exc)
 
+    if request.method == "POST":
+        form = SmsTestForm(request.POST)
+        if form.is_valid():
+            recipient = form.cleaned_data["recipient"]
+            message = form.cleaned_data["message"]
+            try:
+                resp_data = service.send_sms(recipient.phone_number, message)
+                if isinstance(resp_data, dict):
+                    msg_status = (
+                        resp_data.get("messages", [{}])[0].get("status")
+                    )
+                    status_msg = SmsService.STATUS_MESSAGES.get(
+                        msg_status, "وضعیت نامشخص"
+                    )
+                    messages.info(
+                        request,
+                        f"Status {msg_status}: {status_msg}",
+                    )
+                else:
+                    messages.error(request, "Failed to send SMS.")
+            except SmsNotificationError:
+                messages.error(request, "Network error sending SMS.")
+            return redirect("integrations:sms-admin")
+    else:
+        form = SmsTestForm()
+
+    return render(
+        request,
+        "integrations/sms_admin.html",
+        {"form": form, "balance": balance, "balance_error": balance_error},
+    )
 
 
 @login_required

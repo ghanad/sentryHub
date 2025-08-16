@@ -3,17 +3,23 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Process Django messages and convert them to notifications
     {% if django_messages %}
+        const notificationOptions = {
+            timeOut: 5000,
+            closeButton: true,
+            progressBar: true,
+            positionClass: "toast-top-right"
+        };
         {% for message in django_messages %}
             {% if message.level == 'success' %}
-                SentryNotification.success('{{ message.message|escapejs }}');
+                SentryNotification.success('{{ message.message|escapejs }}', notificationOptions);
             {% elif message.level == 'error' %}
-                SentryNotification.error('{{ message.message|escapejs }}');
+                SentryNotification.error('{{ message.message|escapejs }}', notificationOptions);
             {% elif message.level == 'warning' %}
-                SentryNotification.warning('{{ message.message|escapejs }}');
+                SentryNotification.warning('{{ message.message|escapejs }}', notificationOptions);
             {% elif message.level == 'info' %}
-                SentryNotification.info('{{ message.message|escapejs }}');
+                SentryNotification.info('{{ message.message|escapejs }}', notificationOptions);
             {% else %}
-                SentryNotification.info('{{ message.message|escapejs }}');
+                SentryNotification.info('{{ message.message|escapejs }}', notificationOptions);
             {% endif %}
         {% endfor %}
     {% endif %}

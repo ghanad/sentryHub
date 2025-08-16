@@ -301,6 +301,21 @@ SLACK_INTERNAL_ENDPOINT = os.environ.get('SLACK_INTERNAL_ENDPOINT', "")
 # Default Slack channel used when no rule channel is set and no 'channel' label is provided
 SLACK_DEFAULT_CHANNEL = "#general"
 
+# SMS provider configuration
+SMS_PROVIDER_BALANCE_URL = os.environ.get(
+    "SMS_PROVIDER_BALANCE_URL",
+    "https://sms.magfa.com/api/http/sms/v2/balance",
+)
+SMS_PROVIDER_SEND_URL = os.environ.get(
+    "SMS_PROVIDER_SEND_URL",
+    "https://sms.magfa.com/api/http/sms/v2/send",
+)
+SMS_PROVIDER_USERNAME = os.environ.get("SMS_PROVIDER_USERNAME", "")
+SMS_PROVIDER_PASSWORD = os.environ.get("SMS_PROVIDER_PASSWORD", "")
+SMS_PROVIDER_DOMAIN = os.environ.get("SMS_PROVIDER_DOMAIN", "")
+SMS_PROVIDER_SENDER = os.environ.get("SMS_PROVIDER_SENDER", "")
+
+
 JIRA_CONFIG = {
     'server_url': 'https://jira.tsetmc.com',
     'username': 'monitoring',

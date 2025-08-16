@@ -119,3 +119,56 @@ class SlackIntegrationRule(models.Model):
     def __str__(self):
         status = "Active" if self.is_active else "Inactive"
         return f"{self.name} ({status}, Prio: {self.priority})"
+
+
+class PhoneBook(models.Model):
+    """Simple directory mapping names to phone numbers."""
+
+    name = models.CharField(max_length=100, unique=True, db_index=True)
+    phone_number = models.CharField(max_length=20)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return f"{self.name}: {self.phone_number}"
+
+
+class SmsIntegrationRule(models.Model):
+    """Defines rules for sending SMS notifications for alerts."""
+
+    name = models.CharField(max_length=100, unique=True)
+    is_active = models.BooleanField(default=True, db_index=True)
+    priority = models.IntegerField(default=0, help_text="Higher priority rules are evaluated first.")
+    match_criteria = models.JSONField(
+        default=dict,
+        help_text='JSON object to match AlertGroup attributes. Use "labels__<key>" for label matching and regular field names or lookups (e.g., "source", "jira_issue_key__isnull") for AlertGroup properties.'
+    )
+    recipients = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Comma-separated list of recipient names defined in PhoneBook."
+    )
+    use_sms_annotation = models.BooleanField(
+        default=False,
+        help_text="If true, resolve recipients from alert annotations['sms'] instead of rule recipients."
+    )
+    firing_template = models.TextField(help_text="Template for SMS message when alert is firing.")
+    resolved_template = models.TextField(
+        blank=True,
+        help_text="Optional template for SMS message when alert is resolved. If blank, no message is sent on resolve."
+    )
+
+    class Meta:
+        ordering = ['-priority', 'name']
+        verbose_name = "SMS Integration Rule"
+        verbose_name_plural = "SMS Integration Rules"
+
+    def clean(self):
+        super().clean()
+        if not isinstance(self.match_criteria, dict):
+            raise ValidationError({'match_criteria': 'Must be a valid JSON object (dictionary).'})
+
+    def __str__(self):
+        status = "Active" if self.is_active else "Inactive"
+        return f"{self.name} ({status}, Prio: {self.priority})"

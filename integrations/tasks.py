@@ -11,16 +11,17 @@ from celery.exceptions import Retry # <--- این ایمپورت را اضافه
 from django.conf import settings
 
 from core.services.metrics import metrics_manager
-from integrations.exceptions import SlackNotificationError
+from integrations.exceptions import SlackNotificationError, SmsNotificationError
 from django.utils import timezone
 from django.urls import reverse
 from django.core.exceptions import ObjectDoesNotExist
 from django.template import Context, Template, TemplateSyntaxError
 
-from integrations.models import JiraIntegrationRule, SlackIntegrationRule
+from integrations.models import JiraIntegrationRule, SlackIntegrationRule, SmsIntegrationRule
 from alerts.models import AlertGroup, AlertInstance
 from integrations.services.jira_service import JiraService
 from integrations.services.slack_service import SlackService
+from integrations.services.sms_service import SmsService
 
 logger = logging.getLogger(__name__)
 
@@ -391,3 +392,60 @@ def process_slack_for_alert_group(self, alert_group_id: int, rule_id: int):
             f"Slack Task {self.request.id} (FP: {fingerprint_for_log}): Network error sending notification for AlertGroup {alert_group_id}. Celery will retry. Error: {e}"
         )
         raise self.retry(exc=e)
+
+
+@shared_task(bind=True, autoretry_for=(SmsNotificationError,), retry_backoff=True, retry_backoff_max=3600, max_retries=20)
+def process_sms_for_alert_group(self, alert_group_id: int, rule_id: int):
+    """Celery task to send SMS notifications for an alert group."""
+    try:
+        alert_group = AlertGroup.objects.get(pk=alert_group_id)
+        rule = SmsIntegrationRule.objects.get(pk=rule_id)
+        fingerprint_for_log = alert_group.fingerprint
+        logger.info(
+            f"SMS Task {self.request.id} (FP: {fingerprint_for_log}): Starting for AlertGroup ID: {alert_group_id}, Rule ID: {rule_id}"
+        )
+    except AlertGroup.DoesNotExist:
+        logger.error(f"SMS Task {self.request.id}: AlertGroup with ID {alert_group_id} not found. Aborting.")
+        return
+    except SmsIntegrationRule.DoesNotExist:
+        logger.error(f"SMS Task {self.request.id}: SmsIntegrationRule with ID {rule_id} not found. Aborting.")
+        return
+
+    latest_instance = alert_group.instances.order_by('-started_at').first()
+    annotations = latest_instance.annotations if latest_instance else {}
+    status = getattr(alert_group, 'current_status', None)
+
+    context = {
+        'alert_group': alert_group,
+        'latest_instance': latest_instance,
+        'annotations': annotations,
+    }
+
+    template = None
+    if status == 'resolved' and rule.resolved_template:
+        template = rule.resolved_template
+    else:
+        template = rule.firing_template
+
+    message = render_template_safe(template or '', context, '')
+    if not message:
+        logger.info(
+            f"SMS Task {self.request.id} (FP: {fingerprint_for_log}): No message to send for AlertGroup {alert_group_id}. Skipping."
+        )
+        return
+
+    from integrations.services.sms_matcher import SmsRuleMatcherService
+    matcher = SmsRuleMatcherService()
+    recipients = matcher.resolve_recipients(alert_group, rule)
+    if not recipients:
+        logger.info(
+            f"SMS Task {self.request.id} (FP: {fingerprint_for_log}): No recipients resolved for AlertGroup {alert_group_id}. Skipping."
+        )
+        return
+
+    sms_service = SmsService()
+    sms_service.send_bulk(recipients, message, fingerprint=fingerprint_for_log)
+    logger.info(
+        f"SMS Task {self.request.id} (FP: {fingerprint_for_log}): "
+        f"Notification sent to {recipients} for AlertGroup {alert_group_id}."
+    )

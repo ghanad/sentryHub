@@ -1,0 +1,4 @@
+{% extends "dashboard/base.html" %}
+{% block main_content %}
+<form method="post">{% csrf_token %}Delete?<button type="submit">Confirm</button></form>
+{% endblock %}

@@ -3,7 +3,7 @@ import json
 from django.core.exceptions import ValidationError
 from django.conf import settings
 from django.core.validators import validate_email
-from .models import JiraIntegrationRule, SlackIntegrationRule
+from .models import JiraIntegrationRule, SlackIntegrationRule, PhoneBook, SmsIntegrationRule
 
 class JiraIntegrationRuleForm(forms.ModelForm):
     """
@@ -214,3 +214,61 @@ class SlackTemplateTestForm(forms.Form):
             return parsed
         except json.JSONDecodeError:
             raise ValidationError('Invalid JSON format for extra context')
+
+
+class PhoneBookForm(forms.ModelForm):
+    class Meta:
+        model = PhoneBook
+        fields = ['name', 'phone_number']
+
+
+class SmsIntegrationRuleForm(forms.ModelForm):
+    class Meta:
+        model = SmsIntegrationRule
+        fields = [
+            'name', 'is_active', 'priority',
+            'match_criteria', 'recipients', 'use_sms_annotation',
+            'firing_template', 'resolved_template',
+        ]
+        help_texts = {
+            'recipients': 'Comma-separated list of names from PhoneBook.',
+            'match_criteria': 'Optional JSON dict. Leave empty to match all alerts.',
+        }
+        widgets = {
+            'match_criteria': forms.Textarea(attrs={'rows':5,'class':'form-control font-monospace'}),
+            'firing_template': forms.Textarea(attrs={'rows':3,'class':'form-control font-monospace'}),
+            'resolved_template': forms.Textarea(attrs={'rows':3,'class':'form-control font-monospace'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if 'match_criteria' in self.fields:
+            self.fields['match_criteria'].required = False
+        if 'recipients' in self.fields:
+            self.fields['recipients'].required = False
+        if 'priority' in self.fields:
+            self.fields['priority'].initial = 0
+
+    def clean_match_criteria(self):
+        match_criteria = self.cleaned_data.get('match_criteria', '{}')
+        if isinstance(match_criteria, dict):
+            return match_criteria
+        try:
+            parsed = json.loads(match_criteria)
+            if not isinstance(parsed, dict):
+                raise ValidationError('Match criteria must be a valid JSON object (dictionary)')
+            return parsed
+        except json.JSONDecodeError:
+            raise ValidationError('Invalid JSON format for match criteria')
+
+
+class SmsTestForm(forms.Form):
+    recipient = forms.ModelChoiceField(
+        queryset=PhoneBook.objects.all(),
+        label="Recipient",
+        widget=forms.Select(attrs={"class": "form-control"}),
+    )
+    message = forms.CharField(
+        label="Message",
+        widget=forms.Textarea(attrs={"rows": 3, "class": "form-control"}),
+    )
