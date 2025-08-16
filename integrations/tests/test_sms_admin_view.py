@@ -19,10 +19,13 @@ class SmsAdminViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "123")
 
-    @patch("integrations.views.SmsService.send_sms", return_value=True)
+    @patch("integrations.views.SmsService.send_sms", return_value={"messages": [{"status": 1}]})
     @patch("integrations.views.SmsService.get_balance", return_value=0)
     def test_send_test_sms(self, mock_balance, mock_send):
         entry = PhoneBook.objects.create(name="ali", phone_number="09120000000")
-        response = self.client.post(self.url, {"recipient": entry.id, "message": "hi"})
-        self.assertEqual(response.status_code, 302)
+        response = self.client.post(
+            self.url, {"recipient": entry.id, "message": "hi"}, follow=True
+        )
+        self.assertEqual(response.status_code, 200)
         mock_send.assert_called_once_with("09120000000", "hi")
+        self.assertContains(response, "Status 1")

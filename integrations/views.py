@@ -497,8 +497,18 @@ def sms_admin_view(request):
             recipient = form.cleaned_data["recipient"]
             message = form.cleaned_data["message"]
             try:
-                if service.send_sms(recipient.phone_number, message):
-                    messages.success(request, "Test SMS sent successfully.")
+                resp_data = service.send_sms(recipient.phone_number, message)
+                if isinstance(resp_data, dict):
+                    msg_status = (
+                        resp_data.get("messages", [{}])[0].get("status")
+                    )
+                    status_msg = SmsService.STATUS_MESSAGES.get(
+                        msg_status, "وضعیت نامشخص"
+                    )
+                    messages.info(
+                        request,
+                        f"Status {msg_status}: {status_msg}",
+                    )
                 else:
                     messages.error(request, "Failed to send SMS.")
             except SmsNotificationError:

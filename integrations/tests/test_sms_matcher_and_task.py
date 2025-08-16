@@ -39,7 +39,7 @@ class SmsTaskTests(TestCase):
     @patch('integrations.tasks.SmsService')
     def test_process_sms_for_alert_group(self, service_cls):
         mock_service = service_cls.return_value
-        mock_service.send_bulk.return_value = True
+        mock_service.send_bulk.return_value = {"messages": [{"status": 1}]}
         PhoneBook.objects.create(name='alice', phone_number='1')
         alert_group = AlertGroup.objects.create(fingerprint='fp2', name='AG2', labels={}, source='prometheus')
         rule = SmsIntegrationRule.objects.create(name='r', match_criteria={}, recipients='alice', firing_template='msg')
