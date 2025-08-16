@@ -622,3 +622,51 @@ def check_slack_template(request):
     except Exception as e:
         return JsonResponse({'status': 'error', 'error': f'Server error: {e}'}, status=500)
 # --- END: New View ---
+
+
+@login_required
+@require_POST
+def check_sms_template(request):
+    """
+    API endpoint to safely render and validate an SMS message template.
+    Expects a JSON body with a 'template_string' key.
+    """
+    try:
+        data = json.loads(request.body)
+        template_string = data.get('template_string')
+
+        if template_string is None:
+            return JsonResponse({'status': 'error', 'error': 'Missing template_string.'}, status=400)
+
+        mock_alert_group = _build_mock_alert_group()
+
+        try:
+            latest_instance = mock_alert_group.instances.order_by('-started_at').first()
+        except Exception:
+            latest_instance = None
+        annotations = latest_instance.annotations if latest_instance else {}
+        summary = annotations.get('summary', mock_alert_group.name)
+        description = annotations.get('description', 'No description provided.')
+
+        context = {
+            'alert_group': mock_alert_group,
+            'latest_instance': latest_instance,
+            'annotations': annotations,
+            'summary': summary,
+            'description': description,
+        }
+
+        try:
+            from django.template import Template, Context, TemplateSyntaxError  # Local import
+            template = Template(template_string)
+            rendered_text = template.render(Context(context))
+            return JsonResponse({'status': 'success', 'rendered': rendered_text.strip()})
+        except TemplateSyntaxError as e:
+            return JsonResponse({'status': 'error', 'error': f'Template Syntax Error: {e}'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'error': f'An unexpected error occurred: {e}'})
+
+    except json.JSONDecodeError:
+        return JsonResponse({'status': 'error', 'error': 'Invalid JSON body.'}, status=400)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'error': f'Server error: {e}'}, status=500)
