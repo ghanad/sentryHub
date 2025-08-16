@@ -54,8 +54,12 @@ class SmsTaskTests(TestCase):
         alert_group = AlertGroup.objects.create(fingerprint='fp2', name='AG2', labels={}, source='prometheus')
         rule = SmsIntegrationRule.objects.create(name='r', match_criteria={}, recipients='alice', firing_template='msg')
         process_sms_for_alert_group.request.id = 'test'
-        process_sms_for_alert_group.run(alert_group.id, rule.id)
+        with self.assertLogs('integrations.tasks', level='INFO') as cm:
+            process_sms_for_alert_group.run(alert_group.id, rule.id)
         mock_service.send_bulk.assert_called_once_with(['1'], 'msg', fingerprint='fp2')
+        log_output = ' '.join(cm.output)
+        self.assertIn('Message body: msg', log_output)
+        self.assertIn('(FP: fp2)', log_output)
 
     @patch('integrations.tasks.SmsService')
     @patch('integrations.tasks.process_sms_for_alert_group.retry', side_effect=Retry('boom'))
