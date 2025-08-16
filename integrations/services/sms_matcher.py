@@ -37,7 +37,7 @@ class SmsRuleMatcherService:
         numbers: List[str] = []
         for name in names:
             try:
-                entry = PhoneBook.objects.get(name=name)
+                entry = PhoneBook.objects.get(name__iexact=name)
                 numbers.append(entry.phone_number)
             except PhoneBook.DoesNotExist:
                 logger.warning("PhoneBook entry for '%s' not found", name)
