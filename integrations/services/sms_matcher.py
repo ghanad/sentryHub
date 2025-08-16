@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, List
+from typing import Optional, List, Tuple
 
 from integrations.models import SmsIntegrationRule, PhoneBook
 from alerts.models import AlertGroup
@@ -22,14 +22,24 @@ class SmsRuleMatcherService:
         matching.sort(key=lambda r: (-len(r.match_criteria or {}), -r.priority, r.name))
         return matching[0]
 
-    def resolve_recipients(self, alert_group: AlertGroup, rule: SmsIntegrationRule) -> List[str]:
+    def resolve_recipients(self, alert_group: AlertGroup, rule: SmsIntegrationRule) -> Tuple[List[str], bool]:
         names: List[str] = []
+        should_send_resolve = False
         if rule.use_sms_annotation:
             latest = alert_group.instances.order_by('-started_at').first()
             annotations = getattr(latest, 'annotations', {}) or {}
             raw = annotations.get('sms', '')
             if isinstance(raw, str):
-                names = [n.strip() for n in raw.split(',') if n.strip()]
+                parts = raw.split(';')
+                recipients_part = parts[0]
+                names = [n.strip() for n in recipients_part.split(',') if n.strip()]
+                params_part = ';'.join(parts[1:]) if len(parts) > 1 else ''
+                if params_part:
+                    for token in params_part.split(';'):
+                        if '=' in token:
+                            key, value = token.split('=', 1)
+                            if key.strip().lower() == 'resolve' and value.strip().lower() == 'true':
+                                should_send_resolve = True
         else:
             raw = rule.recipients or ''
             names = [n.strip() for n in raw.split(',') if n.strip()]
@@ -41,7 +51,7 @@ class SmsRuleMatcherService:
                 numbers.append(entry.phone_number)
             except PhoneBook.DoesNotExist:
                 logger.warning("PhoneBook entry for '%s' not found", name)
-        return numbers
+        return numbers, should_send_resolve
 
     def _does_rule_match(self, rule: SmsIntegrationRule, alert_group: AlertGroup) -> bool:
         criteria = rule.match_criteria or {}
