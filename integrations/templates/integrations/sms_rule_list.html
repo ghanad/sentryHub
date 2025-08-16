@@ -11,9 +11,14 @@
 {% block main_content %}
 <header class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2">
     <h1 class="page-title m-0">SMS Integration Rules</h1>
-    <a href="{% url 'integrations:sms-rule-create' %}" class="btn btn-primary d-flex align-items-center gap-2">
-        <i class='bx bx-plus-circle'></i> New Rule
-    </a>
+    <div class="d-flex align-items-center gap-2">
+        <a href="{% url 'integrations:sms-rule-guide' %}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+            <i class='bx bx-help-circle'></i> Help
+        </a>
+        <a href="{% url 'integrations:sms-rule-create' %}" class="btn btn-primary d-flex align-items-center gap-2">
+            <i class='bx bx-plus-circle'></i> New Rule
+        </a>
+    </div>
 </header>
 <div class="chart-card">
     <div class="chart-card-header">

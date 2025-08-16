@@ -61,3 +61,12 @@ class SmsRuleViewsTests(TestCase):
         resp = self.client.post(reverse('integrations:sms-rule-delete', args=[rule.id]))
         self.assertEqual(resp.status_code, 302)
         self.assertFalse(SmsIntegrationRule.objects.filter(id=rule.id).exists())
+
+    def test_sms_rule_guide_view(self):
+        # The guide file is expected to exist and contain the actual content.
+        # We are not creating a temporary file here to avoid overwriting.
+        resp = self.client.get(reverse('integrations:sms-rule-guide'))
+        self.assertEqual(resp.status_code, 200)
+        # Check for content that should be present in the actual guide
+        self.assertContains(resp, "راهنمای تنظیم قوانین یکپارچه‌سازی پیامک (SMS) در SentryHub")
+        self.assertContains(resp, "هدف اصلی این قوانین، تعریف <strong>شرایطی</strong> است")

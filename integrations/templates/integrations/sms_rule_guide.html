@@ -1,0 +1,19 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block title %}راهنمای قوانین پیامک - SentryHub{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dashboard/css/modern_dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'integrations/css/slack-admin-guide.css' %}"> {# Reusing Slack's CSS for now #}
+{% endblock %}
+
+{% block main_content %}
+<header class="page-header">
+  <h1 class="page-title">راهنمای قوانین یکپارچه‌سازی پیامک</h1>
+</header>
+
+<div class="markdown-body detect-rtl slack-admin-guide">
+  {{ guide_content_md|safe }}
+</div>
+{% endblock %}

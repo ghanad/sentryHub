@@ -481,6 +481,29 @@ def slack_admin_guide_view(request):
     context = {'guide_content_md': content_html}
     return render(request, 'integrations/slack_admin_guide.html', context)
 @login_required
+def sms_rule_guide_view(request):
+    """
+    View to display SMS Rule guide rendered from Markdown to HTML.
+    """
+    content_html = "خطا در بارگذاری راهنما."
+    try:
+        with open('documentations/SMS_RULE_GUIDE.md', 'r', encoding='utf-8') as f:
+            guide_md = f.read()
+        content_html = markdown.markdown(
+            guide_md,
+            extensions=["extra", "codehilite", "sane_lists", "toc"]
+        )
+    except FileNotFoundError:
+        logger.error("SMS rule guide file not found.")
+        content_html = "Error loading guide: File not found."
+    except Exception as e:
+        logger.error(f"Error reading SMS rule guide file: {e}")
+        content_html = "Error loading guide."
+
+    context = {'guide_content_md': content_html}
+    return render(request, 'integrations/sms_rule_guide.html', context)
+
+@login_required
 def sms_admin_view(request):
     """Admin page for checking SMS balance and sending test messages."""
     service = SmsService()
