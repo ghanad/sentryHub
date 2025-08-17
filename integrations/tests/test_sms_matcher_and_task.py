@@ -62,6 +62,41 @@ class SmsTaskTests(TestCase):
         self.assertIn('(FP: fp2)', log_output)
 
     @patch('integrations.tasks.SmsService')
+    def test_sms_template_with_summary(self, service_cls):
+        mock_service = service_cls.return_value
+        mock_service.send_bulk.return_value = {"messages": [{"status": 1}]}
+        PhoneBook.objects.create(name='test_user', phone_number='1234567890')
+        
+        alert_group = AlertGroup.objects.create(
+            fingerprint='fp_summary',
+            name='Test Alert Group',
+            labels={'env': 'dev'},
+            source='test'
+        )
+        alert_group.instances.create(
+            status='firing',
+            started_at=timezone.now(),
+            annotations={'summary': 'This is a test summary.'}
+        )
+        
+        rule = SmsIntegrationRule.objects.create(
+            name='summary_rule',
+            match_criteria={},
+            recipients='test_user',
+            firing_template='Alert: {{ alert_group.name }}. Summary: {{ summary }}'
+        )
+        
+        process_sms_for_alert_group.request.id = 'test_summary_task'
+        with self.assertLogs('integrations.tasks', level='INFO') as cm:
+            process_sms_for_alert_group.run(alert_group.id, rule.id)
+        
+        expected_message = 'Alert: Test Alert Group. Summary: This is a test summary.'
+        mock_service.send_bulk.assert_called_once_with(['1234567890'], expected_message, fingerprint='fp_summary')
+        log_output = ' '.join(cm.output)
+        self.assertIn(f'Message body: {expected_message}', log_output)
+        self.assertIn('(FP: fp_summary)', log_output)
+
+    @patch('integrations.tasks.SmsService')
     @patch('integrations.tasks.process_sms_for_alert_group.retry', side_effect=Retry('boom'))
     def test_task_retries_on_error(self, retry_mock, service_cls):
         service_cls.return_value.send_bulk.side_effect = SmsNotificationError('net')

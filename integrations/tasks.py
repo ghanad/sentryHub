@@ -413,12 +413,16 @@ def process_sms_for_alert_group(self, alert_group_id: int, rule_id: int):
 
     latest_instance = alert_group.instances.order_by('-started_at').first()
     annotations = latest_instance.annotations if latest_instance else {}
+    summary = annotations.get('summary', alert_group.name)
+    description = annotations.get('description', 'No description provided.')
     status = getattr(alert_group, 'current_status', None)
 
     context = {
         'alert_group': alert_group,
         'latest_instance': latest_instance,
         'annotations': annotations,
+        'summary': summary,
+        'description': description,
     }
 
     template = None
