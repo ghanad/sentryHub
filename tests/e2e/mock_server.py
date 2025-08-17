@@ -8,7 +8,8 @@ app = Flask(__name__)
 # A simple in-memory store for received requests
 received_requests = {
     "slack": [],
-    "jira": []
+    "jira": [],
+    "sms": [],
 }
 
 @app.route('/slack', methods=['POST'])
@@ -17,6 +18,13 @@ def mock_slack():
     print(f"Mock Slack received: {data}")
     received_requests["slack"].append(data)
     return "ok"
+
+@app.route('/sms', methods=['POST'])
+def mock_sms():
+    data = request.json
+    print(f"Mock SMS received: {data}")
+    received_requests["sms"].append(data)
+    return jsonify({"messages": [{"status": 0}]})
 
 @app.route('/jira/rest/api/2/issue', methods=['POST'])
 def mock_jira_create():
