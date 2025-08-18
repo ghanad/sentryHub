@@ -1,6 +1,7 @@
 from django.test import SimpleTestCase, override_settings
 from unittest.mock import Mock, patch
 import requests
+import json
 
 from integrations.services.slack_service import SlackService, SlackNotificationError
 
@@ -58,6 +59,29 @@ class SlackServiceSendNotificationTests(SimpleTestCase):
             result = service.send_notification("#general", "hi")
         self.assertFalse(result)
         metrics_mock.inc_counter.assert_called()
+
+    @override_settings(SLACK_DELIVERY_METHOD="RABBITMQ")
+    @patch("integrations.services.slack_service.pika.BasicProperties")
+    @patch("integrations.services.slack_service.pika.BlockingConnection")
+    def test_send_notification_rabbitmq_success(self, connection_mock, basic_props_mock):
+        service = SlackService()
+        channel_mock = Mock()
+        connection_instance = Mock()
+        connection_instance.channel.return_value = channel_mock
+        connection_mock.return_value = connection_instance
+        basic_props_mock.return_value = Mock()
+
+        result = service.send_notification("general", "hi")
+
+        self.assertTrue(result)
+        connection_mock.assert_called_once()
+        channel_mock.queue_declare.assert_called_once_with(queue='slack_notifications_queue', durable=True)
+        channel_mock.basic_publish.assert_called_once()
+        args, kwargs = channel_mock.basic_publish.call_args
+        self.assertEqual(kwargs["routing_key"], 'slack_notifications_queue')
+        self.assertEqual(json.loads(kwargs["body"]), {"channel": "#general", "text": "hi"})
+        self.assertIs(kwargs["properties"], basic_props_mock.return_value)
+        connection_instance.close.assert_called_once()
 
     @override_settings(SLACK_INTERNAL_ENDPOINT="http://slack")
     @patch("integrations.services.slack_service.metrics_manager")
