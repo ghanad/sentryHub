@@ -1,9 +1,9 @@
-# integrations/services/slack_service.py
-
 import logging
 from django.conf import settings
 import requests
 import time
+import json
+import pika
 
 from core.services.metrics import metrics_manager
 from integrations.exceptions import SlackNotificationError
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 class SlackService:
     """
-    Service for sending plain-text messages to Slack via an internal proxy endpoint.
+    Service for sending messages to Slack via an internal proxy endpoint or RabbitMQ.
     Includes retry logic for network errors and adds contextual fingerprint to logs.
     """
 
@@ -22,21 +22,57 @@ class SlackService:
 
     def send_notification(self, channel: str, message: str, fingerprint: str = "N/A") -> bool:
         """
-        Send text to a Slack channel via POST. Retries on transient network errors.
+        Send a notification either via HTTP or by queueing in RabbitMQ based on settings.
+        """
+        delivery_method = getattr(settings, 'SLACK_DELIVERY_METHOD', 'HTTP').upper()
 
-        Args:
-            channel (str): The target Slack channel (e.g., '#alerts', 'C12345').
-            message (str): The plain text message to send.
-            fingerprint (str, optional): The alert fingerprint for logging context. Defaults to "N/A".
+        if delivery_method == 'RABBITMQ':
+            return self._send_to_rabbitmq(channel, message, fingerprint)
+        else:
+            return self._send_via_http(channel, message, fingerprint)
 
-        Returns:
-            bool: True on success, False on failure.
+    def _send_to_rabbitmq(self, channel: str, message: str, fingerprint: str) -> bool:
+        """
+        Queues the notification message in RabbitMQ.
+        """
+        config = settings.RABBITMQ_FORWARDER_CONFIG
+        normalized_channel = self._normalize_channel(channel)
+        payload = json.dumps({"channel": normalized_channel, "text": message})
 
-        Raises:
-            SlackNotificationError: If the notification fails after all retry attempts due to network issues.
+        try:
+            connection = pika.BlockingConnection(
+                pika.ConnectionParameters(
+                    host=config['HOST'],
+                    port=config['PORT'],
+                    credentials=pika.PlainCredentials(config['USER'], config['PASSWORD'])
+                )
+            )
+            channel_mq = connection.channel()
+            channel_mq.queue_declare(queue=config['QUEUE_NAME'], durable=True)
+
+            channel_mq.basic_publish(
+                exchange='',
+                routing_key=config['QUEUE_NAME'],
+                body=payload,
+                properties=pika.BasicProperties(delivery_mode=2)  # Make message persistent
+            )
+
+            connection.close()
+            logger.info(f"SlackService (FP: {fingerprint}): Message for channel '{normalized_channel}' queued successfully in RabbitMQ.")
+            # You can add success metrics for RabbitMQ here if needed
+            return True
+
+        except Exception as e:
+            logger.error(f"SlackService (FP: {fingerprint}): Failed to queue message in RabbitMQ. Error: {e}", exc_info=True)
+            # This is a critical failure (e.g., RabbitMQ is down)
+            return False
+
+    def _send_via_http(self, channel: str, message: str, fingerprint: str) -> bool:
+        """
+        Original method to send notification via HTTP with retry logic.
         """
         if not self.endpoint:
-            logger.error(f"SlackService (FP: {fingerprint}): SLACK_INTERNAL_ENDPOINT is not configured.")
+            logger.error(f"SlackService (FP: {fingerprint}): SLACK_INTERNAL_ENDPOINT is not configured for HTTP delivery.")
             metrics_manager.inc_counter(
                 "sentryhub_component_initialization_errors_total",
                 labels={"component": "slack"},
@@ -124,7 +160,7 @@ class SlackService:
                     labels={"status": "failure", "reason": "unexpected"},
                 )
                 return False
-        return False # Should not be reached, but as a fallback
+        return False
 
     def _normalize_channel(self, channel: str) -> str:
         if not channel:
@@ -137,3 +173,4 @@ class SlackService:
         if ch.startswith("#") or ch[0] in {"C", "G", "U", "D"}:
             return ch
         return f"#{ch}"
+
