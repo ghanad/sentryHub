@@ -93,7 +93,12 @@ jobs:
           RABBITMQ_PASSWORD: "guest"
           # --- Mock external services ---
           SLACK_INTERNAL_ENDPOINT: "http://localhost:5001/slack"
-          JIRA_SERVER_URL: "http://localhost:5001/jira" 
+          JIRA_SERVER_URL: "http://localhost:5001/jira"
+          SMS_PROVIDER_SEND_URL: "http://localhost:5001/sms"
+          SMS_PROVIDER_USERNAME: "user"
+          SMS_PROVIDER_PASSWORD: "pass"
+          SMS_PROVIDER_DOMAIN: "test"
+          SMS_PROVIDER_SENDER: "1000"
         run: |
           # Start a mock server for Slack/Jira in the background
           python tests/e2e/mock_server.py &
@@ -108,6 +113,8 @@ jobs:
           echo "Waiting for background services to initialize..."
           sleep 15
           
-          # Run the actual E2E test script
-          echo "Running E2E test script..."
+          # Run the actual E2E test scripts
+          echo "Running Slack E2E test..."
           python tests/e2e/run_test.py
+          echo "Running SMS E2E test..."
+          python tests/e2e/run_sms_test.py
