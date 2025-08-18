@@ -315,6 +315,18 @@ SMS_PROVIDER_PASSWORD = os.environ.get("SMS_PROVIDER_PASSWORD", "")
 SMS_PROVIDER_DOMAIN = os.environ.get("SMS_PROVIDER_DOMAIN", "")
 SMS_PROVIDER_SENDER = os.environ.get("SMS_PROVIDER_SENDER", "")
 
+# Defines the delivery method for SMS notifications ('HTTP' or 'RABBITMQ')
+SMS_DELIVERY_METHOD = os.environ.get('SMS_DELIVERY_METHOD', 'HTTP')
+
+# Configuration for the external RabbitMQ instance used as a forwarder for SMS
+RABBITMQ_SMS_FORWARDER_CONFIG = {
+    'HOST': os.environ.get('RABBITMQ_FORWARDER_HOST', 'localhost'),
+    'PORT': int(os.environ.get('RABBITMQ_FORWARDER_PORT', 5672)),
+    'USER': os.environ.get('RABBITMQ_FORWARDER_USER', 'guest'),
+    'PASSWORD': os.environ.get('RABBITMQ_FORWARDER_PASSWORD', 'guest'),
+    'QUEUE_NAME': os.environ.get('RABBITMQ_SMS_QUEUE', 'sms_notifications_queue'),
+}
+
 
 JIRA_CONFIG = {
     'server_url': 'https://jira.tsetmc.com',

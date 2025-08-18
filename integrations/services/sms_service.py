@@ -1,8 +1,10 @@
 import logging
+import json
 from typing import List, Optional, Dict, Any
 
 from django.conf import settings
 import requests
+import pika
 
 from integrations.exceptions import SmsNotificationError
 
@@ -69,6 +71,55 @@ class SmsService:
         self, phone_numbers: List[str], message: str, fingerprint: str = "N/A"
     ) -> Optional[Dict[str, Any]]:
         """Send the same message to multiple recipients in a single request."""
+        delivery_method = getattr(settings, "SMS_DELIVERY_METHOD", "HTTP").upper()
+        if delivery_method == "RABBITMQ":
+            return self._send_to_rabbitmq(phone_numbers, message, fingerprint)
+        return self._send_via_http(phone_numbers, message, fingerprint)
+
+    def _send_to_rabbitmq(
+        self, phone_numbers: List[str], message: str, fingerprint: str
+    ) -> bool:
+        """Queues the SMS message in RabbitMQ."""
+        config = settings.RABBITMQ_SMS_FORWARDER_CONFIG
+        payload = json.dumps({"recipients": phone_numbers, "text": message})
+
+        try:
+            connection = pika.BlockingConnection(
+                pika.ConnectionParameters(
+                    host=config["HOST"],
+                    port=config["PORT"],
+                    credentials=pika.PlainCredentials(config["USER"], config["PASSWORD"]),
+                )
+            )
+            channel = connection.channel()
+            channel.queue_declare(queue=config["QUEUE_NAME"], durable=True)
+
+            channel.basic_publish(
+                exchange="",
+                routing_key=config["QUEUE_NAME"],
+                body=payload,
+                properties=pika.BasicProperties(delivery_mode=2),
+            )
+
+            connection.close()
+            logger.info(
+                "SmsService (FP: %s): Message queued successfully in RabbitMQ for recipients %s.",
+                fingerprint,
+                phone_numbers,
+            )
+            return True
+        except Exception as e:  # pragma: no cover
+            logger.error(
+                "SmsService (FP: %s): Failed to queue message in RabbitMQ. Error: %s",
+                fingerprint,
+                e,
+                exc_info=True,
+            )
+            return False
+
+    def _send_via_http(
+        self, phone_numbers: List[str], message: str, fingerprint: str
+    ) -> Optional[Dict[str, Any]]:
         if not all([self.send_url, self.username, self.password, self.domain, self.sender]):
             logger.error(
                 "SmsService (FP: %s): SMS provider send URL or credentials not configured.",
