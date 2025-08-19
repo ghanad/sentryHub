@@ -71,7 +71,7 @@ class SlackServiceSendNotificationTests(SimpleTestCase):
         connection_mock.return_value = connection_instance
         basic_props_mock.return_value = Mock()
 
-        result = service.send_notification("general", "hi")
+        result = service.send_notification("general", "hi", "test_fingerprint")
 
         self.assertTrue(result)
         connection_mock.assert_called_once()
@@ -79,7 +79,7 @@ class SlackServiceSendNotificationTests(SimpleTestCase):
         channel_mock.basic_publish.assert_called_once()
         args, kwargs = channel_mock.basic_publish.call_args
         self.assertEqual(kwargs["routing_key"], 'slack_notifications_queue')
-        self.assertEqual(json.loads(kwargs["body"]), {"channel": "#general", "text": "hi"})
+        self.assertEqual(json.loads(kwargs["body"]), {"channel": "#general", "text": "hi", "fingerprint": "test_fingerprint"})
         self.assertIs(kwargs["properties"], basic_props_mock.return_value)
         connection_instance.close.assert_called_once()
 

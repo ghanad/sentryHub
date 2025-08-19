@@ -37,7 +37,7 @@ class SlackService:
         """
         config = settings.RABBITMQ_FORWARDER_CONFIG
         normalized_channel = self._normalize_channel(channel)
-        payload = json.dumps({"channel": normalized_channel, "text": message})
+        payload = json.dumps({"channel": normalized_channel, "text": message, "fingerprint": fingerprint})
 
         try:
             connection = pika.BlockingConnection(
