@@ -31,7 +31,11 @@ class HandleAlertProcessedSmsTests(TestCase):
         alert_processed.send(sender=None, alert_group=self.alert_group, instance=None, status='firing')
 
         mock_transaction.on_commit.assert_called_once()
-        mock_task.delay.assert_called_once_with(alert_group_id=self.alert_group.id, rule_id=self.rule.id)
+        mock_task.delay.assert_called_once_with(
+            alert_group_id=self.alert_group.id, 
+            rule_id=self.rule.id, 
+            alert_status='firing'
+        )
 
     @patch('integrations.handlers.transaction')
     @patch('integrations.handlers.process_sms_for_alert_group')

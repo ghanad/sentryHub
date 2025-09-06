@@ -7,7 +7,7 @@ import ipaddress
 import pytz
 from typing import Optional, Dict, Any
 from celery import shared_task, Task
-from celery.exceptions import Retry # <--- این ایمپورت را اضافه کنید
+from celery.exceptions import Retry 
 from django.conf import settings
 
 from core.services.metrics import metrics_manager
@@ -301,9 +301,11 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
                     raise Exception(f"Jira issue creation failed for AlertGroup {alert_group_id}")
 
         elif alert_status == 'resolved':
+            logger.info(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Handling resolved alert. Existing issue key: {existing_issue_key}, Issue status category: {issue_status_category}")
             if existing_issue_key and issue_status_category in open_categories:
                 default_comment = f"Alert group '{alert_group.fingerprint}' was resolved (task run at {current_task_time.isoformat()})."
                 comment_body = render_template_safe(rule.jira_update_comment_template, template_context, default_comment)
+                logger.info(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Generated resolved comment body: {comment_body}")
                 logger.info(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Adding 'resolved' comment to open Jira issue: {existing_issue_key}")
                 success = jira_service.add_comment(existing_issue_key, comment_body)
                 if not success: raise Exception(f"Failed to add 'resolved' comment to {existing_issue_key}")
@@ -395,14 +397,14 @@ def process_slack_for_alert_group(self, alert_group_id: int, rule_id: int):
 
 
 @shared_task(bind=True, autoretry_for=(SmsNotificationError,), retry_backoff=True, retry_backoff_max=3600, max_retries=20)
-def process_sms_for_alert_group(self, alert_group_id: int, rule_id: int):
+def process_sms_for_alert_group(self, alert_group_id: int, rule_id: int, alert_status: str): # <--- پارامتر alert_status اضافه شد
     """Celery task to send SMS notifications for an alert group."""
     try:
         alert_group = AlertGroup.objects.get(pk=alert_group_id)
         rule = SmsIntegrationRule.objects.get(pk=rule_id)
         fingerprint_for_log = alert_group.fingerprint
         logger.info(
-            f"SMS Task {self.request.id} (FP: {fingerprint_for_log}): Starting for AlertGroup ID: {alert_group_id}, Rule ID: {rule_id}"
+            f"SMS Task {self.request.id} (FP: {fingerprint_for_log}): Starting for AlertGroup ID: {alert_group_id}, Rule ID: {rule_id}, Status: {alert_status}"
         )
     except AlertGroup.DoesNotExist:
         logger.error(f"SMS Task {self.request.id}: AlertGroup with ID {alert_group_id} not found. Aborting.")
@@ -415,7 +417,8 @@ def process_sms_for_alert_group(self, alert_group_id: int, rule_id: int):
     annotations = latest_instance.annotations if latest_instance else {}
     summary = annotations.get('summary', alert_group.name)
     description = annotations.get('description', 'No description provided.')
-    status = getattr(alert_group, 'current_status', None)
+    
+    # status = getattr(alert_group, 'current_status', None)  <--- این خط حذف می‌شود
 
     context = {
         'alert_group': alert_group,
@@ -430,7 +433,7 @@ def process_sms_for_alert_group(self, alert_group_id: int, rule_id: int):
     matcher = SmsRuleMatcherService()
     recipients, should_send_resolve = matcher.resolve_recipients(alert_group, rule)
 
-    if status == 'resolved':
+    if alert_status == 'resolved':
         if rule.resolved_template and should_send_resolve:
             template = rule.resolved_template
         else:
