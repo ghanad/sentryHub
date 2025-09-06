@@ -93,7 +93,7 @@ def sanitize_ip_addresses(message: str) -> str:
     return sanitized
 
 @shared_task(bind=True, base=JiraTaskBase)
-def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_status: str, triggering_instance_id: Optional[int] = None):
+def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_status: str, triggering_instance_id: Optional[int] = None, fingerprint: str = "N/A"):
     """
     Celery task to handle Jira integration logic for an alert group using templates.
     Uses the specific triggering_instance if provided.
@@ -104,13 +104,13 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
         fingerprint_for_log = alert_group.fingerprint
         logger.info(f"Jira Task {self.request.id} (FP: {fingerprint_for_log}): Starting for AlertGroup ID: {alert_group_id}, Rule ID: {rule_id}, Status: {alert_status}, TriggeringInstanceID: {triggering_instance_id}")
     except AlertGroup.DoesNotExist:
-        logger.error(f"Task {self.request.id}: AlertGroup with ID {alert_group_id} not found. Aborting Jira task.")
+        logger.error(f"Task {self.request.id} (FP: {fingerprint}): AlertGroup with ID {alert_group_id} not found. Aborting Jira task.")
         return
     except JiraIntegrationRule.DoesNotExist:
-        logger.error(f"Task {self.request.id}: JiraIntegrationRule with ID {rule_id} not found. Aborting Jira task.")
+        logger.error(f"Task {self.request.id} (FP: {fingerprint}): JiraIntegrationRule with ID {rule_id} not found. Aborting Jira task.")
         return
     except Exception as e:
-        logger.error(f"Task {self.request.id}: Error fetching base objects for AlertGroup {alert_group_id}: {e}", exc_info=True)
+        logger.error(f"Task {self.request.id} (FP: {fingerprint}): Error fetching base objects for AlertGroup {alert_group_id}: {e}", exc_info=True)
         raise # Re-raise to allow Celery retry
 
     # Log the received triggering_instance_id more explicitly

@@ -2,9 +2,10 @@
 
 import logging
 from django.dispatch import receiver
+from django.db import transaction
 from alerts.signals import alert_processed
 # Import AlertGroup if needed for type hinting or direct access, though it comes from kwargs
-from alerts.models import AlertGroup, AlertInstance # AlertInstance را اضافه کنید
+from alerts.models import AlertGroup, AlertInstance
 from .services.jira_matcher import JiraRuleMatcherService
 from .services.slack_matcher import SlackRuleMatcherService
 from .services.sms_matcher import SmsRuleMatcherService
@@ -45,14 +46,20 @@ def handle_alert_processed(sender, **kwargs):
         matching_rule = jira_matcher_service.find_matching_rule(alert_group.labels)
 
         if matching_rule:
-            logger.info(f"Integrations Handler (FP: {fingerprint_for_log}): Matched Jira rule '{matching_rule.name}'. Triggering Jira task for status '{status}'.")
+            logger.info(f"Integrations Handler (FP: {fingerprint_for_log}): Matched Jira rule '{matching_rule.name}'. Queueing Jira task for status '{status}'.")
             try:
-                process_jira_for_alert_group.delay(
-                    alert_group_id=alert_group.id,
-                    rule_id=matching_rule.id,
-                    alert_status=status,
-                    triggering_instance_id=triggering_instance.id if triggering_instance else None
-                )
+                def send_jira_task():
+                    task_result = process_jira_for_alert_group.delay(
+                        alert_group_id=alert_group.id,
+                        rule_id=matching_rule.id,
+                        alert_status=status,
+                        triggering_instance_id=triggering_instance.id if triggering_instance else None,
+                        fingerprint=alert_group.fingerprint
+                    )
+                    logger.info(f"Integrations Handler (FP: {fingerprint_for_log}): Successfully queued Jira task with ID: {task_result.id}")
+
+                transaction.on_commit(send_jira_task)
+
             except Exception as e:
                 logger.error(f"Integrations Handler (FP: {fingerprint_for_log}): Failed to queue Jira processing task for AlertGroup {alert_group.id}, status {status}: {e}", exc_info=True)
         else:
@@ -99,10 +106,12 @@ def handle_alert_processed_slack(sender, **kwargs):
             f"Integrations Handler (Slack) (FP: {fingerprint_for_log}): Matched Slack rule '{rule.name}'. Queueing task."
         )
         try:
-            process_slack_for_alert_group.delay(
-                alert_group_id=alert_group.id,
-                rule_id=rule.id,
-            )
+            def send_slack_task():
+                process_slack_for_alert_group.delay(
+                    alert_group_id=alert_group.id,
+                    rule_id=rule.id,
+                )
+            transaction.on_commit(send_slack_task)
         except Exception as e:
             logger.error(
                 f"Integrations Handler (Slack) (FP: {fingerprint_for_log}): Failed to queue Slack processing task for AlertGroup {alert_group.id}: {e}",
@@ -139,7 +148,9 @@ def handle_alert_processed_sms(sender, **kwargs):
             f"Integrations Handler (SMS) (FP: {fingerprint_for_log}): Matched SMS rule '{rule.name}'. Queueing task."
         )
         try:
-            process_sms_for_alert_group.delay(alert_group_id=alert_group.id, rule_id=rule.id)
+            def send_sms_task():
+                process_sms_for_alert_group.delay(alert_group_id=alert_group.id, rule_id=rule.id)
+            transaction.on_commit(send_sms_task)
         except Exception as e:
             logger.error(
                 f"Integrations Handler (SMS) (FP: {fingerprint_for_log}): Failed to queue SMS task for AlertGroup {alert_group.id}: {e}",
