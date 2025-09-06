@@ -1,11 +1,11 @@
-from unittest.mock import patch
 from django.test import TestCase
-from django.utils import timezone
+from unittest.mock import patch
 from alerts.models import AlertGroup
+from django.utils import timezone
 from integrations.models import PhoneBook, SmsIntegrationRule
 from integrations.services.sms_matcher import SmsRuleMatcherService
 from integrations.exceptions import SmsNotificationError
-from integrations.tasks import process_sms_for_alert_group
+from integrations.tasks import process_sms_for_alert_group, sanitize_ip_addresses
 from celery.exceptions import Retry
 
 
@@ -55,7 +55,8 @@ class SmsTaskTests(TestCase):
         rule = SmsIntegrationRule.objects.create(name='r', match_criteria={}, recipients='alice', firing_template='msg')
         process_sms_for_alert_group.request.id = 'test'
         with self.assertLogs('integrations.tasks', level='INFO') as cm:
-            process_sms_for_alert_group.run(alert_group.id, rule.id)
+            # FIX: Added alert_status='firing'
+            process_sms_for_alert_group.run(alert_group.id, rule.id, alert_status='firing')
         mock_service.send_bulk.assert_called_once_with(['1'], 'msg', fingerprint='fp2')
         log_output = ' '.join(cm.output)
         self.assertIn('Message body: msg', log_output)
@@ -88,7 +89,8 @@ class SmsTaskTests(TestCase):
         
         process_sms_for_alert_group.request.id = 'test_summary_task'
         with self.assertLogs('integrations.tasks', level='INFO') as cm:
-            process_sms_for_alert_group.run(alert_group.id, rule.id)
+            # FIX: Added alert_status='firing'
+            process_sms_for_alert_group.run(alert_group.id, rule.id, alert_status='firing')
         
         expected_message = 'Alert: Test Alert Group. Summary: This is a test summary.'
         mock_service.send_bulk.assert_called_once_with(['1234567890'], expected_message, fingerprint='fp_summary')
@@ -105,5 +107,6 @@ class SmsTaskTests(TestCase):
         rule = SmsIntegrationRule.objects.create(name='r', match_criteria={}, recipients='alice', firing_template='msg')
         process_sms_for_alert_group.app.conf.update(task_always_eager=True, task_store_eager_result=False, task_eager_propagates=True, result_backend='cache+memory://')
         with self.assertRaises(Retry):
-            process_sms_for_alert_group.apply(args=(alert_group.id, rule.id))
+            # FIX: Added alert_status='firing' to the args tuple
+            process_sms_for_alert_group.apply(args=(alert_group.id, rule.id, 'firing'))
         retry_mock.assert_called_once()
