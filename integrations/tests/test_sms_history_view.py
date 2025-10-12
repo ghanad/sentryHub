@@ -53,6 +53,7 @@ class SmsHistoryViewTests(TestCase):
         self.assertContains(response, "Success")
         self.assertContains(response, "Sent successfully")
         self.assertContains(response, "Invalid recipient number")
+        self.assertContains(response, self.alert_group.fingerprint)
 
         rows = response.context["sms_log_rows"]
         self.assertEqual(len(rows), 2)
