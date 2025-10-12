@@ -242,12 +242,36 @@ class SmsHistoryListView(LoginRequiredMixin, ListView):
         )
 
         page_obj = context.get('sms_logs')
+        log_rows = []
+
         if page_obj is not None:
             for log in page_obj:
                 resolved = []
                 for recipient in log.recipients or []:
                     resolved.append(phonebook_lookup.get(recipient, recipient))
                 log.recipient_display = resolved
+
+                recipients = list(zip(log.recipients or [], log.recipient_display))
+
+                if recipients:
+                    for recipient_raw, recipient_label in recipients:
+                        log_rows.append(
+                            {
+                                'log': log,
+                                'recipient_raw': recipient_raw,
+                                'recipient_display': recipient_label,
+                            }
+                        )
+                else:
+                    log_rows.append(
+                        {
+                            'log': log,
+                            'recipient_raw': None,
+                            'recipient_display': None,
+                        }
+                    )
+
+        context['sms_log_rows'] = log_rows
 
         return context
 

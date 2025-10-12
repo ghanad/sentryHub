@@ -41,7 +41,9 @@ class SmsHistoryViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "SMS History")
         self.assertContains(response, "history-rule")
-        self.assertContains(response, "Ali, Sara")
+        self.assertContains(response, "Ali")
+        self.assertContains(response, "Sara")
+        self.assertNotContains(response, "Ali, Sara")
         self.assertContains(response, "HTTP")
         self.assertContains(response, "Success")
 

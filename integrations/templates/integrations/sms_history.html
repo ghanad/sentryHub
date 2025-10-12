@@ -43,7 +43,8 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for log in sms_logs %}
+                    {% for entry in sms_log_rows %}
+                    {% with log=entry.log %}
                     <tr>
                         <td class="text-nowrap">{{ log.created_at|date:"Y-m-d H:i" }}</td>
                         <td>
@@ -63,8 +64,8 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if log.recipient_display %}
-                                <span class="small">{{ log.recipient_display|join:", " }}</span>
+                            {% if entry.recipient_display %}
+                                <span class="small">{{ entry.recipient_display }}</span>
                             {% else %}
                                 <span class="text-muted">—</span>
                             {% endif %}
@@ -100,6 +101,7 @@
                             {% endif %}
                         </td>
                     </tr>
+                    {% endwith %}
                     {% empty %}
                     <tr>
                         <td colspan="9" class="text-center p-5">
