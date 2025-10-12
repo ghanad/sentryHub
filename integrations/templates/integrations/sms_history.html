@@ -33,7 +33,7 @@
                     <tr>
                         <th>Sent At</th>
                         <th>Rule</th>
-                        <th>Alert Group</th>
+                        <th>Fingerprint</th>
                         <th>Recipients</th>
                         <th>Delivery</th>
                         <th>Status</th>
@@ -58,7 +58,10 @@
                         </td>
                         <td>
                             {% if log.alert_group %}
-                                <span class="badge bg-light text-dark">#{{ log.alert_group.id }}</span>
+                                <a href="{% url 'alerts:alert-detail' log.alert_group.fingerprint %}"
+                                   class="text-decoration-none">
+                                    <code>{{ log.alert_group.fingerprint }}</code>
+                                </a>
                             {% else %}
                                 <span class="text-muted">—</span>
                             {% endif %}
