@@ -17,7 +17,12 @@ from django.urls import reverse
 from django.core.exceptions import ObjectDoesNotExist
 from django.template import Context, Template, TemplateSyntaxError
 
-from integrations.models import JiraIntegrationRule, SlackIntegrationRule, SmsIntegrationRule
+from integrations.models import (
+    JiraIntegrationRule,
+    SlackIntegrationRule,
+    SmsIntegrationRule,
+    SmsMessageLog,
+)
 from alerts.models import AlertGroup, AlertInstance
 from integrations.services.jira_service import JiraService
 from integrations.services.slack_service import SlackService
@@ -452,10 +457,56 @@ def process_sms_for_alert_group(self, alert_group_id: int, rule_id: int):
         return
 
     sms_service = SmsService()
+    delivery_method = getattr(settings, "SMS_DELIVERY_METHOD", "HTTP").upper()
     logger.info(
         f"SMS Task {self.request.id} (FP: {fingerprint_for_log}): Message body: {message}"
     )
-    sms_service.send_bulk(recipients, message, fingerprint=fingerprint_for_log)
+
+    log_defaults = {
+        "rule": rule,
+        "alert_group": alert_group,
+        "recipients": recipients,
+        "message": message,
+        "delivery_method": delivery_method,
+    }
+
+    try:
+        response = sms_service.send_bulk(
+            recipients, message, fingerprint=fingerprint_for_log
+        )
+    except SmsNotificationError as exc:
+        SmsMessageLog.objects.create(
+            status=SmsMessageLog.STATUS_FAILED,
+            provider_response=None,
+            error_message=str(exc),
+            **log_defaults,
+        )
+        logger.warning(
+            f"SMS Task {self.request.id} (FP: {fingerprint_for_log}): "
+            f"Failed to send notification to {recipients} for AlertGroup {alert_group_id}. Error: {exc}"
+        )
+        raise
+
+    if delivery_method == "RABBITMQ":
+        status = (
+            SmsMessageLog.STATUS_QUEUED if response else SmsMessageLog.STATUS_FAILED
+        )
+    else:
+        status = (
+            SmsMessageLog.STATUS_SUCCESS if response else SmsMessageLog.STATUS_FAILED
+        )
+
+    error_message = ""
+    if status == SmsMessageLog.STATUS_FAILED and not response:
+        error_message = "No response from SMS provider."
+
+    SmsMessageLog.objects.create(
+        status=status,
+        provider_response=response,
+        error_message=error_message,
+        **log_defaults,
+    )
+
     logger.info(
         f"SMS Task {self.request.id} (FP: {fingerprint_for_log}): "
         f"Notification sent to {recipients} for AlertGroup {alert_group_id}."

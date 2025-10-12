@@ -172,3 +172,67 @@ class SmsIntegrationRule(models.Model):
     def __str__(self):
         status = "Active" if self.is_active else "Inactive"
         return f"{self.name} ({status}, Prio: {self.priority})"
+
+
+class SmsMessageLog(models.Model):
+    """Stores a record for each SMS message attempt made by the system."""
+
+    STATUS_SUCCESS = "success"
+    STATUS_FAILED = "failed"
+    STATUS_QUEUED = "queued"
+    STATUS_CHOICES = [
+        (STATUS_SUCCESS, "Success"),
+        (STATUS_FAILED, "Failed"),
+        (STATUS_QUEUED, "Queued"),
+    ]
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    rule = models.ForeignKey(
+        SmsIntegrationRule,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="message_logs",
+    )
+    alert_group = models.ForeignKey(
+        AlertGroup,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="sms_message_logs",
+    )
+    recipients = models.JSONField(default=list)
+    message = models.TextField()
+    delivery_method = models.CharField(max_length=20)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES)
+    provider_response = models.JSONField(null=True, blank=True)
+    error_message = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"SMS Log {self.pk} ({self.status})"
+
+    def provider_status_messages(self):
+        """Return provider status descriptions derived from the stored response."""
+        if not isinstance(self.provider_response, dict):
+            return []
+
+        messages = self.provider_response.get("messages", [])
+        status_messages = []
+        if not isinstance(messages, list):
+            return status_messages
+
+        from integrations.services.sms_service import SmsService
+
+        for entry in messages:
+            if not isinstance(entry, dict):
+                continue
+            status_code = entry.get("status")
+            if status_code is None:
+                continue
+            human_readable = SmsService.STATUS_MESSAGES.get(status_code)
+            if human_readable:
+                status_messages.append(human_readable)
+        return status_messages

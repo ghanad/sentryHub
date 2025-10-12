@@ -63,6 +63,7 @@
             {% url 'integrations:sms-rule-list' as sms_url %}
             {% url 'integrations:phonebook-list' as phonebook_url %}
             {% url 'integrations:sms-admin' as sms_admin_url %}
+            {% url 'integrations:sms-history' as sms_history_url %}
             {% url 'docs:documentation-list' as docs_url %}
             {% url 'docs:macro-list' as macros_url %}
 
@@ -133,15 +134,15 @@
              {% if user.is_authenticated and user.is_staff %}
              <!-- Admin Dropdown -->
              <li class="nav-item">
-                 <a class="nav-link collapsed {% if request.resolver_match.url_name in 'admin_dashboard_summary,user_list,jira-admin,slack-admin,macro-list,phonebook-list' %}active{% endif %}"
+                 <a class="nav-link collapsed {% if request.resolver_match.url_name in 'admin_dashboard_summary,user_list,jira-admin,slack-admin,macro-list,phonebook-list,sms-history' %}active{% endif %}"
                     href="#adminSubmenu" data-bs-toggle="collapse" role="button"
-                    aria-expanded="{% if request.resolver_match.url_name in 'admin_dashboard_summary,user_list,jira-admin,slack-admin,macro-list,phonebook-list' %}true{% else %}false{% endif %}"
+                    aria-expanded="{% if request.resolver_match.url_name in 'admin_dashboard_summary,user_list,jira-admin,slack-admin,macro-list,phonebook-list,sms-history' %}true{% else %}false{% endif %}"
                     aria-controls="adminSubmenu">
                      <i data-lucide="settings" class="nav-icon"></i>
                      <span class="nav-text">Admin</span>
                      <i class='bx bx-chevron-down ms-auto sidebar-arrow'></i>
                  </a>
-                 <ul class="nav-submenu collapse {% if request.resolver_match.url_name in 'admin_dashboard_summary,user_list,jira-admin,slack-admin,phonebook-list' %}show{% endif %}"
+                 <ul class="nav-submenu collapse {% if request.resolver_match.url_name in 'admin_dashboard_summary,user_list,jira-admin,slack-admin,phonebook-list,sms-history' %}show{% endif %}"
                      id="adminSubmenu" data-bs-parent=".sidebar-nav">
                      <li class="nav-item">
                          <a href="{% url 'dashboard:admin_dashboard_summary' %}" class="nav-link {% if request.resolver_match.url_name == 'admin_dashboard_summary' %}active{% endif %}">
@@ -177,6 +178,12 @@
                         <a href="{{ phonebook_url }}" class="nav-link {% if request.resolver_match.namespace == 'integrations' and request.resolver_match.url_name == 'phonebook-list' %}active{% endif %}">
                             <i class='bx bx-radio-circle nav-icon-sub'></i>
                             <span class="nav-text">Phone Book</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ sms_history_url }}" class="nav-link {% if request.resolver_match.namespace == 'integrations' and request.resolver_match.url_name == 'sms-history' %}active{% endif %}">
+                            <i class='bx bx-radio-circle nav-icon-sub'></i>
+                            <span class="nav-text">SMS History</span>
                         </a>
                     </li>
                      <li class="nav-item">

@@ -18,7 +18,13 @@ import markdown
 import re
 import json
 
-from integrations.models import JiraIntegrationRule, SlackIntegrationRule, SmsIntegrationRule, PhoneBook
+from integrations.models import (
+    JiraIntegrationRule,
+    SlackIntegrationRule,
+    SmsIntegrationRule,
+    SmsMessageLog,
+    PhoneBook,
+)
 from integrations.forms import (
     JiraIntegrationRuleForm,
     SlackIntegrationRuleForm,
@@ -215,6 +221,35 @@ class SmsRuleDeleteView(LoginRequiredMixin, DeleteView):
     model = SmsIntegrationRule
     template_name = 'integrations/sms_rule_confirm_delete.html'
     success_url = reverse_lazy('integrations:sms-rule-list')
+
+
+class SmsHistoryListView(LoginRequiredMixin, ListView):
+    model = SmsMessageLog
+    template_name = 'integrations/sms_history.html'
+    context_object_name = 'sms_logs'
+    paginate_by = 25
+
+    def get_queryset(self):
+        return (
+            SmsMessageLog.objects.select_related('rule', 'alert_group')
+            .order_by('-created_at')
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        phonebook_lookup = dict(
+            PhoneBook.objects.values_list('phone_number', 'name')
+        )
+
+        page_obj = context.get('sms_logs')
+        if page_obj is not None:
+            for log in page_obj:
+                resolved = []
+                for recipient in log.recipients or []:
+                    resolved.append(phonebook_lookup.get(recipient, recipient))
+                log.recipient_display = resolved
+
+        return context
 
 @login_required
 def jira_admin_view(request):
