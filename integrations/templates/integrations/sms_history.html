@@ -1,5 +1,5 @@
 {% extends "dashboard/base.html" %}
-{% load static %}
+{% load static core_tags %}
 
 {% block title %}SMS History - SentryHub{% endblock %}
 
@@ -46,7 +46,7 @@
                     {% for entry in sms_log_rows %}
                     {% with log=entry.log %}
                     <tr>
-                        <td class="text-nowrap">{{ log.created_at|date:"Y-m-d H:i" }}</td>
+                        <td class="text-nowrap">{{ log.created_at|format_datetime_short:user }}</td>
                         <td>
                             {% if log.rule %}
                                 <a href="{% url 'integrations:sms-rule-update' log.rule_id %}" class="text-decoration-none">

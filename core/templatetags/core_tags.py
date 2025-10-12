@@ -95,6 +95,12 @@ def format_datetime(value, user=None, format_string="%Y-%m-%d %H:%M:%S"):
         except Exception:
             return str(value)  # Raw string representation as last resort
 
+
+@register.filter
+def format_datetime_short(value, user=None):
+    """Format a datetime for display with minute precision respecting user preference."""
+    return format_datetime(value, user, format_string="%Y-%m-%d %H:%M")
+
 @register.filter
 def has_group(user, group_name):
     """Check if user belongs to specified group"""

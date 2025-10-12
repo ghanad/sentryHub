@@ -25,15 +25,11 @@ from core.templatetags.core_tags import (
     time_ago,
     status_badge,
     jsonify,
-    format_datetime, 
+    format_datetime,
+    format_datetime_short,
     has_group,
     add_class,
     calculate_duration
-)
-
-
-from core.templatetags.core_tags import (
-    format_datetime 
 )
 
 # Mock for the force_jalali function to avoid dependency on date_format_tags.py during these tests
@@ -241,6 +237,17 @@ class CoreTagsFormatDatetimeTests(TestCase):
         mock_localtime.return_value.strftime.return_value = "GREGORIAN_NO_PROFILE_FORMAT"
         self.assertEqual(format_datetime(self.test_datetime_utc, user_no_profile), "GREGORIAN_NO_PROFILE_FORMAT")
         mock_localtime.assert_called_once_with(self.test_datetime_utc)
+
+    @patch('core.templatetags.core_tags.format_datetime')
+    def test_format_datetime_short_uses_minute_precision(self, mock_format_datetime):
+        mock_format_datetime.return_value = "SHORT_FORMAT"
+        result = format_datetime_short(self.test_datetime_utc, self.user_gregorian_ft)
+        mock_format_datetime.assert_called_once_with(
+            self.test_datetime_utc,
+            self.user_gregorian_ft,
+            format_string="%Y-%m-%d %H:%M",
+        )
+        self.assertEqual(result, "SHORT_FORMAT")
 
 
 class CoreTagsHasGroupTests(TestCase):
