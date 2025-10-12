@@ -34,7 +34,7 @@ class SmsHistoryViewTests(TestCase):
             message="Test message",
             delivery_method="HTTP",
             status=SmsMessageLog.STATUS_SUCCESS,
-            provider_response={"messages": [{"status": 0}]},
+            provider_response={"messages": [{"status": 0}, {"status": 1}]},
         )
 
         response = self.client.get(reverse("integrations:sms-history"))
@@ -46,6 +46,15 @@ class SmsHistoryViewTests(TestCase):
         self.assertNotContains(response, "Ali, Sara")
         self.assertContains(response, "HTTP")
         self.assertContains(response, "Success")
+        self.assertContains(response, "Sent successfully")
+        self.assertContains(response, "Invalid recipient number")
+
+        rows = response.context["sms_log_rows"]
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(rows[0]["recipient_display"], "Ali")
+        self.assertEqual(rows[0]["provider_status_display"], "Sent successfully")
+        self.assertEqual(rows[1]["recipient_display"], "Sara")
+        self.assertEqual(rows[1]["provider_status_display"], "Invalid recipient number")
 
     def test_requires_login(self):
         self.client.logout()

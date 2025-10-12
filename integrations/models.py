@@ -235,4 +235,6 @@ class SmsMessageLog(models.Model):
             human_readable = SmsService.STATUS_MESSAGES.get(status_code)
             if human_readable:
                 status_messages.append(human_readable)
+            else:
+                status_messages.append(f"Status {status_code}")
         return status_messages

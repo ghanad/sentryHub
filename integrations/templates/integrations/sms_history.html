@@ -78,17 +78,11 @@
                             </span>
                         </td>
                         <td>
-                            {% with details=log.provider_status_messages %}
-                                {% if details %}
-                                    <ul class="list-unstyled mb-0 small">
-                                        {% for detail in details %}
-                                            <li>{{ detail }}</li>
-                                        {% endfor %}
-                                    </ul>
-                                {% else %}
-                                    <span class="text-muted small">—</span>
-                                {% endif %}
-                            {% endwith %}
+                            {% if entry.provider_status_display %}
+                                <span class="small">{{ entry.provider_status_display }}</span>
+                            {% else %}
+                                <span class="text-muted small">—</span>
+                            {% endif %}
                         </td>
                         <td>
                             <span class="small" title="{{ log.message }}">{{ log.message|truncatechars:80 }}</span>

@@ -36,6 +36,7 @@ from integrations.forms import (
 # otherwise it can be removed if solely used for the incorrect delete check.
 from alerts.models import AlertGroup
 import logging
+from itertools import zip_longest
 
 logger = logging.getLogger(__name__)
 
@@ -251,23 +252,33 @@ class SmsHistoryListView(LoginRequiredMixin, ListView):
                     resolved.append(phonebook_lookup.get(recipient, recipient))
                 log.recipient_display = resolved
 
-                recipients = list(zip(log.recipients or [], log.recipient_display))
+                added_row = False
+                recipients = log.recipients or []
+                statuses = log.provider_status_messages()
 
-                if recipients:
-                    for recipient_raw, recipient_label in recipients:
-                        log_rows.append(
-                            {
-                                'log': log,
-                                'recipient_raw': recipient_raw,
-                                'recipient_display': recipient_label,
-                            }
-                        )
-                else:
+                for recipient_raw, recipient_label, status_text in zip_longest(
+                    recipients,
+                    log.recipient_display,
+                    statuses,
+                    fillvalue=None,
+                ):
+                    added_row = True
+                    log_rows.append(
+                        {
+                            'log': log,
+                            'recipient_raw': recipient_raw,
+                            'recipient_display': recipient_label,
+                            'provider_status_display': status_text,
+                        }
+                    )
+
+                if not added_row:
                     log_rows.append(
                         {
                             'log': log,
                             'recipient_raw': None,
                             'recipient_display': None,
+                            'provider_status_display': None,
                         }
                     )
 
