@@ -235,6 +235,22 @@ class SmsHistoryListView(LoginRequiredMixin, ListView):
             .order_by('-created_at')
         )
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        phonebook_lookup = dict(
+            PhoneBook.objects.values_list('phone_number', 'name')
+        )
+
+        page_obj = context.get('sms_logs')
+        if page_obj is not None:
+            for log in page_obj:
+                resolved = []
+                for recipient in log.recipients or []:
+                    resolved.append(phonebook_lookup.get(recipient, recipient))
+                log.recipient_display = resolved
+
+        return context
+
 @login_required
 def jira_admin_view(request):
     """

@@ -3,7 +3,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from alerts.models import AlertGroup
-from integrations.models import SmsIntegrationRule, SmsMessageLog
+from integrations.models import PhoneBook, SmsIntegrationRule, SmsMessageLog
 
 
 class SmsHistoryViewTests(TestCase):
@@ -25,6 +25,8 @@ class SmsHistoryViewTests(TestCase):
         )
 
     def test_history_page_lists_logs(self):
+        PhoneBook.objects.create(name="Ali", phone_number="0912")
+        PhoneBook.objects.create(name="Sara", phone_number="0935")
         SmsMessageLog.objects.create(
             rule=self.rule,
             alert_group=self.alert_group,
@@ -39,7 +41,7 @@ class SmsHistoryViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "SMS History")
         self.assertContains(response, "history-rule")
-        self.assertContains(response, "0912, 0935")
+        self.assertContains(response, "Ali, Sara")
         self.assertContains(response, "HTTP")
         self.assertContains(response, "Success")
 

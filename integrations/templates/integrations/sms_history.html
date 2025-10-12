@@ -64,8 +64,8 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if log.recipients %}
-                                <span class="small">{{ log.recipients|join:", " }}</span>
+                            {% if log.recipient_display %}
+                                <span class="small">{{ log.recipient_display|join:", " }}</span>
                             {% else %}
                                 <span class="text-muted">—</span>
                             {% endif %}
