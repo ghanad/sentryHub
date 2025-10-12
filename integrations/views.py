@@ -36,6 +36,7 @@ from integrations.forms import (
 # otherwise it can be removed if solely used for the incorrect delete check.
 from alerts.models import AlertGroup
 import logging
+from itertools import zip_longest
 
 logger = logging.getLogger(__name__)
 
@@ -242,12 +243,46 @@ class SmsHistoryListView(LoginRequiredMixin, ListView):
         )
 
         page_obj = context.get('sms_logs')
+        log_rows = []
+
         if page_obj is not None:
             for log in page_obj:
                 resolved = []
                 for recipient in log.recipients or []:
                     resolved.append(phonebook_lookup.get(recipient, recipient))
                 log.recipient_display = resolved
+
+                added_row = False
+                recipients = log.recipients or []
+                statuses = log.provider_status_messages()
+
+                for recipient_raw, recipient_label, status_text in zip_longest(
+                    recipients,
+                    log.recipient_display,
+                    statuses,
+                    fillvalue=None,
+                ):
+                    added_row = True
+                    log_rows.append(
+                        {
+                            'log': log,
+                            'recipient_raw': recipient_raw,
+                            'recipient_display': recipient_label,
+                            'provider_status_display': status_text,
+                        }
+                    )
+
+                if not added_row:
+                    log_rows.append(
+                        {
+                            'log': log,
+                            'recipient_raw': None,
+                            'recipient_display': None,
+                            'provider_status_display': None,
+                        }
+                    )
+
+        context['sms_log_rows'] = log_rows
 
         return context
 

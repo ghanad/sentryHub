@@ -1,5 +1,5 @@
 {% extends "dashboard/base.html" %}
-{% load static %}
+{% load static core_tags %}
 
 {% block title %}SMS History - SentryHub{% endblock %}
 
@@ -43,9 +43,10 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for log in sms_logs %}
+                    {% for entry in sms_log_rows %}
+                    {% with log=entry.log %}
                     <tr>
-                        <td class="text-nowrap">{{ log.created_at|date:"Y-m-d H:i" }}</td>
+                        <td class="text-nowrap">{{ log.created_at|format_datetime_short:user }}</td>
                         <td>
                             {% if log.rule %}
                                 <a href="{% url 'integrations:sms-rule-update' log.rule_id %}" class="text-decoration-none">
@@ -63,8 +64,8 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if log.recipient_display %}
-                                <span class="small">{{ log.recipient_display|join:", " }}</span>
+                            {% if entry.recipient_display %}
+                                <span class="small">{{ entry.recipient_display }}</span>
                             {% else %}
                                 <span class="text-muted">—</span>
                             {% endif %}
@@ -77,17 +78,11 @@
                             </span>
                         </td>
                         <td>
-                            {% with details=log.provider_status_messages %}
-                                {% if details %}
-                                    <ul class="list-unstyled mb-0 small">
-                                        {% for detail in details %}
-                                            <li>{{ detail }}</li>
-                                        {% endfor %}
-                                    </ul>
-                                {% else %}
-                                    <span class="text-muted small">—</span>
-                                {% endif %}
-                            {% endwith %}
+                            {% if entry.provider_status_display %}
+                                <span class="small">{{ entry.provider_status_display }}</span>
+                            {% else %}
+                                <span class="text-muted small">—</span>
+                            {% endif %}
                         </td>
                         <td>
                             <span class="small" title="{{ log.message }}">{{ log.message|truncatechars:80 }}</span>
@@ -100,6 +95,7 @@
                             {% endif %}
                         </td>
                     </tr>
+                    {% endwith %}
                     {% empty %}
                     <tr>
                         <td colspan="9" class="text-center p-5">
