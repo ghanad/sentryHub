@@ -2,7 +2,7 @@ from unittest.mock import patch
 from django.test import TestCase
 from django.utils import timezone
 from alerts.models import AlertGroup
-from integrations.models import PhoneBook, SmsIntegrationRule
+from integrations.models import PhoneBook, SmsIntegrationRule, SmsMessageLog
 from integrations.services.sms_matcher import SmsRuleMatcherService
 from integrations.exceptions import SmsNotificationError
 from integrations.tasks import process_sms_for_alert_group
@@ -60,6 +60,12 @@ class SmsTaskTests(TestCase):
         log_output = ' '.join(cm.output)
         self.assertIn('Message body: msg', log_output)
         self.assertIn('(FP: fp2)', log_output)
+        self.assertEqual(SmsMessageLog.objects.count(), 1)
+        sms_log = SmsMessageLog.objects.first()
+        self.assertEqual(sms_log.status, SmsMessageLog.STATUS_SUCCESS)
+        self.assertEqual(sms_log.rule, rule)
+        self.assertEqual(sms_log.alert_group, alert_group)
+        self.assertEqual(sms_log.recipients, ['1'])
 
     @patch('integrations.tasks.SmsService')
     def test_sms_template_with_summary(self, service_cls):
@@ -89,12 +95,16 @@ class SmsTaskTests(TestCase):
         process_sms_for_alert_group.request.id = 'test_summary_task'
         with self.assertLogs('integrations.tasks', level='INFO') as cm:
             process_sms_for_alert_group.run(alert_group.id, rule.id)
-        
+
         expected_message = 'Alert: Test Alert Group. Summary: This is a test summary.'
         mock_service.send_bulk.assert_called_once_with(['1234567890'], expected_message, fingerprint='fp_summary')
         log_output = ' '.join(cm.output)
         self.assertIn(f'Message body: {expected_message}', log_output)
         self.assertIn('(FP: fp_summary)', log_output)
+        self.assertEqual(SmsMessageLog.objects.count(), 1)
+        sms_log = SmsMessageLog.objects.first()
+        self.assertEqual(sms_log.message, expected_message)
+        self.assertEqual(sms_log.status, SmsMessageLog.STATUS_SUCCESS)
 
     @patch('integrations.tasks.SmsService')
     @patch('integrations.tasks.process_sms_for_alert_group.retry', side_effect=Retry('boom'))
@@ -107,3 +117,7 @@ class SmsTaskTests(TestCase):
         with self.assertRaises(Retry):
             process_sms_for_alert_group.apply(args=(alert_group.id, rule.id))
         retry_mock.assert_called_once()
+        self.assertEqual(SmsMessageLog.objects.count(), 1)
+        failure_log = SmsMessageLog.objects.first()
+        self.assertEqual(failure_log.status, SmsMessageLog.STATUS_FAILED)
+        self.assertEqual(failure_log.error_message, 'net')
