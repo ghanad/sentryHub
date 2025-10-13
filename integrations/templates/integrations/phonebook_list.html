@@ -11,67 +11,87 @@
 {% block main_content %}
 <header class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2">
     <h1 class="page-title m-0">Phone Book</h1>
-    <a href="{% url 'integrations:phonebook-create' %}" class="btn btn-primary d-flex align-items-center gap-2">
+    <a href="{% url 'integrations:phonebook-create' %}?contact_type={{ active_tab }}" class="btn btn-primary d-flex align-items-center gap-2">
         <i class='bx bx-plus-circle'></i> New Entry
     </a>
 </header>
-<div class="chart-card">
-    <div class="chart-card-header">
-        <h5 class="chart-title d-flex align-items-center gap-2">
-            <i class='bx bx-list-ul'></i>
-            Entries
-            {% if is_paginated %}
-                <span class="badge bg-secondary rounded-pill fw-normal ms-2">
-                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-                </span>
-            {% endif %}
-        </h5>
-        <span class="text-muted small">Total: {{ page_obj.paginator.count }}</span>
-    </div>
-    <div class="chart-card-body p-0">
-        <div class="table-responsive">
-            <table class="table align-items-center mb-0">
-                <thead class="thead-light">
-                    <tr>
-                        <th>Name</th>
-                        <th>Phone Number</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for entry in entries %}
-                    <tr>
-                        <td>{{ entry.name }}</td>
-                        <td>{{ entry.phone_number }}</td>
-                        <td>
-                            {% if entry.is_active %}
-                                <span class="badge bg-success">Active</span>
-                            {% else %}
-                                <span class="badge bg-secondary">Inactive</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <div class="action-menu">
-                                <a href="{% url 'integrations:phonebook-update' entry.pk %}" class="action-btn" data-bs-toggle="tooltip" title="Edit">
-                                    <i class='bx bx-pencil'></i>
-                                </a>
-                                <a href="{% url 'integrations:phonebook-delete' entry.pk %}" class="action-btn text-danger" data-bs-toggle="tooltip" title="Delete">
-                                    <i class='bx bx-trash'></i>
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="4" class="text-center p-5">
-                            <i class='bx bx-info-circle fs-1 text-muted mb-3 d-block'></i>
-                            <p class="text-muted mb-0">No phone book entries found.</p>
-                        </td>
-                    </tr>
+    <div class="chart-card">
+        <div class="chart-card-header">
+            <h5 class="chart-title d-flex align-items-center gap-2">
+                <i class='bx bx-list-ul'></i>
+                Entries
+                {% if active_tab_meta %}
+                    <span class="badge bg-primary-subtle text-primary-emphasis fw-semibold">{{ active_tab_meta.label }}</span>
+                {% endif %}
+                {% if is_paginated %}
+                    <span class="badge bg-secondary rounded-pill fw-normal ms-2">
+                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                    </span>
+                {% endif %}
+            </h5>
+            <span class="text-muted small">Total: {% if active_tab_meta %}{{ active_tab_meta.count }}{% else %}{{ page_obj.paginator.count }}{% endif %}</span>
+        </div>
+        <div class="chart-card-body p-0">
+            <div class="px-3 pt-3">
+                <ul class="nav nav-tabs card-tabs" role="tablist">
+                    {% for tab in tabs %}
+                        <li class="nav-item" role="presentation">
+                            <a
+                                class="nav-link {% if tab.key == active_tab %}active{% endif %}"
+                                href="?tab={{ tab.key }}"
+                                role="tab"
+                            >
+                                {{ tab.label }}
+                                <span class="badge bg-secondary ms-2">{{ tab.count }}</span>
+                            </a>
+                        </li>
                     {% endfor %}
-                </tbody>
-            </table>
+                </ul>
+            </div>
+            <div class="table-responsive">
+                <table class="table align-items-center mb-0">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Name</th>
+                            <th>Phone Number</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for entry in entries %}
+                        <tr>
+                            <td>{{ entry.name }}</td>
+                            <td>{{ entry.phone_number }}</td>
+                            <td>
+                                {% if entry.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="action-menu">
+                                    <a href="{% url 'integrations:phonebook-update' entry.pk %}" class="action-btn" data-bs-toggle="tooltip" title="Edit">
+                                        <i class='bx bx-pencil'></i>
+                                    </a>
+                                    <a href="{% url 'integrations:phonebook-delete' entry.pk %}" class="action-btn text-danger" data-bs-toggle="tooltip" title="Delete">
+                                        <i class='bx bx-trash'></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center p-5">
+                                <i class='bx bx-info-circle fs-1 text-muted mb-3 d-block'></i>
+                                <p class="text-muted mb-0">No phone book entries found.</p>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>

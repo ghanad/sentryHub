@@ -182,22 +182,72 @@ class PhoneBookListView(LoginRequiredMixin, ListView):
     context_object_name = 'entries'
     paginate_by = 20
 
+    def get_active_tab(self):
+        tab = self.request.GET.get('tab', PhoneBook.TYPE_INTERNAL)
+        valid_tabs = {choice[0] for choice in PhoneBook.TYPE_CHOICES}
+        if tab not in valid_tabs:
+            tab = PhoneBook.TYPE_INTERNAL
+        return tab
+
+    def get_queryset(self):
+        return PhoneBook.objects.filter(contact_type=self.get_active_tab())
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        active_tab = self.get_active_tab()
+        tab_counts = {
+            tab: PhoneBook.objects.filter(contact_type=tab).count()
+            for tab, _ in PhoneBook.TYPE_CHOICES
+        }
+        tabs = [
+            {
+                'key': key,
+                'label': label,
+                'count': tab_counts.get(key, 0),
+            }
+            for key, label in PhoneBook.TYPE_CHOICES
+        ]
+        active_tab_meta = next((tab for tab in tabs if tab['key'] == active_tab), tabs[0] if tabs else None)
+        context.update(
+            {
+                'active_tab': active_tab,
+                'active_tab_meta': active_tab_meta,
+                'tabs': tabs,
+            }
+        )
+        return context
+
 class PhoneBookCreateView(LoginRequiredMixin, CreateView):
     model = PhoneBook
     form_class = PhoneBookForm
     template_name = 'integrations/phonebook_form.html'
-    success_url = reverse_lazy('integrations:phonebook-list')
+
+    def get_initial(self):
+        initial = super().get_initial()
+        contact_type = self.request.GET.get('contact_type')
+        valid_types = {choice[0] for choice in PhoneBook.TYPE_CHOICES}
+        if contact_type in valid_types:
+            initial['contact_type'] = contact_type
+        return initial
+
+    def get_success_url(self):
+        return f"{reverse_lazy('integrations:phonebook-list')}?tab={self.object.contact_type}"
 
 class PhoneBookUpdateView(LoginRequiredMixin, UpdateView):
     model = PhoneBook
     form_class = PhoneBookForm
     template_name = 'integrations/phonebook_form.html'
-    success_url = reverse_lazy('integrations:phonebook-list')
+
+    def get_success_url(self):
+        return f"{reverse_lazy('integrations:phonebook-list')}?tab={self.object.contact_type}"
 
 class PhoneBookDeleteView(LoginRequiredMixin, DeleteView):
     model = PhoneBook
     template_name = 'integrations/phonebook_confirm_delete.html'
-    success_url = reverse_lazy('integrations:phonebook-list')
+
+    def get_success_url(self):
+        contact_type = getattr(self.object, 'contact_type', PhoneBook.TYPE_INTERNAL)
+        return f"{reverse_lazy('integrations:phonebook-list')}?tab={contact_type}"
 
 class SmsRuleListView(LoginRequiredMixin, ListView):
     model = SmsIntegrationRule
