@@ -35,6 +35,7 @@
                     <tr>
                         <th>Name</th>
                         <th>Phone Number</th>
+                        <th>Status</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -43,6 +44,13 @@
                     <tr>
                         <td>{{ entry.name }}</td>
                         <td>{{ entry.phone_number }}</td>
+                        <td>
+                            {% if entry.is_active %}
+                                <span class="badge bg-success">Active</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inactive</span>
+                            {% endif %}
+                        </td>
                         <td>
                             <div class="action-menu">
                                 <a href="{% url 'integrations:phonebook-update' entry.pk %}" class="action-btn" data-bs-toggle="tooltip" title="Edit">
@@ -56,7 +64,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="3" class="text-center p-5">
+                        <td colspan="4" class="text-center p-5">
                             <i class='bx bx-info-circle fs-1 text-muted mb-3 d-block'></i>
                             <p class="text-muted mb-0">No phone book entries found.</p>
                         </td>

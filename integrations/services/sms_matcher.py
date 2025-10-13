@@ -46,10 +46,14 @@ class SmsRuleMatcherService:
 
         numbers: List[str] = []
         for name in names:
-            try:
-                entry = PhoneBook.objects.get(name__iexact=name)
+            match_qs = PhoneBook.objects.filter(name__iexact=name)
+            entry = match_qs.filter(is_active=True).first()
+            if entry:
                 numbers.append(entry.phone_number)
-            except PhoneBook.DoesNotExist:
+                continue
+            if match_qs.exists():
+                logger.info("PhoneBook entry for '%s' is inactive; skipping", name)
+            else:
                 logger.warning("PhoneBook entry for '%s' not found", name)
         return numbers, should_send_resolve
 

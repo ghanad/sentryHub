@@ -35,6 +35,14 @@ class SmsMatcherTests(TestCase):
         self.assertEqual(nums, ['1'])
         self.assertFalse(should)
 
+    def test_inactive_phonebook_entries_are_skipped(self):
+        PhoneBook.objects.create(name='alice', phone_number='1', is_active=False)
+        rule = SmsIntegrationRule.objects.create(name='r_inactive', match_criteria={}, recipients='alice', firing_template='hi')
+        matcher = SmsRuleMatcherService()
+        nums, should = matcher.resolve_recipients(self.alert_group, rule)
+        self.assertEqual(nums, [])
+        self.assertFalse(should)
+
 
     def test_case_insensitive_recipient_matching(self):
         PhoneBook.objects.create(name='Ali', phone_number='3')
