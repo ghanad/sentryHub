@@ -1,0 +1,71 @@
+{% extends "alerts/base.html" %}
+{% load core_tags %}
+
+{% block title %}Delete {{ alert.name }} - SentryHub{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'dashboard:dashboard' %}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'alerts:alert-list' %}">Alerts</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'alerts:alert-detail' fingerprint=alert.fingerprint %}">{{ alert.name }}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Confirm Delete</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">Confirm Alert Deletion</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">Deleting an alert removes all of its history from SentryHub. This action cannot be undone.</p>
+
+                <ul class="list-unstyled mb-4">
+                    <li><strong>Alert Name:</strong> {{ alert.name }}</li>
+                    <li><strong>Fingerprint:</strong> <code>{{ alert.fingerprint }}</code></li>
+                    <li><strong>Severity:</strong> {{ alert.get_severity_display }}</li>
+                    <li><strong>Status:</strong> {{ alert.get_current_status_display }}</li>
+                </ul>
+
+                <p class="mb-3">To confirm, please type the alert name below:</p>
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger" role="alert">
+                            {{ form.non_field_errors|join:" " }}
+                        </div>
+                    {% endif %}
+                    <div class="mb-3">
+                        {{ form.confirmation.label_tag }}
+                        {{ form.confirmation }}
+                        {% if form.confirmation.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.confirmation.errors|join:" " }}
+                            </div>
+                        {% endif %}
+                        {% if form.confirmation.help_text %}
+                            <div class="form-text">{{ form.confirmation.help_text }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex justify-content-end">
+                        <a href="{% url 'alerts:alert-detail' fingerprint=alert.fingerprint %}" class="btn btn-secondary me-2">
+                            <i class="bi bi-x-lg me-1"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash me-1"></i> Delete Alert
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

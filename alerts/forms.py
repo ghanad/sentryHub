@@ -27,6 +27,30 @@ class AlertCommentForm(forms.ModelForm):
         }
 
 
+class AlertDeleteForm(forms.Form):
+    """Form used to confirm alert deletion by retyping the alert name."""
+
+    confirmation = forms.CharField(
+        label="Type the alert name to confirm deletion",
+        widget=forms.TextInput(attrs={'class': 'form-control'}),
+        help_text="Enter the alert name exactly to confirm you want to delete it.",
+    )
+
+    def __init__(self, *args, expected_value=None, **kwargs):
+        self.expected_value = expected_value
+        super().__init__(*args, **kwargs)
+        if expected_value:
+            self.fields['confirmation'].widget.attrs.setdefault('placeholder', expected_value)
+
+    def clean_confirmation(self):
+        value = self.cleaned_data.get('confirmation', '').strip()
+        if not value:
+            raise ValidationError("This field is required.")
+        if self.expected_value and value != self.expected_value:
+            raise ValidationError("The provided value does not match the alert name.")
+        return value
+
+
 class JSONTextareaWidget(forms.Textarea):
     """
     Custom Textarea widget for JSONField that handles None values during rendering.

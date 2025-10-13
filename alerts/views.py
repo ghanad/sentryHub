@@ -2,7 +2,7 @@ from django.views.generic import TemplateView, ListView, DetailView, FormView
 from django.db.models import Count, Q, Min, OuterRef, Subquery, F, Value, Case, When, IntegerField, Max
 from django.db.models.functions import Coalesce
 from django.utils import timezone
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.http import JsonResponse
@@ -17,6 +17,7 @@ from django.views import View
 from django.http import HttpResponse, Http404, HttpResponseRedirect # Import Http404, HttpResponseRedirect
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
+from django.core.exceptions import PermissionDenied
 
 from .models import (
     AlertGroup, AlertInstance, AlertComment,
@@ -24,7 +25,7 @@ from .models import (
 )
 from .forms import (
     AlertAcknowledgementForm, AlertCommentForm,
-    SilenceRuleForm
+    AlertDeleteForm, SilenceRuleForm
 )
 from .services.alerts_processor import acknowledge_alert
 from .services.silence_matcher import check_alert_silence # Import the function
@@ -329,6 +330,47 @@ class AlertDetailView(LoginRequiredMixin, DetailView):
         # If neither acknowledge nor content was in POST, redirect (or handle as appropriate)
         logger.warning(f"POST request received for alert {alert.fingerprint} without 'acknowledge' or 'comment' data.")
         return redirect('alerts:alert-detail', fingerprint=alert.fingerprint)
+
+
+class AlertDeleteView(LoginRequiredMixin, UserPassesTestMixin, View):
+    template_name = 'alerts/alert_confirm_delete.html'
+    raise_exception = False
+
+    def test_func(self):
+        return self.request.user.is_superuser
+
+    def dispatch(self, request, *args, **kwargs):
+        self.alert = get_object_or_404(AlertGroup, fingerprint=kwargs.get('fingerprint'))
+        return super().dispatch(request, *args, **kwargs)
+
+    def handle_no_permission(self):
+        if self.request.user.is_authenticated:
+            raise PermissionDenied
+        return super().handle_no_permission()
+
+    def get(self, request, *args, **kwargs):
+        form = AlertDeleteForm(expected_value=self.alert.name)
+        context = {
+            'alert': self.alert,
+            'form': form,
+        }
+        return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+        form = AlertDeleteForm(request.POST, expected_value=self.alert.name)
+        if form.is_valid():
+            alert_name = self.alert.name
+            logger.info("Deleting alert %s (%s) per user %s", alert_name, self.alert.fingerprint, request.user.username)
+            self.alert.delete()
+            messages.success(request, f"Alert '{alert_name}' has been deleted.")
+            return redirect('alerts:alert-list')
+
+        messages.error(request, "Unable to delete the alert. Please confirm the alert name to proceed.")
+        context = {
+            'alert': self.alert,
+            'form': form,
+        }
+        return render(request, self.template_name, context)
 
 
 @login_required
