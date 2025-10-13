@@ -61,6 +61,7 @@ class SmsHistoryViewTests(TestCase):
         self.assertEqual(rows[0]["provider_status_display"], "Sent successfully")
         self.assertEqual(rows[1]["recipient_display"], "Sara")
         self.assertEqual(rows[1]["provider_status_display"], "Invalid recipient number")
+        self.assertContains(response, "Total: 2")
 
     def test_sent_at_uses_user_date_preference(self):
         profile, _ = UserProfile.objects.get_or_create(user=self.user)
