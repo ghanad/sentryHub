@@ -5,8 +5,8 @@ from integrations.models import PhoneBook, SmsIntegrationRule
 
 class SmsModelsTests(TestCase):
     def test_phonebook_str(self):
-        pb = PhoneBook.objects.create(name='alice', phone_number='123')
-        self.assertEqual(str(pb), 'alice: 123')
+        pb = PhoneBook.objects.create(name='alice', phone_number='09100000008')
+        self.assertEqual(str(pb), 'alice: 09100000008')
 
     def test_sms_rule_defaults_and_str(self):
         rule = SmsIntegrationRule.objects.create(

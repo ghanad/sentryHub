@@ -19,24 +19,24 @@ class SmsMatcherTests(TestCase):
         )
 
     def test_annotation_priority(self):
-        PhoneBook.objects.create(name='alice', phone_number='1')
-        PhoneBook.objects.create(name='bob', phone_number='2')
+        PhoneBook.objects.create(name='alice', phone_number='09100000000')
+        PhoneBook.objects.create(name='bob', phone_number='09100000001')
         self.alert_group.instances.create(status='firing', started_at=timezone.now(), annotations={'sms': 'alice,bob'})
         rule = SmsIntegrationRule.objects.create(name='r', match_criteria={}, use_sms_annotation=True, firing_template='hi')
         matcher = SmsRuleMatcherService()
         nums, _ = matcher.resolve_recipients(self.alert_group, rule)
-        self.assertEqual(set(nums), {'1', '2'})
+        self.assertEqual(set(nums), {'09100000000', '09100000001'})
 
     def test_rule_recipients_fallback(self):
-        PhoneBook.objects.create(name='alice', phone_number='1')
+        PhoneBook.objects.create(name='alice', phone_number='09100000000')
         rule = SmsIntegrationRule.objects.create(name='r', match_criteria={}, recipients='alice', firing_template='hi')
         matcher = SmsRuleMatcherService()
         nums, should = matcher.resolve_recipients(self.alert_group, rule)
-        self.assertEqual(nums, ['1'])
+        self.assertEqual(nums, ['09100000000'])
         self.assertFalse(should)
 
     def test_inactive_phonebook_entries_are_skipped(self):
-        PhoneBook.objects.create(name='alice', phone_number='1', is_active=False)
+        PhoneBook.objects.create(name='alice', phone_number='09100000000', is_active=False)
         rule = SmsIntegrationRule.objects.create(name='r_inactive', match_criteria={}, recipients='alice', firing_template='hi')
         matcher = SmsRuleMatcherService()
         nums, should = matcher.resolve_recipients(self.alert_group, rule)
@@ -45,12 +45,12 @@ class SmsMatcherTests(TestCase):
 
 
     def test_case_insensitive_recipient_matching(self):
-        PhoneBook.objects.create(name='Ali', phone_number='3')
+        PhoneBook.objects.create(name='Ali', phone_number='09100000002')
         self.alert_group.instances.create(status='firing', started_at=timezone.now(), annotations={'sms': 'ali'})
         rule = SmsIntegrationRule.objects.create(name='r_case_insensitive', match_criteria={}, use_sms_annotation=True, firing_template='hi')
         matcher = SmsRuleMatcherService()
         nums, _ = matcher.resolve_recipients(self.alert_group, rule)
-        self.assertEqual(set(nums), {'3'})
+        self.assertEqual(set(nums), {'09100000002'})
 
 
 class SmsTaskTests(TestCase):
@@ -58,13 +58,13 @@ class SmsTaskTests(TestCase):
     def test_process_sms_for_alert_group(self, service_cls):
         mock_service = service_cls.return_value
         mock_service.send_bulk.return_value = {"messages": [{"status": 1}]}
-        PhoneBook.objects.create(name='alice', phone_number='1')
+        PhoneBook.objects.create(name='alice', phone_number='09100000000')
         alert_group = AlertGroup.objects.create(fingerprint='fp2', name='AG2', labels={}, source='prometheus')
         rule = SmsIntegrationRule.objects.create(name='r', match_criteria={}, recipients='alice', firing_template='msg')
         process_sms_for_alert_group.request.id = 'test'
         with self.assertLogs('integrations.tasks', level='INFO') as cm:
             process_sms_for_alert_group.run(alert_group.id, rule.id)
-        mock_service.send_bulk.assert_called_once_with(['1'], 'msg', fingerprint='fp2')
+        mock_service.send_bulk.assert_called_once_with(['09100000000'], 'msg', fingerprint='fp2')
         log_output = ' '.join(cm.output)
         self.assertIn('Message body: msg', log_output)
         self.assertIn('(FP: fp2)', log_output)
@@ -73,13 +73,13 @@ class SmsTaskTests(TestCase):
         self.assertEqual(sms_log.status, SmsMessageLog.STATUS_SUCCESS)
         self.assertEqual(sms_log.rule, rule)
         self.assertEqual(sms_log.alert_group, alert_group)
-        self.assertEqual(sms_log.recipients, ['1'])
+        self.assertEqual(sms_log.recipients, ['09100000000'])
 
     @patch('integrations.tasks.SmsService')
     def test_sms_template_with_summary(self, service_cls):
         mock_service = service_cls.return_value
         mock_service.send_bulk.return_value = {"messages": [{"status": 1}]}
-        PhoneBook.objects.create(name='test_user', phone_number='1234567890')
+        PhoneBook.objects.create(name='test_user', phone_number='09100000003')
         
         alert_group = AlertGroup.objects.create(
             fingerprint='fp_summary',
@@ -105,7 +105,7 @@ class SmsTaskTests(TestCase):
             process_sms_for_alert_group.run(alert_group.id, rule.id)
 
         expected_message = 'Alert: Test Alert Group. Summary: This is a test summary.'
-        mock_service.send_bulk.assert_called_once_with(['1234567890'], expected_message, fingerprint='fp_summary')
+        mock_service.send_bulk.assert_called_once_with(['09100000003'], expected_message, fingerprint='fp_summary')
         log_output = ' '.join(cm.output)
         self.assertIn(f'Message body: {expected_message}', log_output)
         self.assertIn('(FP: fp_summary)', log_output)
@@ -118,7 +118,7 @@ class SmsTaskTests(TestCase):
     @patch('integrations.tasks.process_sms_for_alert_group.retry', side_effect=Retry('boom'))
     def test_task_retries_on_error(self, retry_mock, service_cls):
         service_cls.return_value.send_bulk.side_effect = SmsNotificationError('net')
-        PhoneBook.objects.create(name='alice', phone_number='1')
+        PhoneBook.objects.create(name='alice', phone_number='09100000000')
         alert_group = AlertGroup.objects.create(fingerprint='fp3', name='AG3', labels={}, source='prometheus')
         rule = SmsIntegrationRule.objects.create(name='r', match_criteria={}, recipients='alice', firing_template='msg')
         process_sms_for_alert_group.app.conf.update(task_always_eager=True, task_store_eager_result=False, task_eager_propagates=True, result_backend='cache+memory://')

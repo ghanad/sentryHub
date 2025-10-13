@@ -10,8 +10,8 @@ from integrations.tasks import process_sms_for_alert_group
 
 class SmsOptInTests(TestCase):
     def setUp(self):
-        PhoneBook.objects.create(name='ali', phone_number='111')
-        PhoneBook.objects.create(name='reza', phone_number='222')
+        PhoneBook.objects.create(name='ali', phone_number='09100000000')
+        PhoneBook.objects.create(name='reza', phone_number='09100000001')
         self.alert_group = AlertGroup.objects.create(
             fingerprint='fp1',
             name='test',
@@ -34,7 +34,7 @@ class SmsOptInTests(TestCase):
         )
         matcher = SmsRuleMatcherService()
         numbers, should_send_resolve = matcher.resolve_recipients(self.alert_group, rule)
-        self.assertEqual(numbers, ['111', '222'])
+        self.assertEqual(numbers, ['09100000000', '09100000001'])
         self.assertTrue(should_send_resolve)
 
     def test_resolve_recipients_without_annotation_flag(self):
@@ -47,7 +47,7 @@ class SmsOptInTests(TestCase):
         )
         matcher = SmsRuleMatcherService()
         numbers, should_send_resolve = matcher.resolve_recipients(self.alert_group, rule)
-        self.assertEqual(numbers, ['111', '222'])
+        self.assertEqual(numbers, ['09100000000', '09100000001'])
         self.assertFalse(should_send_resolve)
 
     def test_resolved_sms_sent_only_with_opt_in(self):

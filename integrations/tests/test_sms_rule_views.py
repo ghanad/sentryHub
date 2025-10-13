@@ -10,7 +10,7 @@ class SmsRuleViewsTests(TestCase):
         User = get_user_model()
         self.user = User.objects.create_user(username='tester', password='pass')
         self.client.login(username='tester', password='pass')
-        PhoneBook.objects.create(name='alice', phone_number='1')
+        PhoneBook.objects.create(name='alice', phone_number='09100000000')
 
     def test_list_view(self):
         SmsIntegrationRule.objects.create(name='r1', match_criteria={}, recipients='alice', firing_template='hi')
