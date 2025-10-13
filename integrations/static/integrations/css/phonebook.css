@@ -1,0 +1,38 @@
+/* Styles specific to the phone book tabs to ensure consistent visibility */
+.nav-tabs.card-tabs {
+    border-bottom: 1px solid var(--bs-border-color);
+    gap: 0.5rem;
+}
+
+.nav-tabs.card-tabs .nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: none;
+    background: transparent;
+    font-weight: 500;
+    color: var(--bs-gray-700);
+    padding: 0.75rem 1.25rem;
+    transition: color 0.2s ease-in-out;
+}
+
+.nav-tabs.card-tabs .nav-link:hover {
+    color: var(--bs-primary);
+}
+
+.nav-tabs.card-tabs .nav-link.active {
+    color: var(--bs-primary);
+    border-bottom: 2px solid var(--bs-primary);
+}
+
+.nav-tabs.card-tabs .nav-link .badge {
+    font-size: 0.75rem;
+}
+
+[data-bs-theme="dark"] .nav-tabs.card-tabs .nav-link {
+    color: var(--bs-tertiary-color);
+}
+
+[data-bs-theme="dark"] .nav-tabs.card-tabs .nav-link.active {
+    color: var(--bs-primary);
+}
