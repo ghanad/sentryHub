@@ -24,6 +24,7 @@ class PhoneBookViewsTests(TestCase):
             {
                 'name': 'bob',
                 'phone_number': '2',
+                'is_active': 'on',
             },
         )
         self.assertEqual(resp.status_code, 302)
@@ -36,12 +37,28 @@ class PhoneBookViewsTests(TestCase):
             {
                 'name': 'charles',
                 'phone_number': '33',
+                'is_active': 'on',
             },
         )
         self.assertEqual(resp.status_code, 302)
         entry.refresh_from_db()
         self.assertEqual(entry.name, 'charles')
         self.assertEqual(entry.phone_number, '33')
+        self.assertTrue(entry.is_active)
+
+    def test_update_view_can_deactivate_entry(self):
+        entry = PhoneBook.objects.create(name='diana', phone_number='44', is_active=True)
+        resp = self.client.post(
+            reverse('integrations:phonebook-update', args=[entry.id]),
+            {
+                'name': 'diana',
+                'phone_number': '44',
+                # Checkbox omitted to simulate unchecked state
+            },
+        )
+        self.assertEqual(resp.status_code, 302)
+        entry.refresh_from_db()
+        self.assertFalse(entry.is_active)
 
     def test_delete_view(self):
         entry = PhoneBook.objects.create(name='dave', phone_number='4')

@@ -126,6 +126,7 @@ class PhoneBook(models.Model):
 
     name = models.CharField(max_length=100, unique=True, db_index=True)
     phone_number = models.CharField(max_length=20)
+    is_active = models.BooleanField(default=True, db_index=True)
 
     class Meta:
         ordering = ['name']

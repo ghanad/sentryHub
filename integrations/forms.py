@@ -219,7 +219,12 @@ class SlackTemplateTestForm(forms.Form):
 class PhoneBookForm(forms.ModelForm):
     class Meta:
         model = PhoneBook
-        fields = ['name', 'phone_number']
+        fields = ['name', 'phone_number', 'is_active']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.instance.pk:
+            self.fields['is_active'].initial = True
 
 
 class SmsIntegrationRuleForm(forms.ModelForm):
@@ -264,7 +269,7 @@ class SmsIntegrationRuleForm(forms.ModelForm):
 
 class SmsTestForm(forms.Form):
     recipient = forms.ModelChoiceField(
-        queryset=PhoneBook.objects.all(),
+        queryset=PhoneBook.objects.filter(is_active=True),
         label="Recipient",
         widget=forms.Select(attrs={"class": "form-control"}),
     )
@@ -272,3 +277,7 @@ class SmsTestForm(forms.Form):
         label="Message",
         widget=forms.Textarea(attrs={"rows": 3, "class": "form-control"}),
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['recipient'].queryset = PhoneBook.objects.filter(is_active=True)
