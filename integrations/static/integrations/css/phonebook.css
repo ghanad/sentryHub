@@ -11,9 +11,14 @@
     border: none;
     background: transparent;
     font-weight: 500;
-    color: var(--bs-gray-700);
+    color: var(--bs-body-color);
     padding: 0.75rem 1.25rem;
     transition: color 0.2s ease-in-out;
+}
+
+.nav-tabs.card-tabs .nav-link:not(.active) {
+    color: var(--bs-body-color);
+    opacity: 0.85;
 }
 
 .nav-tabs.card-tabs .nav-link:hover {
@@ -30,7 +35,12 @@
 }
 
 [data-bs-theme="dark"] .nav-tabs.card-tabs .nav-link {
-    color: var(--bs-tertiary-color);
+    color: var(--bs-body-color);
+}
+
+[data-bs-theme="dark"] .nav-tabs.card-tabs .nav-link:not(.active) {
+    color: var(--bs-body-color);
+    opacity: 0.9;
 }
 
 [data-bs-theme="dark"] .nav-tabs.card-tabs .nav-link.active {
