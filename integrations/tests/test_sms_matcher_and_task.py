@@ -27,6 +27,29 @@ class SmsMatcherTests(TestCase):
         nums, _ = matcher.resolve_recipients(self.alert_group, rule)
         self.assertEqual(set(nums), {'09100000000', '09100000001'})
 
+    def test_annotation_alias_for_oms_contacts(self):
+        PhoneBook.objects.create(
+            name='Karamad OMS',
+            phone_number='09100000009',
+            contact_type=PhoneBook.TYPE_OMS,
+        )
+        self.alert_group.instances.create(
+            status='firing',
+            started_at=timezone.now(),
+            annotations={'sms': 'karamad;resolved=true'},
+        )
+        rule = SmsIntegrationRule.objects.create(
+            name='r_alias',
+            match_criteria={},
+            use_sms_annotation=True,
+            firing_template='hi',
+            resolved_template='resolved',
+        )
+        matcher = SmsRuleMatcherService()
+        nums, should_resolve = matcher.resolve_recipients(self.alert_group, rule)
+        self.assertEqual(nums, ['09100000009'])
+        self.assertTrue(should_resolve)
+
     def test_rule_recipients_fallback(self):
         PhoneBook.objects.create(name='alice', phone_number='09100000000')
         rule = SmsIntegrationRule.objects.create(name='r', match_criteria={}, recipients='alice', firing_template='hi')
