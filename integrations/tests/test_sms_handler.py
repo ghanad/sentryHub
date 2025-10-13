@@ -13,7 +13,7 @@ class HandleAlertProcessedSmsTests(TestCase):
             labels={},
             source='prometheus',
         )
-        PhoneBook.objects.create(name='alice', phone_number='1')
+        PhoneBook.objects.create(name='alice', phone_number='09100000000')
         self.rule = SmsIntegrationRule.objects.create(
             name='rule',
             match_criteria={},

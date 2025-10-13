@@ -1,5 +1,6 @@
 from django.db import models
 from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
 from django.utils import timezone
 from django.contrib.auth.models import User
 import json
@@ -132,7 +133,15 @@ class PhoneBook(models.Model):
     ]
 
     name = models.CharField(max_length=100, unique=True, db_index=True)
-    phone_number = models.CharField(max_length=20)
+    phone_number = models.CharField(
+        max_length=20,
+        validators=[
+            RegexValidator(
+                regex=r"^09\d{9}$",
+                message="Enter a valid Iranian mobile number in the format 09XXXXXXXXX.",
+            )
+        ],
+    )
     contact_type = models.CharField(
         max_length=20,
         choices=TYPE_CHOICES,
