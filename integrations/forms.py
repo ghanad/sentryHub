@@ -219,7 +219,7 @@ class SlackTemplateTestForm(forms.Form):
 class PhoneBookForm(forms.ModelForm):
     class Meta:
         model = PhoneBook
-        fields = ['name', 'phone_number', 'is_active']
+        fields = ['name', 'phone_number', 'contact_type', 'is_active']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

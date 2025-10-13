@@ -124,8 +124,21 @@ class SlackIntegrationRule(models.Model):
 class PhoneBook(models.Model):
     """Simple directory mapping names to phone numbers."""
 
+    TYPE_INTERNAL = "internal"
+    TYPE_OMS = "oms"
+    TYPE_CHOICES = [
+        (TYPE_INTERNAL, "Internal Users"),
+        (TYPE_OMS, "OMS Customers"),
+    ]
+
     name = models.CharField(max_length=100, unique=True, db_index=True)
     phone_number = models.CharField(max_length=20)
+    contact_type = models.CharField(
+        max_length=20,
+        choices=TYPE_CHOICES,
+        default=TYPE_INTERNAL,
+        db_index=True,
+    )
     is_active = models.BooleanField(default=True, db_index=True)
 
     class Meta:

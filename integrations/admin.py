@@ -57,8 +57,8 @@ class SlackIntegrationRuleAdmin(admin.ModelAdmin):
 
 @admin.register(PhoneBook)
 class PhoneBookAdmin(admin.ModelAdmin):
-    list_display = ('name', 'phone_number', 'is_active')
-    list_filter = ('is_active',)
+    list_display = ('name', 'phone_number', 'contact_type', 'is_active')
+    list_filter = ('contact_type', 'is_active')
     search_fields = ('name',)
 
 
