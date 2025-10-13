@@ -283,6 +283,7 @@ class SmsHistoryListView(LoginRequiredMixin, ListView):
                     )
 
         context['sms_log_rows'] = log_rows
+        context['sms_log_rows_total'] = len(log_rows)
 
         return context
 
