@@ -37,6 +37,24 @@ class SmsOptInTests(TestCase):
         self.assertEqual(numbers, ['09100000000', '09100000001'])
         self.assertTrue(should_send_resolve)
 
+    def test_resolve_recipients_accepts_resolved_keyword(self):
+        rule = SmsIntegrationRule.objects.create(
+            name='rule1b',
+            firing_template='firing',
+            resolved_template='resolved',
+            use_sms_annotation=True,
+        )
+        AlertInstance.objects.create(
+            alert_group=self.alert_group,
+            status='firing',
+            started_at=timezone.now(),
+            annotations={'sms': 'ali ; resolved = true'},
+        )
+        matcher = SmsRuleMatcherService()
+        numbers, should_send_resolve = matcher.resolve_recipients(self.alert_group, rule)
+        self.assertEqual(numbers, ['09100000000'])
+        self.assertTrue(should_send_resolve)
+
     def test_resolve_recipients_without_annotation_flag(self):
         rule = SmsIntegrationRule.objects.create(
             name='rule3',

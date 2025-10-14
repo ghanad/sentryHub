@@ -3,6 +3,7 @@ from typing import Optional, List, Tuple
 
 from integrations.models import SmsIntegrationRule, PhoneBook
 from alerts.models import AlertGroup
+from django.utils.text import slugify
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +39,9 @@ class SmsRuleMatcherService:
                     for token in params_part.split(';'):
                         if '=' in token:
                             key, value = token.split('=', 1)
-                            if key.strip().lower() == 'resolve' and value.strip().lower() == 'true':
+                            key_normalized = key.strip().lower()
+                            value_normalized = value.strip().lower()
+                            if key_normalized in {'resolve', 'resolved'} and value_normalized == 'true':
                                 should_send_resolve = True
         else:
             raw = rule.recipients or ''
@@ -46,15 +49,9 @@ class SmsRuleMatcherService:
 
         numbers: List[str] = []
         for name in names:
-            match_qs = PhoneBook.objects.filter(name__iexact=name)
-            entry = match_qs.filter(is_active=True).first()
+            entry = self._resolve_phonebook_entry(name)
             if entry:
                 numbers.append(entry.phone_number)
-                continue
-            if match_qs.exists():
-                logger.info("PhoneBook entry for '%s' is inactive; skipping", name)
-            else:
-                logger.warning("PhoneBook entry for '%s' not found", name)
         return numbers, should_send_resolve
 
     def _does_rule_match(self, rule: SmsIntegrationRule, alert_group: AlertGroup) -> bool:
@@ -82,3 +79,36 @@ class SmsRuleMatcherService:
                 elif str(actual) != str(expected):
                     return False
         return True
+
+    def _resolve_phonebook_entry(self, token: str) -> Optional[PhoneBook]:
+        """Resolve a phonebook entry by name or reasonable aliases."""
+
+        if not token:
+            return None
+
+        match_qs = PhoneBook.objects.filter(name__iexact=token)
+        entry = match_qs.filter(is_active=True).first()
+        if entry:
+            return entry
+
+        if match_qs.exists():
+            logger.info("PhoneBook entry for '%s' is inactive; skipping", token)
+            return None
+
+        normalized = slugify(token)
+        if not normalized:
+            logger.warning("PhoneBook entry for '%s' not found", token)
+            return None
+
+        # Attempt to match OMS contacts by alias (e.g., 'Karamad OMS' -> 'karamad').
+        for candidate in PhoneBook.objects.filter(is_active=True, contact_type=PhoneBook.TYPE_OMS):
+            candidate_slug = slugify(candidate.name)
+            trimmed_candidate_slug = candidate_slug[:-4] if candidate_slug.endswith('-oms') else candidate_slug
+            if candidate_slug == normalized or trimmed_candidate_slug == normalized:
+                logger.info(
+                    "PhoneBook alias match for '%s' resolved to '%s'", token, candidate.name
+                )
+                return candidate
+
+        logger.warning("PhoneBook entry for '%s' not found", token)
+        return None
