@@ -1,0 +1,29 @@
+{% if is_paginated %}
+<nav aria-label="Tier 1 alerts pagination">
+    <ul class="pagination justify-content-end mb-0">
+        <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+            <a class="page-link" href="?page={% if page_obj.has_previous %}{{ page_obj.previous_page_number }}{% else %}1{% endif %}" aria-label="Previous">
+                <span aria-hidden="true">&laquo;</span>
+            </a>
+        </li>
+        {% for page_num in paginator.page_range %}
+            {% if page_num >= page_obj.number|add:'-2' and page_num <= page_obj.number|add:'2' %}
+                <li class="page-item {% if page_num == page_obj.number %}active{% endif %}">
+                    <a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a>
+                </li>
+            {% elif page_num == 1 or page_num == paginator.num_pages %}
+                <li class="page-item {% if page_num == page_obj.number %}active{% endif %}">
+                    <a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a>
+                </li>
+            {% elif page_num == page_obj.number|add:'-3' or page_num == page_obj.number|add:'3' %}
+                <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+            {% endif %}
+        {% endfor %}
+        <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+            <a class="page-link" href="?page={% if page_obj.has_next %}{{ page_obj.next_page_number }}{% else %}{{ paginator.num_pages }}{% endif %}" aria-label="Next">
+                <span aria-hidden="true">&raquo;</span>
+            </a>
+        </li>
+    </ul>
+</nav>
+{% endif %}

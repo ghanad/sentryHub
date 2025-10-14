@@ -14,7 +14,7 @@
         <h1 class="page-title d-flex align-items-center">
             <i class='bx bx-bell-off me-2'></i>
             Unacknowledged Alerts
-            <span class="badge bg-secondary ms-3" id="refresh-badge">Auto-Refresh: 30s</span>
+            <span class="badge bg-secondary ms-3" id="refresh-badge" data-refresh-interval="15">Auto-Refresh: 15s</span>
         </h1>
     </header>
 
@@ -24,9 +24,14 @@
                  <i class='bx bx-list-ul'></i>
                  Alert List (Unacknowledged Only)
              </h5>
-             <span class="text-muted small" id="alert-count-display">Total: {{ alerts.count }}</span>
+             <span class="text-muted small" id="alert-count-display">Total: {{ alert_count }}</span>
          </div>
         <div class="chart-card-body p-0">
+            <div
+                id="refresh-error-banner"
+                class="alert alert-danger d-none rounded-0 mb-0"
+                role="alert"
+                aria-live="polite"></div>
             <div class="table-responsive">
                 <table class="alert-table">
                     <thead>
@@ -41,126 +46,19 @@
                         </tr>
                     </thead>
                     <tbody id="alert-table-body">
-                        {% for alert in alerts %}
-                        <tr class="alert-row {% if alert.is_silenced %}silenced-row{% endif %}" data-fingerprint="{{ alert.fingerprint }}">
-                            <td>
-                                {% if alert.current_status == 'firing' %}
-                                <span class="status-badge badge-critical"><i class='bx bxs-circle'></i> Firing</span>
-                                {% else %}
-                                <span class="status-badge badge-success"><i class='bx bxs-check-circle'></i> Resolved</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <a href="{% url 'alerts:alert-detail' alert.fingerprint %}" class="alert-name-link">{{ alert.name }}</a>
-                                {% if alert.is_silenced %}
-                                    <i class='bx bxs-volume-mute silence-indicator ms-1' data-bs-toggle="tooltip" data-bs-placement="top"
-                                       title="Silenced until {{ alert.silenced_until|format_datetime:user }}"></i>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <span class="alert-host">
-                                    {% if alert.labels.name %}
-                                        {{ alert.labels.name }} ({{ alert.instance|default:"-" }})
-                                    {% else %}
-                                        {{ alert.instance|default:"-" }}
-                                    {% endif %}
-                                </span>
-                            </td>
-                            <td>
-                                {% if alert.severity == 'critical' %}
-                                <span class="status-badge badge-critical">Critical</span>
-                                {% elif alert.severity == 'warning' %}
-                                <span class="status-badge badge-warning">Warning</span>
-                                {% else %}
-                                <span class="status-badge badge-info">Info</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if alert.current_status == 'firing' and alert.current_problem_start_time %}
-                                    <span>
-                                        {{ alert.current_problem_start_time|calculate_duration }}
-                                    </span>
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if alert.latest_instance_start %}
-                                    {{ alert.latest_instance_start|format_datetime:user }}
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </td>
-                            <td>
-                                <div class="action-menu text-center justify-content-center">
-                                    <button class="action-btn expand-btn"
-                                        data-bs-toggle="collapse"
-                                        data-bs-target="#details-{{ alert.fingerprint }}"
-                                        aria-expanded="false"
-                                        aria-controls="details-{{ alert.fingerprint }}"
-                                        data-bs-toggle="tooltip" title="Show Details">
-                                        <i class='bx bx-chevron-right'></i>
-                                    </button>
-                                    <a href="{% url 'alerts:alert-detail' alert.fingerprint %}" class="action-btn" data-bs-toggle="tooltip" title="View Details"><i class='bx bx-show'></i></a>
-                                    <button type="button" class="action-btn" data-bs-toggle="modal" data-bs-target="#acknowledgeModal-{{ alert.fingerprint }}" title="Acknowledge Alert">
-                                        <i class='bx bx-check-shield'></i>
-                                    </button>
-                                    <a href="{% url 'alerts:silence-rule-create' %}?labels={{ alert.labels|jsonify }}"
-                                       class="action-btn" data-bs-toggle="tooltip" title="Create Silence Rule">
-                                       <i class='bx bx-volume-mute'></i>
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr class="collapse alert-details-row" id="details-{{ alert.fingerprint }}">
-                            <td colspan="7">
-                                {% include "alerts/partials/alert_row_details.html" with alert=alert %}
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="7" class="text-center p-5">
-                                <i class='bx bx-check-circle fs-1 text-success mb-3 d-block'></i>
-                                <p class="text-muted mb-0">No unacknowledged alerts found.</p>
-                            </td>
-                        </tr>
-                        {% endfor %}
+                        {% include "dashboard/partials/tier1_alert_rows.html" %}
                     </tbody>
                 </table>
             </div>
         </div>
-    </div>
-
-    {% for alert in alerts %}
-    <div class="modal fade" id="acknowledgeModal-{{ alert.fingerprint }}" tabindex="-1" aria-labelledby="acknowledgeModalLabel-{{ alert.fingerprint }}" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="acknowledgeModalLabel-{{ alert.fingerprint }}">Acknowledge Alert</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form method="post" action="{% url 'alerts:alert-detail' alert.fingerprint %}">
-                    <div class="modal-body">
-                        {% csrf_token %}
-                        <input type="hidden" name="next" value="{% url 'dashboard:tier1_dashboard_new' %}">
-                        <p>You are acknowledging the alert: <strong>{{ alert.name }}</strong></p>
-                        <p>Please provide a comment explaining the reason for acknowledgement or any actions being taken:</p>
-
-                        <div class="mb-3">
-                            <label for="id_comment_{{ alert.fingerprint }}" class="form-label">Comment <span class="text-danger">*</span></label>
-                            <textarea name="{{ acknowledge_form.comment.name }}" class="form-control" required id="id_comment_{{ alert.fingerprint }}"></textarea>
-                            <div class="form-text">Required: Please provide details about why you're acknowledging this alert.</div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" name="acknowledge" class="btn btn-primary">Acknowledge Alert</button>
-                    </div>
-                </form>
-            </div>
+        <div class="chart-card-footer p-3" id="alert-pagination">
+            {% include "dashboard/partials/tier1_pagination.html" %}
         </div>
     </div>
-    {% endfor %}
+
+    <div id="alert-modals-container">
+        {% include "dashboard/partials/tier1_alert_modals.html" %}
+    </div>
 
     {# Audio element for new alert notification #}
     <audio id="alert-notification-sound" src="{% static 'sounds/notification.wav' %}" preload="auto"></audio>

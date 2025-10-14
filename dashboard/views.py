@@ -3,6 +3,8 @@ from django.views.generic import TemplateView, ListView
 from django.db.models import Count, Q
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.urls import reverse, reverse_lazy
+from django.http import JsonResponse
+from django.template.loader import render_to_string
 from django.utils import timezone
 from datetime import timedelta
 import logging
@@ -99,7 +101,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
 
 class Tier1AlertListView(UserPassesTestMixin, AlertListView):
     """List view of unacknowledged alerts for Tier 1 users"""
-    paginate_by = None  # Disable pagination
+    paginate_by = 20
     template_name = 'dashboard/tier1_unacked.html'
 
     def get_queryset(self):
@@ -119,13 +121,36 @@ class Tier1AlertListView(UserPassesTestMixin, AlertListView):
         filter_keys = ['status', 'severity', 'instance', 'acknowledged', 'silenced_filter', 'search']
         for key in filter_keys:
             context.pop(key, None)
-        # Remove pagination context
-        context.pop('paginator', None)
-        context.pop('page_obj', None)
-        context.pop('is_paginated', None)
         # Add the acknowledgement form
         context['acknowledge_form'] = AlertAcknowledgementForm()
+        paginator = context.get('paginator')
+        if paginator is not None:
+            context['alert_count'] = paginator.count
+        else:
+            context['alert_count'] = self.get_queryset().count()
         return context
+
+    def render_to_response(self, context, **response_kwargs):
+        request = self.request
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            rows_html = render_to_string('dashboard/partials/tier1_alert_rows.html', context, request=request)
+            modals_html = render_to_string('dashboard/partials/tier1_alert_modals.html', context, request=request)
+            pagination_html = render_to_string('dashboard/partials/tier1_pagination.html', context, request=request)
+
+            page_obj = context.get('page_obj')
+            paginator = context.get('paginator')
+
+            data = {
+                'rows_html': rows_html,
+                'modals_html': modals_html,
+                'pagination_html': pagination_html,
+                'alert_count': context.get('alert_count', 0),
+                'current_page': page_obj.number if page_obj else 1,
+                'total_pages': paginator.num_pages if paginator else 1,
+            }
+            return JsonResponse(data)
+
+        return super().render_to_response(context, **response_kwargs)
 
 
 class AdminDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
