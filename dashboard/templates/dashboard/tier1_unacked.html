@@ -27,6 +27,11 @@
              <span class="text-muted small" id="alert-count-display">Total: {{ alert_count }}</span>
          </div>
         <div class="chart-card-body p-0">
+            <div
+                id="refresh-error-banner"
+                class="alert alert-danger d-none rounded-0 mb-0"
+                role="alert"
+                aria-live="polite"></div>
             <div class="table-responsive">
                 <table class="alert-table">
                     <thead>

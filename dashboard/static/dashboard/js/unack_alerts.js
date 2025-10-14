@@ -8,12 +8,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const refreshIntervalSeconds = refreshBadge && refreshBadge.dataset.refreshInterval
         ? parseInt(refreshBadge.dataset.refreshInterval, 10)
         : 15;
+    const refreshErrorBanner = document.getElementById('refresh-error-banner');
     const apiURL = window.ALERTS_API_URL;
 
     let currentFingerprints = new Set();
     let refreshIntervalId = null;
     let countdownIntervalId = null;
     let countdown = refreshIntervalSeconds;
+    let isInErrorState = false;
 
     // --- Helper Functions ---
 
@@ -185,9 +187,26 @@ document.addEventListener('DOMContentLoaded', function() {
             // Re-initialize tooltips and event listeners for the new content
             initializeDynamicContent();
 
+            // Clear any previous error message and styling once data loads
+            isInErrorState = false;
+            if (refreshErrorBanner) {
+                refreshErrorBanner.classList.add('d-none');
+                refreshErrorBanner.removeAttribute('data-error');
+                refreshErrorBanner.textContent = '';
+            }
+
         } catch (error) {
             console.error("Failed to fetch or update alerts:", error);
-            // Optionally display an error message to the user
+            isInErrorState = true;
+
+            if (refreshErrorBanner) {
+                const errorTime = new Date().toLocaleTimeString();
+                refreshErrorBanner.classList.remove('d-none');
+                const baseMessage = 'Unable to refresh alerts. The system will keep retrying automatically.';
+                const detailMessage = error && error.message ? ` (${error.message})` : '';
+                refreshErrorBanner.textContent = `${baseMessage}${detailMessage} Last attempt: ${errorTime}.`;
+                refreshErrorBanner.setAttribute('data-error', 'true');
+            }
         } finally {
             // Reset countdown for the next refresh cycle
             resetCountdown();
@@ -198,7 +217,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updateCountdownDisplay() {
         if (refreshBadge) {
-            refreshBadge.textContent = `Auto-Refresh: ${countdown}s`;
+            if (isInErrorState) {
+                refreshBadge.textContent = `Retrying in ${countdown}s`;
+                refreshBadge.classList.remove('bg-secondary');
+                refreshBadge.classList.add('bg-danger');
+            } else {
+                refreshBadge.textContent = `Auto-Refresh: ${countdown}s`;
+                refreshBadge.classList.remove('bg-danger');
+                refreshBadge.classList.add('bg-secondary');
+            }
         }
         countdown--;
 
