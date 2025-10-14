@@ -7,7 +7,7 @@ from django import forms
 
 # Import models and forms from the parent 'alerts' app
 from ..models import SilenceRule, AlertGroup, AlertComment
-from ..forms import SilenceRuleForm, AlertAcknowledgementForm, AlertCommentForm
+from ..forms import AlertDeleteForm, SilenceRuleForm, AlertAcknowledgementForm, AlertCommentForm
 
 
 class SilenceRuleFormTests(TestCase):
@@ -225,3 +225,22 @@ class AlertCommentFormTests(TestCase):
         self.assertIsInstance(widget, forms.Textarea)
         self.assertEqual(widget.attrs.get('rows'), 3)
         self.assertEqual(widget.attrs.get('class'), 'form-control')
+
+
+class AlertDeleteFormTests(TestCase):
+
+    def test_delete_form_valid_confirmation(self):
+        form = AlertDeleteForm(data={'confirmation': 'Critical Alert'}, expected_value='Critical Alert')
+        self.assertTrue(form.is_valid(), msg=f"Form should be valid. Errors: {form.errors.as_json()}")
+
+    def test_delete_form_invalid_confirmation(self):
+        form = AlertDeleteForm(data={'confirmation': 'Wrong'}, expected_value='Critical Alert')
+        self.assertFalse(form.is_valid(), msg="Form should be invalid when confirmation does not match.")
+        self.assertIn('confirmation', form.errors)
+        self.assertIn('The provided value does not match the alert name.', form.errors['confirmation'])
+
+    def test_delete_form_blank_confirmation(self):
+        form = AlertDeleteForm(data={'confirmation': '   '}, expected_value='Critical Alert')
+        self.assertFalse(form.is_valid(), msg="Form should be invalid when confirmation is blank.")
+        self.assertIn('confirmation', form.errors)
+        self.assertIn('This field is required.', form.errors['confirmation'])

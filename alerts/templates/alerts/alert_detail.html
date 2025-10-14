@@ -35,6 +35,14 @@
                 <i class="bx bx-bell-off"></i> Silence
             </a>
 
+            {% if user.is_superuser %}
+            <a href="{% url 'alerts:alert-delete' fingerprint=alert.fingerprint %}"
+               class="btn btn-sm btn-outline-danger me-2"
+               title="Delete this alert from SentryHub">
+                <i class="bx bx-trash"></i> Delete
+            </a>
+            {% endif %}
+
             {% if not alert.acknowledged %}
             <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#acknowledgeModal">
                 <i class="bx bx-check-circle"></i> Acknowledge

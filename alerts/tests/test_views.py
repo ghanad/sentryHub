@@ -18,6 +18,7 @@ class AlertListViewTest(TestCase):
     def setUp(self):
         self.client = Client()
         self.user = User.objects.create_user(username='testuser', password='password')
+        self.admin_user = User.objects.create_superuser(username='adminuser', email='admin@example.com', password='password')
         self.client.login(username='testuser', password='password')
 
         # Create some alert groups for testing
@@ -149,6 +150,7 @@ class AlertDetailViewTest(TestCase):
     def setUp(self):
         self.client = Client()
         self.user = User.objects.create_user(username='testuser', password='password')
+        self.admin_user = User.objects.create_superuser(username='admintest', email='admin@example.com', password='password')
         self.client.login(username='testuser', password='password')
 
         self.alert_group = AlertGroup.objects.create(
@@ -181,6 +183,16 @@ class AlertDetailViewTest(TestCase):
         self.assertIsInstance(response.context['acknowledge_form'], AlertAcknowledgementForm)
         self.assertIsInstance(response.context['comment_form'], AlertCommentForm)
         self.assertEqual(response.context['active_tab'], 'details') # Default tab
+        delete_url = reverse('alerts:alert-delete', kwargs={'fingerprint': self.alert_group.fingerprint})
+        self.assertNotContains(response, delete_url)
+
+    def test_alert_detail_view_get_admin_sees_delete(self):
+        self.client.logout()
+        self.client.force_login(self.admin_user)
+        response = self.client.get(self.detail_url)
+        self.assertEqual(response.status_code, 200)
+        delete_url = reverse('alerts:alert-delete', kwargs={'fingerprint': self.alert_group.fingerprint})
+        self.assertContains(response, delete_url)
 
     def test_alert_detail_view_get_specific_tab(self):
         response = self.client.get(self.detail_url, {'tab': 'history'})
@@ -296,6 +308,56 @@ class AlertDetailViewTest(TestCase):
         post_data = {'some_other_field': 'value'}
         response = self.client.post(self.detail_url, post_data)
         self.assertRedirects(response, self.detail_url) # Should just redirect back
+
+
+class AlertDeleteViewTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username='deleter', password='password')
+        self.admin_user = User.objects.create_superuser(username='admin', email='admin@example.com', password='password')
+        self.alert_group = AlertGroup.objects.create(
+            fingerprint='delete_fp',
+            name='Delete Me Alert',
+            labels={'job': 'delete'},
+            severity='critical',
+            current_status='firing'
+        )
+        self.delete_url = reverse('alerts:alert-delete', kwargs={'fingerprint': self.alert_group.fingerprint})
+
+    def test_delete_view_requires_login(self):
+        response = self.client.get(self.delete_url)
+        from django.conf import settings
+        expected_url = f"{settings.LOGIN_URL}?next={self.delete_url}"
+        self.assertRedirects(response, expected_url, status_code=302, target_status_code=200, fetch_redirect_response=False)
+
+    def test_delete_view_get(self):
+        self.client.login(username='admin', password='password')
+        response = self.client.get(self.delete_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'alerts/alert_confirm_delete.html')
+        self.assertContains(response, 'Delete Me Alert')
+        self.assertIn('form', response.context)
+
+    def test_delete_view_post_invalid_confirmation(self):
+        self.client.login(username='admin', password='password')
+        response = self.client.post(self.delete_url, {'confirmation': 'Wrong Name'})
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(AlertGroup.objects.filter(pk=self.alert_group.pk).exists())
+        self.assertFormError(response, 'form', 'confirmation', 'The provided value does not match the alert name.')
+
+    def test_delete_view_post_valid_confirmation(self):
+        self.client.login(username='admin', password='password')
+        response = self.client.post(self.delete_url, {'confirmation': 'Delete Me Alert'})
+        self.assertRedirects(response, reverse('alerts:alert-list'))
+        self.assertFalse(AlertGroup.objects.filter(pk=self.alert_group.pk).exists())
+
+    def test_delete_view_forbidden_for_non_admin(self):
+        self.client.login(username='deleter', password='password')
+        response = self.client.get(self.delete_url)
+        self.assertEqual(response.status_code, 403)
+        response = self.client.post(self.delete_url, {'confirmation': 'Delete Me Alert'})
+        self.assertEqual(response.status_code, 403)
+        self.assertTrue(AlertGroup.objects.filter(pk=self.alert_group.pk).exists())
 
 
 # --- Tests for SilenceRule Views ---

@@ -4,6 +4,7 @@ from django.urls import path, include
 from .views import (
     AlertListView,
     AlertDetailView,
+    AlertDeleteView,
     SilenceRuleListView,
     SilenceRuleCreateView,
     SilenceRuleUpdateView,
@@ -24,5 +25,6 @@ urlpatterns = [
 
     path('', AlertListView.as_view(), name='alert-list'),
     path('acknowledge/', acknowledge_alert_from_list, name='acknowledge-alert-from-list'), # Moved before fingerprint
+    path('<str:fingerprint>/delete/', AlertDeleteView.as_view(), name='alert-delete'),
     path('<str:fingerprint>/', AlertDetailView.as_view(), name='alert-detail'),
 ]

@@ -1,0 +1,83 @@
+{% extends "dashboard/base.html" %}
+{% load static core_tags %}
+
+{% block title %}Delete {{ alert.name }} - SentryHub{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'dashboard/css/modern_dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/standard-form.css' %}">
+{% endblock %}
+
+{% block main_content %}
+<div class="row justify-content-center">
+    <div class="col-xl-8 col-lg-9">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pt-3 gap-3">
+            <div>
+                <h1 class="page-title text-danger mb-1">Confirm Alert Deletion</h1>
+                <p class="page-subtitle mb-0">Deleting this alert removes all of its history from SentryHub. This action cannot be undone.</p>
+            </div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard:dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'alerts:alert-list' %}">Alerts</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'alerts:alert-detail' fingerprint=alert.fingerprint %}">{{ alert.name }}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Confirm Delete</li>
+                </ol>
+            </nav>
+        </div>
+
+        <div class="form-container">
+            <div class="alert alert-danger d-flex align-items-start gap-3" role="alert">
+                <i class='bx bx-error-circle fs-3 mt-1'></i>
+                <div>
+                    <h5 class="mb-1">You're about to permanently delete this alert.</h5>
+                    <p class="mb-0">Please review the alert details and type the alert name exactly to confirm.</p>
+                </div>
+            </div>
+
+            <dl class="row mb-4">
+                <dt class="col-sm-4 text-muted">Alert Name</dt>
+                <dd class="col-sm-8 fw-semibold">{{ alert.name }}</dd>
+                <dt class="col-sm-4 text-muted">Fingerprint</dt>
+                <dd class="col-sm-8"><code>{{ alert.fingerprint }}</code></dd>
+                <dt class="col-sm-4 text-muted">Severity</dt>
+                <dd class="col-sm-8">{{ alert.get_severity_display }}</dd>
+                <dt class="col-sm-4 text-muted">Status</dt>
+                <dd class="col-sm-8">{{ alert.get_current_status_display }}</dd>
+            </dl>
+
+            <form method="post" class="d-flex flex-column gap-3" novalidate>
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger" role="alert">
+                        {{ form.non_field_errors|join:" " }}
+                    </div>
+                {% endif %}
+
+                <div>
+                    {{ form.confirmation.label_tag }}
+                    {{ form.confirmation }}
+                    {% if form.confirmation.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.confirmation.errors|join:" " }}
+                        </div>
+                    {% endif %}
+                    {% if form.confirmation.help_text %}
+                        <div class="form-text">{{ form.confirmation.help_text }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{% url 'alerts:alert-detail' fingerprint=alert.fingerprint %}" class="btn btn-outline-secondary">
+                        <i class='bx bx-arrow-back me-1'></i> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-danger">
+                        <i class='bx bx-trash me-1'></i> Delete Alert
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
