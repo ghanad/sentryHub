@@ -1,0 +1,31 @@
+{% load core_tags %}
+{% for alert in alerts %}
+<div class="modal fade" id="acknowledgeModal-{{ alert.fingerprint }}" tabindex="-1" aria-labelledby="acknowledgeModalLabel-{{ alert.fingerprint }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="acknowledgeModalLabel-{{ alert.fingerprint }}">Acknowledge Alert</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'alerts:alert-detail' alert.fingerprint %}">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{% url 'dashboard:tier1_dashboard_new' %}">
+                    <p>You are acknowledging the alert: <strong>{{ alert.name }}</strong></p>
+                    <p>Please provide a comment explaining the reason for acknowledgement or any actions being taken:</p>
+
+                    <div class="mb-3">
+                        <label for="id_comment_{{ alert.fingerprint }}" class="form-label">Comment <span class="text-danger">*</span></label>
+                        <textarea name="{{ acknowledge_form.comment.name }}" class="form-control" required id="id_comment_{{ alert.fingerprint }}"></textarea>
+                        <div class="form-text">Required: Please provide details about why you're acknowledging this alert.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" name="acknowledge" class="btn btn-primary">Acknowledge Alert</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}

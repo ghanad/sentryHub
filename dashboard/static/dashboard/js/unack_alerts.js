@@ -1,9 +1,13 @@
 document.addEventListener('DOMContentLoaded', function() {
     const alertTableBody = document.getElementById('alert-table-body');
     const alertCountDisplay = document.getElementById('alert-count-display');
+    const alertModalsContainer = document.getElementById('alert-modals-container');
+    const paginationContainer = document.getElementById('alert-pagination');
     const notificationSound = document.getElementById('alert-notification-sound');
     const refreshBadge = document.getElementById('refresh-badge');
-    const refreshIntervalSeconds = 15;
+    const refreshIntervalSeconds = refreshBadge && refreshBadge.dataset.refreshInterval
+        ? parseInt(refreshBadge.dataset.refreshInterval, 10)
+        : 15;
     const apiURL = window.ALERTS_API_URL;
 
     let currentFingerprints = new Set();
@@ -45,6 +49,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function initializeDynamicContent() {
+        if (!alertTableBody) {
+            return;
+        }
         // Re-initialize tooltips for new content
         const tooltipTriggerList = [].slice.call(alertTableBody.querySelectorAll('[data-bs-toggle="tooltip"]'));
         tooltipTriggerList.map(function (tooltipTriggerEl) {
@@ -111,18 +118,36 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- Core Refresh Logic ---
 
+    function buildFetchURL() {
+        try {
+            const requestUrl = new URL(apiURL, window.location.origin);
+            const currentParams = new URLSearchParams(window.location.search);
+            currentParams.forEach((value, key) => {
+                requestUrl.searchParams.set(key, value);
+            });
+            return requestUrl.toString();
+        } catch (error) {
+            console.error('Failed to build request URL', error);
+            return apiURL;
+        }
+    }
+
     async function fetchAndUpdateAlerts() {
         console.log("Fetching alerts..."); // For debugging
         try {
-            const response = await fetch(apiURL);
+            const response = await fetch(buildFetchURL(), {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const data = await response.json();
 
-            const newHtml = data.html;
+            const rowsHtml = data.rows_html;
             const newAlertCount = data.alert_count;
-            const newFingerprints = parseFingerprintsFromHTML(newHtml);
+            const newFingerprints = parseFingerprintsFromHTML(rowsHtml);
 
 
             // Detect new alerts
@@ -136,11 +161,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Update DOM
             if (alertTableBody) {
-                alertTableBody.innerHTML = newHtml;
+                alertTableBody.innerHTML = rowsHtml;
             }
             if (alertCountDisplay) {
                 // Update the count text, assuming the format "Total: N"
                 alertCountDisplay.textContent = `Total: ${newAlertCount}`;
+            }
+            if (alertModalsContainer) {
+                alertModalsContainer.innerHTML = data.modals_html;
+            }
+            if (paginationContainer) {
+                paginationContainer.innerHTML = data.pagination_html;
             }
 
             // Update current state
