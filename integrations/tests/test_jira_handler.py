@@ -22,9 +22,10 @@ class HandleAlertProcessedTests(TestCase):
             annotations={},
         )
 
+    @patch('integrations.handlers.transaction.on_commit')
     @patch('integrations.handlers.process_jira_for_alert_group')
     @patch('integrations.handlers.JiraRuleMatcherService')
-    def test_triggers_task_when_rule_matches(self, mock_matcher_cls, mock_task):
+    def test_triggers_task_when_rule_matches(self, mock_matcher_cls, mock_task, mock_on_commit):
         rule = JiraIntegrationRule.objects.create(
             name='Rule',
             match_criteria={},
@@ -42,6 +43,11 @@ class HandleAlertProcessedTests(TestCase):
         )
 
         mock_matcher.find_matching_rule.assert_called_once_with(self.alert_group.labels)
+        mock_on_commit.assert_called_once()
+
+        callback = mock_on_commit.call_args[0][0]
+        callback()
+
         mock_task.delay.assert_called_once_with(
             alert_group_id=self.alert_group.id,
             rule_id=rule.id,
