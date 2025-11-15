@@ -76,11 +76,43 @@ class SmsTaskTests(TestCase):
         self.assertEqual(sms_log.recipients, ['09100000000'])
 
     @patch('integrations.tasks.SmsService')
+    def test_process_sms_for_alert_group_prefers_explicit_status(self, service_cls):
+        mock_service = service_cls.return_value
+        mock_service.send_bulk.return_value = {"messages": [{"status": 1}]}
+
+        PhoneBook.objects.create(name='alice', phone_number='09100000000')
+        alert_group = AlertGroup.objects.create(
+            fingerprint='fp_explicit',
+            name='Explicit',
+            labels={},
+            source='prometheus',
+            current_status='resolved',
+        )
+
+        rule = SmsIntegrationRule.objects.create(
+            name='r_explicit',
+            match_criteria={},
+            recipients='alice',
+            firing_template='firing {{ alert_group.name }}',
+            resolved_template='resolved {{ alert_group.name }}',
+        )
+
+        process_sms_for_alert_group.request.id = 'test_explicit_task'
+        process_sms_for_alert_group.run(alert_group.id, rule.id, alert_status='firing')
+
+        mock_service.send_bulk.assert_called_once_with(
+            ['09100000000'], 'firing Explicit', fingerprint='fp_explicit'
+        )
+        self.assertEqual(SmsMessageLog.objects.count(), 1)
+        log = SmsMessageLog.objects.first()
+        self.assertEqual(log.message, 'firing Explicit')
+
+    @patch('integrations.tasks.SmsService')
     def test_sms_template_with_summary(self, service_cls):
         mock_service = service_cls.return_value
         mock_service.send_bulk.return_value = {"messages": [{"status": 1}]}
         PhoneBook.objects.create(name='test_user', phone_number='09100000003')
-        
+
         alert_group = AlertGroup.objects.create(
             fingerprint='fp_summary',
             name='Test Alert Group',

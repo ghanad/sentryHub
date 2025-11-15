@@ -237,6 +237,34 @@ class SlackTaskTests(TestCase):
             '#chan', 'resolved AG8', fingerprint='fp8'
         )
 
+    @patch('integrations.tasks.SlackService')
+    def test_process_slack_for_alert_group_prefers_explicit_status(self, mock_service_cls):
+        mock_service = mock_service_cls.return_value
+        mock_service.send_notification.return_value = True
+
+        alert_group = AlertGroup.objects.create(
+            fingerprint='fp_explicit',
+            name='Explicit',
+            labels={'app': 'app'},
+            source='prometheus',
+        )
+        alert_group.current_status = 'resolved'
+        alert_group.save()
+
+        rule = SlackIntegrationRule.objects.create(
+            name='rule',
+            slack_channel='#chan',
+            match_criteria={},
+            message_template='firing {{ alert_group.name }}',
+            resolved_message_template='resolved {{ alert_group.name }}',
+        )
+
+        process_slack_for_alert_group(alert_group.id, rule.id, alert_status='firing')
+
+        mock_service.send_notification.assert_called_once_with(
+            '#chan', 'firing Explicit', fingerprint='fp_explicit'
+        )
+
     @patch('integrations.tasks.metrics_manager')
     @patch('integrations.tasks.SlackService')
     @patch('integrations.tasks.process_slack_for_alert_group.retry', side_effect=Retry('boom'))
