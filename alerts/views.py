@@ -25,11 +25,12 @@ from .models import (
 )
 from .forms import (
     AlertAcknowledgementForm, AlertCommentForm,
-    AlertDeleteForm, SilenceRuleForm
+    AlertDeleteForm, SilenceRuleForm, ManualResolveForm
 )
-from .services.alerts_processor import acknowledge_alert
+from .services.alerts_processor import acknowledge_alert, manually_resolve_alert, ManualResolutionError
 from .services.silence_matcher import check_alert_silence # Import the function
 from docs.services.documentation_matcher import match_documentation_to_alert
+from users.models import UserProfile
 
 logger = logging.getLogger(__name__)
 
@@ -243,8 +244,16 @@ class AlertDetailView(LoginRequiredMixin, DetailView):
         context['comments'] = paginated_comments
         
         # Add forms to context
-        context['acknowledge_form'] = AlertAcknowledgementForm()
-        context['comment_form'] = AlertCommentForm()
+        if 'acknowledge_form' not in context:
+            context['acknowledge_form'] = AlertAcknowledgementForm()
+        if 'comment_form' not in context:
+            context['comment_form'] = AlertCommentForm()
+
+        if self.request.user.is_staff and self.object.current_status == 'firing':
+            manual_form = context.get('manual_resolve_form')
+            if manual_form is None:
+                manual_form = ManualResolveForm(user_timezone=self._get_user_timezone())
+            context['manual_resolve_form'] = manual_form
         
         # Add active tab to context
         context['active_tab'] = self.request.GET.get('tab', 'details')
@@ -254,6 +263,30 @@ class AlertDetailView(LoginRequiredMixin, DetailView):
         alert = self.get_object()
         logger.info(f"Processing POST request for alert: {alert.name} (ID: {alert.id})")
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+        if 'manual_resolve' in request.POST:
+            if not request.user.is_staff:
+                logger.warning("User %s attempted manual resolve without permission", request.user.username)
+                raise PermissionDenied
+
+            form = ManualResolveForm(request.POST, user_timezone=self._get_user_timezone())
+            if form.is_valid():
+                resolved_at = form.cleaned_data['resolved_at']
+                note = form.cleaned_data.get('note')
+                try:
+                    manually_resolve_alert(alert, request.user, resolved_at, note)
+                except ManualResolutionError as exc:
+                    form.add_error(None, str(exc))
+                else:
+                    if not is_ajax:
+                        messages.success(request, "Alert has been resolved manually.")
+                    return redirect('alerts:alert-detail', fingerprint=alert.fingerprint)
+
+            if not is_ajax:
+                messages.error(request, "Unable to resolve the alert manually. Please review the errors below.")
+            self.object = alert
+            context = self.get_context_data(manual_resolve_form=form)
+            return self.render_to_response(context)
 
         # Handle acknowledgement with required comment
         if 'acknowledge' in request.POST:
@@ -289,9 +322,8 @@ class AlertDetailView(LoginRequiredMixin, DetailView):
                     messages.error(request, "Please provide a comment when acknowledging an alert.")
                 # Re-render the page with the invalid form
                 # Manually build context needed for render_to_response
-                context = {'alert': alert, 'acknowledge_form': form, 'comment_form': AlertCommentForm()}
-                # Add other necessary context items if template requires them (e.g., history, instances)
-                # For simplicity in fix, assuming template handles missing optional context
+                self.object = alert
+                context = self.get_context_data(acknowledge_form=form)
                 return self.render_to_response(context)
 
         # Handle comment - Use 'content' which is the actual form field name
@@ -323,13 +355,21 @@ class AlertDetailView(LoginRequiredMixin, DetailView):
                     messages.error(request, "Please provide a valid comment.")
                     # Re-render the page with the invalid form
                     # Manually build context needed for render_to_response
-                    context = {'alert': alert, 'comment_form': form, 'acknowledge_form': AlertAcknowledgementForm()}
-                    # Add other necessary context items if template requires them
+                    self.object = alert
+                    context = self.get_context_data(comment_form=form)
                     return self.render_to_response(context)
 
         # If neither acknowledge nor content was in POST, redirect (or handle as appropriate)
         logger.warning(f"POST request received for alert {alert.fingerprint} without 'acknowledge' or 'comment' data.")
         return redirect('alerts:alert-detail', fingerprint=alert.fingerprint)
+
+    def _get_user_timezone(self):
+        try:
+            return self.request.user.profile.timezone
+        except UserProfile.DoesNotExist:
+            return timezone.get_default_timezone_name()
+        except AttributeError:
+            return timezone.get_default_timezone_name()
 
 
 class AlertDeleteView(LoginRequiredMixin, UserPassesTestMixin, View):

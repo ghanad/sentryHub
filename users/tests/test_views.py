@@ -15,7 +15,10 @@ class UpdatePreferencesTests(TestCase):
     def test_valid_update(self):
         request = self.factory.post(
             reverse('users:update_preferences'),
-            {'date_format_preference': 'jalali'},
+            {
+                'date_format_preference': 'jalali',
+                'timezone': 'Asia/Tehran'
+            },
         )
         request.user = self.user
         request.session = {}
@@ -24,11 +27,15 @@ class UpdatePreferencesTests(TestCase):
         self.assertEqual(response.status_code, 302)
         profile = UserProfile.objects.get(user=self.user)
         self.assertEqual(profile.date_format_preference, 'jalali')
+        self.assertEqual(profile.timezone, 'Asia/Tehran')
 
     def test_invalid_update_keeps_default(self):
         request = self.factory.post(
             reverse('users:update_preferences'),
-            {'date_format_preference': 'invalid'},
+            {
+                'date_format_preference': 'invalid',
+                'timezone': 'UTC'
+            },
         )
         request.user = self.user
         request.session = {}
@@ -37,6 +44,23 @@ class UpdatePreferencesTests(TestCase):
         self.assertEqual(response.status_code, 302)
         profile = UserProfile.objects.get(user=self.user)
         self.assertEqual(profile.date_format_preference, 'gregorian')
+        self.assertEqual(profile.timezone, 'UTC')
+
+    def test_invalid_timezone_keeps_default(self):
+        request = self.factory.post(
+            reverse('users:update_preferences'),
+            {
+                'date_format_preference': 'gregorian',
+                'timezone': 'Invalid/Zone'
+            },
+        )
+        request.user = self.user
+        request.session = {}
+        setattr(request, '_messages', FallbackStorage(request))
+        response = update_preferences(request)
+        self.assertEqual(response.status_code, 302)
+        profile = UserProfile.objects.get(user=self.user)
+        self.assertEqual(profile.timezone, 'UTC')
 
 
 class UserListViewTests(TestCase):
@@ -76,6 +100,7 @@ class PreferencesViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['user'], self.staff)
         self.assertTrue(UserProfile.objects.filter(user=self.staff).exists())
+        self.assertIn('timezone_choices', response.context)
 
 
 class UserProfileViewTests(TestCase):

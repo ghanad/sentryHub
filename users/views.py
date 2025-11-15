@@ -8,6 +8,8 @@ from django.shortcuts import get_object_or_404
 from django.db import models, IntegrityError
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+import pytz
+from pytz.exceptions import UnknownTimeZoneError
 from .forms import CustomUserCreationForm, CustomUserChangeForm
 from .models import UserProfile
 
@@ -24,6 +26,8 @@ class PreferencesView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         profile, created = UserProfile.objects.get_or_create(user=self.request.user)
         context['user'] = self.request.user
+        context['timezone_choices'] = pytz.common_timezones
+        context['current_timezone'] = profile.timezone
         return context
 
 class UserProfileView(LoginRequiredMixin, TemplateView):
@@ -143,13 +147,29 @@ class UserDeleteView(AdminRequiredMixin, DeleteView):
 @login_required
 def update_preferences(request):
     if request.method == 'POST':
+        profile, created = UserProfile.objects.get_or_create(user=request.user)
         date_format = request.POST.get('date_format_preference')
+        selected_timezone = request.POST.get('timezone')
+
+        updated = False
+
         if date_format in ['gregorian', 'jalali']:
-            # Get or create profile
-            profile, created = UserProfile.objects.get_or_create(user=request.user)
             profile.date_format_preference = date_format
-            profile.save()
-            messages.success(request, 'Your preferences have been updated successfully.')
+            updated = True
         else:
             messages.error(request, 'Invalid date format preference.')
+
+        if selected_timezone:
+            try:
+                pytz.timezone(selected_timezone)
+                profile.timezone = selected_timezone
+                updated = True
+            except UnknownTimeZoneError:
+                messages.error(request, 'Invalid timezone selection.')
+        else:
+            messages.error(request, 'Timezone selection is required.')
+
+        if updated:
+            profile.save()
+            messages.success(request, 'Your preferences have been updated successfully.')
     return redirect('users:preferences')

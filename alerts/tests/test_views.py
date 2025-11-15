@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from django.conf import settings # Import settings
 from datetime import timedelta, datetime
+import pytz
 import json
 from unittest.mock import patch, call
 from django.contrib import messages
@@ -193,6 +194,7 @@ class AlertDetailViewTest(TestCase):
         self.assertEqual(response.status_code, 200)
         delete_url = reverse('alerts:alert-delete', kwargs={'fingerprint': self.alert_group.fingerprint})
         self.assertContains(response, delete_url)
+        self.assertIn('manual_resolve_form', response.context)
 
     def test_alert_detail_view_get_specific_tab(self):
         response = self.client.get(self.detail_url, {'tab': 'history'})
@@ -308,6 +310,56 @@ class AlertDetailViewTest(TestCase):
         post_data = {'some_other_field': 'value'}
         response = self.client.post(self.detail_url, post_data)
         self.assertRedirects(response, self.detail_url) # Should just redirect back
+
+    def test_alert_detail_manual_resolve_requires_staff(self):
+        resolved_at = (timezone.now() - timedelta(minutes=1)).astimezone(pytz.UTC).strftime('%Y-%m-%dT%H:%M')
+        post_data = {
+            'manual_resolve': '',
+            'resolved_at': resolved_at,
+            'timezone': 'UTC',
+            'note': 'Attempt without permission'
+        }
+        response = self.client.post(self.detail_url, post_data)
+        self.assertEqual(response.status_code, 403)
+
+    def test_alert_detail_manual_resolve_success(self):
+        self.client.logout()
+        self.client.force_login(self.admin_user)
+        resolved_at = (timezone.now() - timedelta(minutes=1)).astimezone(pytz.UTC).strftime('%Y-%m-%dT%H:%M')
+        post_data = {
+            'manual_resolve': '',
+            'resolved_at': resolved_at,
+            'timezone': 'UTC',
+            'note': 'Manual closure'
+        }
+        response = self.client.post(self.detail_url, post_data)
+        self.assertRedirects(response, self.detail_url)
+
+        self.alert_group.refresh_from_db()
+        self.instance1.refresh_from_db()
+        self.assertEqual(self.alert_group.current_status, 'resolved')
+        self.assertEqual(self.instance1.status, 'resolved')
+        self.assertEqual(self.instance1.resolution_type, 'manual')
+        self.assertIsNotNone(self.instance1.ended_at)
+
+        latest_comment = AlertComment.objects.filter(alert_group=self.alert_group).latest('created_at')
+        self.assertIn('Manual resolve', latest_comment.content)
+        self.assertEqual(latest_comment.user, self.admin_user)
+
+    def test_alert_detail_manual_resolve_invalid_time(self):
+        self.client.logout()
+        self.client.force_login(self.admin_user)
+        resolved_at = (self.instance1.started_at - timedelta(minutes=5)).astimezone(pytz.UTC).strftime('%Y-%m-%dT%H:%M')
+        post_data = {
+            'manual_resolve': '',
+            'resolved_at': resolved_at,
+            'timezone': 'UTC',
+            'note': 'Too early'
+        }
+        response = self.client.post(self.detail_url, post_data)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('manual_resolve_form', response.context)
+        self.assertTrue(response.context['manual_resolve_form'].errors)
 
 
 class AlertDeleteViewTests(TestCase):

@@ -19,6 +19,8 @@
                     <td>
                         {% if instance.status == 'firing' and not instance.ended_at %}
                         <span class="badge bg-danger">Firing</span>
+                        {% elif instance.status == 'resolved' and instance.resolution_type == 'manual' %}
+                        <span class="badge bg-primary" data-bs-toggle="tooltip" title="Resolved manually by an operator">Resolved (Manual)</span>
                         {% elif instance.status == 'resolved' and instance.resolution_type == 'inferred' %}
                         <span class="badge bg-secondary" data-bs-toggle="tooltip" title="Resolution inferred due to new firing event">Resolved (Inferred)</span>
                         {% else %} {# instance.status == 'resolved' and instance.ended_at is not NULL #}

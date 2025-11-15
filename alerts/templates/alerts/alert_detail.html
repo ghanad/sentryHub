@@ -48,6 +48,11 @@
                 <i class="bx bx-check-circle"></i> Acknowledge
             </button>
             {% endif %}
+            {% if manual_resolve_form %}
+            <button type="button" class="btn btn-sm btn-outline-success ms-2" data-bs-toggle="modal" data-bs-target="#manualResolveModal">
+                <i class="bx bx-check-shield"></i> Manual Resolve
+            </button>
+            {% endif %}
         </div>
     </div>
 </header>
@@ -154,6 +159,65 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" name="acknowledge" class="btn btn-primary">Acknowledge Alert</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if manual_resolve_form %}
+<div class="modal fade" id="manualResolveModal" tabindex="-1" aria-labelledby="manualResolveModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="manualResolveModalLabel">Manual Resolve Alert</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    {% if manual_resolve_form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in manual_resolve_form.non_field_errors %}
+                                <div>{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    <div class="mb-3">
+                        <label for="id_resolved_at" class="form-label">Resolution Time</label>
+                        {{ manual_resolve_form.resolved_at }}
+                        {% for error in manual_resolve_form.resolved_at.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                        {% if manual_resolve_form.resolved_at.help_text %}
+                            <div class="form-text">{{ manual_resolve_form.resolved_at.help_text }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_timezone" class="form-label">Timezone</label>
+                        {{ manual_resolve_form.timezone }}
+                        {% for error in manual_resolve_form.timezone.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                        {% if manual_resolve_form.timezone.help_text %}
+                            <div class="form-text">{{ manual_resolve_form.timezone.help_text }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_note" class="form-label">Resolution Note</label>
+                        {{ manual_resolve_form.note }}
+                        {% for error in manual_resolve_form.note.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                        {% if manual_resolve_form.note.help_text %}
+                            <div class="form-text">{{ manual_resolve_form.note.help_text }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" name="manual_resolve" class="btn btn-success">Resolve Alert</button>
                 </div>
             </form>
         </div>

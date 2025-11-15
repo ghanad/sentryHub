@@ -10,3 +10,4 @@ class UserProfileModelTests(TestCase):
         profile = user.profile
         self.assertEqual(str(profile), "alice's profile")
         self.assertEqual(profile.date_format_preference, 'gregorian')
+        self.assertEqual(profile.timezone, 'UTC')

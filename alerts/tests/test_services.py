@@ -10,8 +10,13 @@ from unittest.mock import patch
 from dateutil.parser import parse as parse_datetime
 
 # Import models and services from the parent 'alerts' app
-from ..models import AlertGroup, AlertInstance, AlertAcknowledgementHistory
-from ..services.alerts_processor import acknowledge_alert, get_active_firing_instance
+from ..models import AlertGroup, AlertInstance, AlertAcknowledgementHistory, AlertComment
+from ..services.alerts_processor import (
+    acknowledge_alert,
+    get_active_firing_instance,
+    manually_resolve_alert,
+    ManualResolutionError,
+)
 from ..services.alert_state_manager import update_alert_state
 from ..services.payload_parser import parse_alertmanager_payload
 
@@ -73,6 +78,60 @@ class GetActiveFiringInstanceTests(TestCase):
         self.assertIsNone(instance)
 
     # Add more tests for get_active_firing_instance based on test_forms.py results
+
+
+class ManualResolveAlertTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='resolver', password='password', is_staff=True)
+        self.alert_group = AlertGroup.objects.create(
+            fingerprint='manual-fp',
+            name='Manual Alert',
+            labels={},
+            current_status='firing',
+            severity='warning'
+        )
+        self.instance = AlertInstance.objects.create(
+            alert_group=self.alert_group,
+            status='firing',
+            started_at=timezone.now() - datetime.timedelta(minutes=10),
+            annotations={},
+        )
+
+    def test_manual_resolve_updates_models(self):
+        resolved_at = timezone.now() - datetime.timedelta(minutes=1)
+        manually_resolve_alert(self.alert_group, self.user, resolved_at)
+
+        self.alert_group.refresh_from_db()
+        self.instance.refresh_from_db()
+
+        self.assertEqual(self.alert_group.current_status, 'resolved')
+        self.assertAlmostEqual(self.alert_group.last_occurrence, resolved_at, delta=datetime.timedelta(seconds=1))
+        self.assertEqual(self.instance.status, 'resolved')
+        self.assertEqual(self.instance.resolution_type, 'manual')
+        self.assertAlmostEqual(self.instance.ended_at, resolved_at, delta=datetime.timedelta(seconds=1))
+
+    def test_manual_resolve_creates_comment_when_note_provided(self):
+        resolved_at = timezone.now() - datetime.timedelta(minutes=2)
+        manually_resolve_alert(self.alert_group, self.user, resolved_at, note='Investigated and mitigated')
+
+        comment = AlertComment.objects.filter(alert_group=self.alert_group).latest('created_at')
+        self.assertIn('Manual resolve', comment.content)
+        self.assertEqual(comment.user, self.user)
+
+    def test_manual_resolve_requires_active_instance(self):
+        self.instance.status = 'resolved'
+        self.instance.ended_at = timezone.now() - datetime.timedelta(minutes=5)
+        self.instance.save()
+        self.alert_group.current_status = 'resolved'
+        self.alert_group.save()
+
+        with self.assertRaises(ManualResolutionError):
+            manually_resolve_alert(self.alert_group, self.user, timezone.now())
+
+    def test_manual_resolve_rejects_time_before_start(self):
+        earlier_time = self.instance.started_at - datetime.timedelta(minutes=1)
+        with self.assertRaises(ManualResolutionError):
+            manually_resolve_alert(self.alert_group, self.user, earlier_time)
 
 
 # --- Tests for alert_state_manager.py ---
