@@ -326,7 +326,7 @@ def process_jira_for_alert_group(self, alert_group_id: int, rule_id: int, alert_
 
 
 @shared_task(bind=True, retry_kwargs={'max_retries': 12}, countdown=300, retry_backoff=True, retry_backoff_max=3600)
-def process_slack_for_alert_group(self, alert_group_id: int, rule_id: int):
+def process_slack_for_alert_group(self, alert_group_id: int, rule_id: int, alert_status: Optional[str] = None):
     """
     Celery task to send Slack notifications for an alert group.
     Handles network errors gracefully and retries without logging full tracebacks.
@@ -350,7 +350,7 @@ def process_slack_for_alert_group(self, alert_group_id: int, rule_id: int):
     summary = annotations.get('summary', alert_group.name)
     description = annotations.get('description', 'No description provided.')
 
-    status = getattr(alert_group, "current_status", None)
+    status = alert_status or getattr(alert_group, "current_status", None)
 
     context = {
         'alert_group': alert_group,
@@ -400,7 +400,7 @@ def process_slack_for_alert_group(self, alert_group_id: int, rule_id: int):
 
 
 @shared_task(bind=True, autoretry_for=(SmsNotificationError,), retry_backoff=True, retry_backoff_max=3600, max_retries=20)
-def process_sms_for_alert_group(self, alert_group_id: int, rule_id: int):
+def process_sms_for_alert_group(self, alert_group_id: int, rule_id: int, alert_status: Optional[str] = None):
     """Celery task to send SMS notifications for an alert group."""
     try:
         alert_group = AlertGroup.objects.get(pk=alert_group_id)
@@ -420,7 +420,7 @@ def process_sms_for_alert_group(self, alert_group_id: int, rule_id: int):
     annotations = latest_instance.annotations if latest_instance else {}
     summary = annotations.get('summary', alert_group.name)
     description = annotations.get('description', 'No description provided.')
-    status = getattr(alert_group, 'current_status', None)
+    status = alert_status or getattr(alert_group, 'current_status', None)
 
     context = {
         'alert_group': alert_group,

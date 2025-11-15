@@ -29,7 +29,11 @@ class HandleAlertProcessedSlackTests(TestCase):
         on_commit_mock.assert_called_once()
         callback = on_commit_mock.call_args[0][0]
         callback()
-        delay_mock.assert_called_once_with(alert_group_id=self.alert_group.id, rule_id=self.rule.id)
+        delay_mock.assert_called_once_with(
+            alert_group_id=self.alert_group.id,
+            rule_id=self.rule.id,
+            alert_status='firing',
+        )
 
     @patch('integrations.handlers.transaction.on_commit')
     @patch('integrations.handlers.process_slack_for_alert_group.delay')
@@ -61,4 +65,8 @@ class HandleAlertProcessedSlackTests(TestCase):
         on_commit_mock.assert_called_once()
         callback = on_commit_mock.call_args[0][0]
         callback()
-        delay_mock.assert_called_once_with(alert_group_id=self.alert_group.id, rule_id=self.rule.id)
+        delay_mock.assert_called_once_with(
+            alert_group_id=self.alert_group.id,
+            rule_id=self.rule.id,
+            alert_status='firing',
+        )

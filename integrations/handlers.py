@@ -1,6 +1,7 @@
 # integrations/handlers.py
 
 import logging
+from functools import partial
 from django.db import transaction
 from django.dispatch import receiver
 from alerts.signals import alert_processed
@@ -49,7 +50,8 @@ def handle_alert_processed(sender, **kwargs):
             logger.info(f"Integrations Handler (FP: {fingerprint_for_log}): Matched Jira rule '{matching_rule.name}'. Triggering Jira task for status '{status}'.")
             try:
                 transaction.on_commit(
-                    lambda: process_jira_for_alert_group.delay(
+                    partial(
+                        process_jira_for_alert_group.delay,
                         alert_group_id=alert_group.id,
                         rule_id=matching_rule.id,
                         alert_status=status,
@@ -106,9 +108,11 @@ def handle_alert_processed_slack(sender, **kwargs):
         )
         try:
             transaction.on_commit(
-                lambda: process_slack_for_alert_group.delay(
+                partial(
+                    process_slack_for_alert_group.delay,
                     alert_group_id=alert_group.id,
                     rule_id=rule.id,
+                    alert_status=status,
                 )
             )
         except Exception as e:
@@ -148,9 +152,11 @@ def handle_alert_processed_sms(sender, **kwargs):
         )
         try:
             transaction.on_commit(
-                lambda: process_sms_for_alert_group.delay(
+                partial(
+                    process_sms_for_alert_group.delay,
                     alert_group_id=alert_group.id,
                     rule_id=rule.id,
+                    alert_status=status,
                 )
             )
         except Exception as e:
