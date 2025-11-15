@@ -41,6 +41,9 @@
                         <dt class="col-sm-4 text-muted">Last Name:</dt>
                         <dd class="col-sm-8 detect-rtl">{{ user.last_name|default:"-" }}</dd>
 
+                        <dt class="col-sm-4 text-muted">Timezone:</dt>
+                        <dd class="col-sm-8 detect-rtl">{{ user.profile.timezone }}</dd>
+
                         <dt class="col-sm-4 text-muted">Date Joined:</dt>
                         <dd class="col-sm-8">
                             {% if user.profile.date_format_preference == 'jalali' %}

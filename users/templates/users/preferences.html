@@ -51,6 +51,17 @@
                                     Choose how dates should be displayed throughout the application.
                                 </div>
                             </div>
+                            <div class="mb-3">
+                                <label for="timezone" class="form-label">Timezone</label>
+                                <select name="timezone" id="timezone" class="form-select">
+                                    {% for tz in timezone_choices %}
+                                        <option value="{{ tz }}" {% if tz == user.profile.timezone %}selected{% endif %}>{{ tz }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">
+                                    The selected timezone is used when capturing manual alert resolution times and displaying timestamps.
+                                </div>
+                            </div>
                         </div>
 
                         <div class="text-end"> {# Align button to the right #}

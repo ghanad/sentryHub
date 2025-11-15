@@ -1,8 +1,12 @@
+from datetime import timedelta
+
 from django import forms
 from .models import AlertComment, SilenceRule
 import json
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+import pytz
+from pytz.exceptions import UnknownTimeZoneError
 
 class AlertAcknowledgementForm(forms.Form):
     """
@@ -13,6 +17,83 @@ class AlertAcknowledgementForm(forms.Form):
         required=True,
         help_text="Please provide a comment for this acknowledgement."
     )
+
+
+COMMON_TIMEZONES = pytz.common_timezones
+TIMEZONE_CHOICES = [(tz, tz) for tz in COMMON_TIMEZONES]
+TIMEZONE_SET = set(COMMON_TIMEZONES)
+
+
+class ManualResolveForm(forms.Form):
+    """Form used by managers to resolve an alert manually."""
+
+    resolved_at = forms.DateTimeField(
+        label='Resolution time',
+        widget=forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
+        input_formats=['%Y-%m-%dT%H:%M'],
+        help_text='Select the date and time when the alert should be considered resolved.'
+    )
+    timezone = forms.ChoiceField(
+        label='Timezone',
+        choices=TIMEZONE_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        help_text='The timezone for the provided resolution time.'
+    )
+    note = forms.CharField(
+        label='Resolution note',
+        required=False,
+        widget=forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
+        help_text='Optional context about why the alert was resolved manually.'
+    )
+
+    def __init__(self, *args, user_timezone='UTC', **kwargs):
+        super().__init__(*args, **kwargs)
+        timezone_choice = user_timezone if user_timezone in TIMEZONE_SET else 'UTC'
+        self.fields['timezone'].initial = timezone_choice
+
+        if not self.initial.get('resolved_at'):
+            current_time = timezone.now()
+            try:
+                tz = pytz.timezone(timezone_choice)
+                current_time = timezone.localtime(current_time, tz)
+            except UnknownTimeZoneError:
+                current_time = timezone.localtime(current_time)
+            current_time = current_time.replace(second=0, microsecond=0)
+            self.fields['resolved_at'].initial = current_time.strftime('%Y-%m-%dT%H:%M')
+
+    def clean_timezone(self):
+        tz_name = self.cleaned_data['timezone']
+        if tz_name not in TIMEZONE_SET:
+            raise ValidationError('Invalid timezone selection.')
+        return tz_name
+
+    def clean(self):
+        cleaned_data = super().clean()
+        resolved_at = cleaned_data.get('resolved_at')
+        tz_name = cleaned_data.get('timezone')
+
+        if not resolved_at or not tz_name:
+            return cleaned_data
+
+        try:
+            tz = pytz.timezone(tz_name)
+        except UnknownTimeZoneError:
+            self.add_error('timezone', 'Invalid timezone selection.')
+            return cleaned_data
+
+        if timezone.is_aware(resolved_at):
+            resolved_at = timezone.make_naive(resolved_at, timezone.get_current_timezone())
+
+        localized_time = tz.localize(resolved_at)
+
+        resolved_at_utc = localized_time.astimezone(timezone.utc)
+        if resolved_at_utc > timezone.now() + timedelta(minutes=5):
+            self.add_error('resolved_at', 'Resolution time cannot be in the future.')
+            return cleaned_data
+
+        cleaned_data['resolved_at'] = resolved_at_utc
+        cleaned_data['resolved_at_local'] = localized_time
+        return cleaned_data
 
 
 class AlertCommentForm(forms.ModelForm):
